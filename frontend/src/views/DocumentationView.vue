@@ -48,18 +48,21 @@
                         The generator uses the Morgan-Keenan (MK) spectral classification system. Stars are categorized by their spectral class (temperature) and luminosity.
                     </p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="(desc, code) in STAR_TYPE_DESCRIPTIONS" :key="code" 
-                             class="p-4 bg-gray-900/50 border border-gray-800 rounded-lg hover:border-blue-500/30 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <span :class="getStarClassColor(code.substring(0,2))" 
-                                      class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ring-2 ring-gray-800">
+                             class="p-4 bg-gray-900/50 border border-gray-800 rounded-xl hover:border-blue-500/30 transition-all flex items-center gap-4 group">
+                            <div class="relative w-16 h-16 flex-shrink-0">
+                                <img :src="getStarImage(String(code))" 
+                                     :alt="desc"
+                                     class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-300">
+                                <div :class="getStarClassColor(String(code).substring(0,2))"
+                                     class="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-950">
                                     {{ code }}
-                                </span>
-                                <div>
-                                    <h4 class="font-bold text-gray-200">{{ desc }}</h4>
-                                    <p class="text-xs text-gray-500">Spectral Class {{ code }}</p>
                                 </div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-100 mb-1">{{ desc }}</h4>
+                                <p class="text-xs text-gray-400 group-hover:text-blue-300 transition-colors">Spectral Class {{ code }}</p>
                             </div>
                         </div>
                     </div>
@@ -158,6 +161,23 @@ const getPlanetDetailDescription = (type: string) => {
         'E': 'Planets located in the circumstellar habitable zone with potential for liquid water.'
     };
     return details[type] || 'Standard planetary body classification.';
+};
+const getStarImage = (code: string) => {
+    // Extract base class (first letter or first char if not g/c/D)
+    let base = code[0];
+    if (code.startsWith('g') || code.startsWith('c')) {
+        base = code[1];
+    } else if (code.startsWith('D')) {
+        base = code[1];
+    }
+    
+    // Check if image exists for base class
+    const availableClasses = ['O', 'B', 'A', 'F', 'G'];
+    if (availableClasses.includes(base)) {
+        return `/images/stars/star-${base}.png`;
+    }
+    
+    return '/images/stars/star-default.png';
 };
 </script>
 
