@@ -87,7 +87,7 @@
                         <div class="space-y-2 mb-4">
                             <div class="flex justify-between">
                                 <span class="text-gray-400">Coordinates:</span>
-                                <span class="font-mono">({{ system.xPos }}, {{ system.yPos }}, {{ system.zPos }})</span>
+                                <span class="font-mono">({{ system.xPos.toFixed(3) }}, {{ system.yPos.toFixed(3) }}, {{ system.zPos.toFixed(3) }})</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-400">Stars in system:</span>

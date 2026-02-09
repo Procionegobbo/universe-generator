@@ -6,29 +6,30 @@
             <div class="form-group">
                 <label class="form-label" for="systemCount">
                     Number of Systems
-                    <span class="text-gray-400 text-sm ml-2">(1-1000)</span>
+                    <span class="text-gray-400 text-sm ml-2">(1-5,000)</span>
                 </label>
                 <input
                     id="systemCount"
                     v-model.number="systemCount"
                     type="number"
                     min="1"
-                    max="1000"
+                    max="5000"
                     required
                     class="form-input"
                     placeholder="e.g., 100"
                 />
-                <div class="flex items-center mt-2">
+                <div class="flex items-center mt-2 group">
+                    <span class="text-xs text-gray-500 mr-2">1</span>
                     <input
                         id="systemCountRange"
                         v-model.number="systemCount"
                         type="range"
                         min="1"
-                        max="1000"
+                        max="5000"
                         step="1"
-                        class="flex-1 mr-4"
+                        class="flex-1 mr-2"
                     />
-                    <span class="text-gray-400 text-sm">{{ systemCount }}</span>
+                    <span class="text-xs text-gray-500">5k</span>
                 </div>
             </div>
 
@@ -48,7 +49,8 @@
                     class="form-input"
                     placeholder="e.g., 1000"
                 />
-                <div class="flex items-center mt-2">
+                <div class="flex items-center mt-2 group">
+                    <span class="text-xs text-gray-500 mr-2">10</span>
                     <input
                         id="sectorVolumeRange"
                         v-model.number="sectorVolume"
@@ -56,9 +58,9 @@
                         min="10"
                         max="100000"
                         step="10"
-                        class="flex-1 mr-4"
+                        class="flex-1 mr-2"
                     />
-                    <span class="text-gray-400 text-sm">{{ sectorVolume }}</span>
+                    <span class="text-xs text-gray-500">100k</span>
                 </div>
             </div>
 
@@ -156,28 +158,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import type { GenerationRequest, SectorZone } from '../types';
+import { storeToRefs } from 'pinia';
 import { useSectorStore } from '../stores/sectorStore';
 
 const store = useSectorStore();
+const { systemCount, sectorVolume, zone, currentSeed: seed } = storeToRefs(store);
 
 const emit = defineEmits<{
     generate: [request: GenerationRequest];
     reset: [];
 }>();
 
-const systemCount = ref(100);
-const sectorVolume = ref(1000);
-const zone = ref<SectorZone>('medium');
-const seed = ref<number | string>('');
 const error = ref<string | null>(null);
 const isLoading = ref(false);
 const lastStats = ref<{ systemCount: number; starCount: number; planetCount: number; generationTimeMs: number } | null>(null);
-
-onMounted(() => {
-    seed.value = store.currentSeed;
-});
 
 const randomizeSeed = () => {
     seed.value = Math.floor(Math.random() * 1000000);
@@ -186,7 +182,7 @@ const randomizeSeed = () => {
 // Sync range inputs with number inputs
 watch(systemCount, (value) => {
     if (value < 1) systemCount.value = 1;
-    if (value > 1000) systemCount.value = 1000;
+    if (value > 5000) systemCount.value = 5000;
 });
 
 watch(sectorVolume, (value) => {

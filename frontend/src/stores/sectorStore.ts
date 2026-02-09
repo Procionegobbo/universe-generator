@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Sector, GenerationRequest } from '../types';
+import type { Sector, GenerationRequest, SectorZone } from '../types';
 import axios from 'axios';
 
 export const useSectorStore = defineStore('sector', () => {
@@ -8,6 +8,11 @@ export const useSectorStore = defineStore('sector', () => {
     const isLoading = ref(false);
     const error = ref<string | null>(null);
     const currentSeed = ref<number | string>(Math.floor(Math.random() * 1000000));
+
+    // Generation Settings Persistence
+    const systemCount = ref(100);
+    const sectorVolume = ref(1000);
+    const zone = ref<SectorZone>('medium');
 
     // Actions
     const checkHealth = async (): Promise<boolean> => {
@@ -63,6 +68,9 @@ export const useSectorStore = defineStore('sector', () => {
         isLoading,
         error,
         currentSeed,
+        systemCount,
+        sectorVolume,
+        zone,
         checkHealth,
         generateSector,
         getSystemById
