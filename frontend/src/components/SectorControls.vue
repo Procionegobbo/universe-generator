@@ -63,6 +63,24 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label" for="zone">
+                    Sector Zone
+                    <span class="text-gray-400 text-sm ml-2">(Affects star distribution)</span>
+                </label>
+                <select
+                    id="zone"
+                    v-model="zone"
+                    class="form-input"
+                >
+                    <option value="extragalactic">Extragalactic</option>
+                    <option value="galactic edge">Galactic Edge</option>
+                    <option value="medium">Medium (Standard)</option>
+                    <option value="central zone">Central Zone</option>
+                    <option value="core">Galactic Core</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label" for="seed">
                     Generation Seed
                     <span class="text-gray-400 text-sm ml-2">(Shared seed = Identical sector)</span>
@@ -139,7 +157,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import type { GenerationRequest } from '../types';
+import type { GenerationRequest, SectorZone } from '../types';
 import { useSectorStore } from '../stores/sectorStore';
 
 const store = useSectorStore();
@@ -151,6 +169,7 @@ const emit = defineEmits<{
 
 const systemCount = ref(100);
 const sectorSize = ref(1000);
+const zone = ref<SectorZone>('medium');
 const seed = ref<number | string>('');
 const error = ref<string | null>(null);
 const isLoading = ref(false);
@@ -195,7 +214,8 @@ const handleSubmit = () => {
     const request: GenerationRequest = {
         systemCount: systemCount.value,
         sectorSize: sectorSize.value,
-        seed: seed.value
+        seed: seed.value,
+        zone: zone.value
     };
 
     emit('generate', request);
@@ -204,6 +224,7 @@ const handleSubmit = () => {
 const resetForm = () => {
     systemCount.value = 100;
     sectorSize.value = 1000;
+    zone.value = 'medium';
     seed.value = '';
     error.value = null;
     lastStats.value = null;

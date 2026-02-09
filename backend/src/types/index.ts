@@ -1,5 +1,7 @@
 // Shared type definitions for the stellar generation system
 
+export type SectorZone = 'extragalactic' | 'galactic edge' | 'medium' | 'central zone' | 'core';
+
 export interface StarType {
     spectralClass: string;
     hasSubclass?: boolean;
@@ -47,6 +49,7 @@ export interface GenerationRequest {
     systemCount: number;
     sectorSize: number;
     seed?: string | number;
+    zone?: SectorZone;
 }
 
 export interface GenerationResponse {

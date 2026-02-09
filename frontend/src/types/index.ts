@@ -1,5 +1,7 @@
 // Shared type definitions matching backend
 
+export type SectorZone = 'extragalactic' | 'galactic edge' | 'medium' | 'central zone' | 'core';
+
 export interface Star {
     starId: number;
     systemId: number;
@@ -33,6 +35,7 @@ export interface GenerationRequest {
     systemCount: number;
     sectorSize: number;
     seed?: string | number;
+    zone?: SectorZone;
 }
 
 export interface GenerationResponse {

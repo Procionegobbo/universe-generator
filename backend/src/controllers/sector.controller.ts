@@ -14,7 +14,7 @@ export class SectorController {
      */
     generateSector = (req: Request, res: Response) => {
         try {
-            const { systemCount, sectorSize, seed } = req.body as GenerationRequest;
+            const { systemCount, sectorSize, seed, zone } = req.body as GenerationRequest;
 
             // Validate input
             if (typeof systemCount !== 'number' || systemCount <= 0 || systemCount > 1000) {
@@ -36,7 +36,7 @@ export class SectorController {
             const startTime = Date.now();
 
             // Generate the sector
-            const sector = this.stellarService.generateSector(systemCount, sectorSize, seed);
+            const sector = this.stellarService.generateSector(systemCount, sectorSize, seed, zone);
 
             const generationTimeMs = Date.now() - startTime;
 

@@ -1,4 +1,5 @@
 import seedrandom from 'seedrandom';
+import { SectorZone } from '../types';
 
 // Globale.ts
 
@@ -87,10 +88,12 @@ export class StellarGenerator {
     private lastStarId = 0;
     private lastSystemId = 0;
     private prng: seedrandom.PRNG;
+    private zone: SectorZone;
 
-    constructor(seed?: string | number) {
+    constructor(seed?: string | number, zone: SectorZone = 'medium') {
         const seedStr = seed !== undefined ? seed.toString() : Math.random().toString();
         this.prng = seedrandom(seedStr);
+        this.zone = zone;
     }
 
     // Star types table (simulated - normally from database)
@@ -255,39 +258,66 @@ export class StellarGenerator {
     }
 
     /**
-     * Generates the primary star type
+     * Generates the primary star type based on location zone
      * @returns Spectral class string
      */
     generateStarType(): string {
-        const diceRoll = Math.floor(this.prng() * 100) + 1;
+        const roll = this.prng() * 100;
 
-        switch (true) {
-            case diceRoll === 1:
-                return this.generateStarType2();
-            case diceRoll === 2:
-                return "B";
-            case diceRoll >= 3 && diceRoll <= 4:
-                return "A";
-            case diceRoll >= 5 && diceRoll <= 8:
-                return "F";
-            case diceRoll >= 9 && diceRoll <= 15:
-                return "G";
-            case diceRoll >= 16 && diceRoll <= 30:
-                return "K";
-            case diceRoll >= 31 && diceRoll <= 93:
-                return "M";
-            case diceRoll === 94:
-                return "DB";
-            case diceRoll >= 95 && diceRoll <= 96:
-                return "DA";
-            case diceRoll >= 97 && diceRoll <= 98:
-                return "DF";
-            case diceRoll === 99:
-                return "DG";
-            case diceRoll === 100:
-                return "DK";
-            default:
-                return "??";
+        if (this.zone === 'extragalactic') {
+            // Halo Population: Old, low-mass stars
+            if (roll < 0.01) return this.generateStarType2(); // Very rare giants
+            if (roll < 0.1) return "G";
+            if (roll < 5.0) return "K";
+            if (roll < 92.0) return "M"; // 87% Red Dwarfs
+            if (roll < 98.0) return "DA"; // 6% White Dwarfs
+            return "DF";
+        } else if (this.zone === 'galactic edge') {
+            // Thin/Thick Disk transition
+            if (roll < 0.1) return this.generateStarType2();
+            if (roll < 0.5) return "F";
+            if (roll < 4.0) return "G";
+            if (roll < 15.0) return "K";
+            if (roll < 90.0) return "M";
+            if (roll < 97.0) return "DA";
+            return "DF";
+        } else if (this.zone === 'central zone') {
+            // Population I: More young, massive stars
+            if (roll < 2.0) return this.generateStarType2(); // 2% Giants/Exotic
+            if (roll < 2.5) return "B";
+            if (roll < 4.0) return "A";
+            if (roll < 10.0) return "F";
+            if (roll < 20.0) return "G";
+            if (roll < 35.0) return "K";
+            if (roll < 90.0) return "M";
+            return "DA";
+        } else if (this.zone === 'core') {
+            // Galactic Bulge: High density, many old stars and remnants
+            if (roll < 15.0) return this.generateStarType2(); // 15% Giants/Exotic
+            if (roll < 16.0) return "B";
+            if (roll < 18.0) return "A";
+            if (roll < 25.0) return "F";
+            if (roll < 35.0) return "G";
+            if (roll < 50.0) return "K";
+            if (roll < 85.0) return "M";
+            if (roll < 95.0) return "DA";
+            return "BH"; // 5% Black Holes (high density in core)
+        } else {
+            // Default "medium" zone (Solar Neighborhood / Disk)
+            // Based on: M(76%), K(12%), G(7.6%), F(3.0%), A(0.6%), B(0.13%), WD(10%)
+            // Adjusted to fit 100%
+            if (roll < 1.0) return this.generateStarType2(); // 1% Giants/Exotic
+            if (roll < 1.1) return "B"; // 0.1%
+            if (roll < 1.7) return "A"; // 0.6%
+            if (roll < 4.7) return "F"; // 3.0%
+            if (roll < 12.3) return "G"; // 7.6%
+            if (roll < 24.3) return "K"; // 12.0%
+            if (roll < 92.0) return "M"; // 67.7% (adjusted)
+            if (roll < 95.0) return "DA"; // 3% White Dwarfs
+            if (roll < 97.0) return "DB";
+            if (roll < 98.0) return "DF";
+            if (roll < 99.0) return "DG";
+            return "DK";
         }
     }
 
@@ -296,26 +326,15 @@ export class StellarGenerator {
      * @returns Spectral class string
      */
     generateStarType2(): string {
-        const diceRoll = Math.floor(this.prng() * 100) + 1;
+        const roll = this.prng() * 100;
 
-        switch (true) {
-            case diceRoll === 1:
-                return this.generateStarType3(1);
-            case diceRoll >= 2 && diceRoll <= 5:
-                return "gF";
-            case diceRoll >= 6 && diceRoll <= 10:
-                return "gG";
-            case diceRoll >= 11 && diceRoll <= 55:
-                return "gK";
-            case diceRoll >= 56 && diceRoll <= 95:
-                return "gM";
-            case diceRoll >= 96 && diceRoll <= 99:
-                return "NS";
-            case diceRoll === 100:
-                return this.generateStarType3(100);
-            default:
-                return "??";
-        }
+        if (roll < 1.0) return this.generateStarType3(1);
+        if (roll < 5.0) return "gF";
+        if (roll < 10.0) return "gG";
+        if (roll < 55.0) return "gK";
+        if (roll < 95.0) return "gM";
+        if (roll < 99.0) return "NS";
+        return this.generateStarType3(100);
     }
 
     /**
@@ -324,21 +343,21 @@ export class StellarGenerator {
      * @returns Spectral class string
      */
     generateStarType3(previous: number): string {
-        const diceRoll = Math.floor(this.prng() * 100) + 1;
+        const roll = this.prng() * 100;
 
         if (previous === 1) {
-            if (diceRoll >= 1 && diceRoll <= 10) return "cB";
-            if (diceRoll >= 11 && diceRoll <= 20) return "cA";
-            if (diceRoll >= 21 && diceRoll <= 40) return "cF";
-            if (diceRoll >= 41 && diceRoll <= 60) return "cG";
-            if (diceRoll >= 61 && diceRoll <= 80) return "cK";
-            if (diceRoll >= 81 && diceRoll <= 100) return "cM";
+            if (roll < 10.0) return "cB";
+            if (roll < 20.0) return "cA";
+            if (roll < 40.0) return "cF";
+            if (roll < 60.0) return "cG";
+            if (roll < 80.0) return "cK";
+            return "cM";
         } else if (previous === 100) {
-            if (diceRoll >= 1 && diceRoll <= 20) return "BH";
-            if (diceRoll >= 21 && diceRoll <= 100) return "O";
+            if (roll < 5.0) return "BH";
+            return "O"; // Still rare as it requires roll 100 in generateStarType2
         }
 
-        return "??";
+        return "M";
     }
 
     /**

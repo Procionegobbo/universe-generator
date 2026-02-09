@@ -1,5 +1,5 @@
 import { StellarGenerator } from '../lib/example_star_generator';
-import { Sector } from '../types';
+import { Sector, SectorZone } from '../types';
 
 export class StellarService {
 
@@ -10,8 +10,8 @@ export class StellarService {
     /**
      * Generate a sector with the given parameters
      */
-    generateSector(systemCount: number, sectorSize: number, seed?: string | number): Sector {
-        const generator = new StellarGenerator(seed);
+    generateSector(systemCount: number, sectorSize: number, seed?: string | number, zone?: SectorZone): Sector {
+        const generator = new StellarGenerator(seed, zone);
         return generator.generateSector(systemCount, sectorSize);
     }
 
