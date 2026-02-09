@@ -76,7 +76,7 @@
                         <router-link to="/documentation" class="text-gray-400 hover:text-white transition-colors underline decoration-purple-500/30 hover:decoration-purple-500 transition-all underline-offset-4">
                             Documentation
                         </router-link>
-                        <a href="#" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
+                        <a href="https://github.com/Procionegobbo/universe-generator" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
                         <router-link to="/api-reference" class="text-gray-400 hover:text-white transition-colors underline decoration-blue-500/30 hover:decoration-blue-500 transition-all underline-offset-4">
                             API Reference
                         </router-link>
