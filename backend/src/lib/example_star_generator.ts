@@ -363,10 +363,10 @@ export class StellarGenerator {
     /**
      * Generates a stellar sector
      * @param systemCount Number of systems to generate
-     * @param sectorSize Size of the sector cube
+     * @param sectorVolume Volume of the sector in cubic parsecs
      * @returns Object containing generated systems, stars, and planets
      */
-    generateSector(systemCount: number, sectorSize: number): {
+    generateSector(systemCount: number, sectorVolume: number): {
         systems: System[],
         stars: Star[],
         planets: Planet[]
@@ -375,13 +375,16 @@ export class StellarGenerator {
         const stars: Star[] = [];
         const planets: Planet[] = [];
 
+        // Calculate the side length of the cube from the volume
+        const sectorSide = Math.cbrt(sectorVolume);
+
         for (let i = 1; i <= systemCount; i++) {
             // Create system
             const system: System = {
                 systemId: ++this.lastSystemId,
-                xPos: Math.floor(this.prng() * sectorSize),
-                yPos: Math.floor(this.prng() * sectorSize),
-                zPos: Math.floor(this.prng() * sectorSize)
+                xPos: this.prng() * sectorSide,
+                yPos: this.prng() * sectorSide,
+                zPos: this.prng() * sectorSide
             };
             systems.push(system);
 

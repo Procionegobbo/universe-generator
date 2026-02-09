@@ -33,32 +33,32 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="sectorSize">
-                    Sector Size (cubic units)
-                    <span class="text-gray-400 text-sm ml-2">(100-100000)</span>
+                <label class="form-label" for="sectorVolume">
+                    Sector Volume (cubic parsec)
+                    <span class="text-gray-400 text-sm ml-2">(10-1,000,000)</span>
                 </label>
                 <input
-                    id="sectorSize"
-                    v-model.number="sectorSize"
+                    id="sectorVolume"
+                    v-model.number="sectorVolume"
                     type="number"
-                    min="100"
-                    max="100000"
-                    step="100"
+                    min="10"
+                    max="1000000"
+                    step="10"
                     required
                     class="form-input"
                     placeholder="e.g., 1000"
                 />
                 <div class="flex items-center mt-2">
                     <input
-                        id="sectorSizeRange"
-                        v-model.number="sectorSize"
+                        id="sectorVolumeRange"
+                        v-model.number="sectorVolume"
                         type="range"
-                        min="100"
-                        max="10000"
-                        step="100"
+                        min="10"
+                        max="100000"
+                        step="10"
                         class="flex-1 mr-4"
                     />
-                    <span class="text-gray-400 text-sm">{{ sectorSize }}</span>
+                    <span class="text-gray-400 text-sm">{{ sectorVolume }}</span>
                 </div>
             </div>
 
@@ -168,7 +168,7 @@ const emit = defineEmits<{
 }>();
 
 const systemCount = ref(100);
-const sectorSize = ref(1000);
+const sectorVolume = ref(1000);
 const zone = ref<SectorZone>('medium');
 const seed = ref<number | string>('');
 const error = ref<string | null>(null);
@@ -189,21 +189,38 @@ watch(systemCount, (value) => {
     if (value > 1000) systemCount.value = 1000;
 });
 
-watch(sectorSize, (value) => {
-    if (value < 100) sectorSize.value = 100;
-    if (value > 100000) sectorSize.value = 100000;
+watch(sectorVolume, (value) => {
+    if (value < 10) sectorVolume.value = 10;
+    if (value > 1000000) sectorVolume.value = 1000000;
+});
+
+// Density constants (stars per cubic parsec)
+const DENSITY_MAP: Record<SectorZone, number> = {
+    'extragalactic': 0.001,
+    'galactic edge': 0.01,
+    'medium': 0.14,
+    'central zone': 1.0,
+    'core': 10.0
+};
+
+// Automatically calculate suggested system count based on volume and zone
+watch([sectorVolume, zone], ([newVolume, newZone]) => {
+    const density = DENSITY_MAP[newZone] || 0.14;
+    const suggestedCount = Math.max(1, Math.round(newVolume * density));
+    // Limit to a reasonable number for simulation
+    systemCount.value = Math.min(suggestedCount, 5000);
 });
 
 const handleSubmit = () => {
     error.value = null;
 
-    if (systemCount.value < 1 || systemCount.value > 1000) {
-        error.value = 'System count must be between 1 and 1000';
+    if (systemCount.value < 1 || systemCount.value > 10000) {
+        error.value = 'System count must be between 1 and 10000';
         return;
     }
 
-    if (sectorSize.value < 100 || sectorSize.value > 100000) {
-        error.value = 'Sector size must be between 100 and 100000';
+    if (sectorVolume.value < 10 || sectorVolume.value > 10000000) {
+        error.value = 'Sector volume must be between 10 and 10,000,000';
         return;
     }
 
@@ -213,7 +230,7 @@ const handleSubmit = () => {
 
     const request: GenerationRequest = {
         systemCount: systemCount.value,
-        sectorSize: sectorSize.value,
+        sectorVolume: sectorVolume.value,
         seed: seed.value,
         zone: zone.value
     };
@@ -223,7 +240,7 @@ const handleSubmit = () => {
 
 const resetForm = () => {
     systemCount.value = 100;
-    sectorSize.value = 1000;
+    sectorVolume.value = 1000;
     zone.value = 'medium';
     seed.value = '';
     error.value = null;

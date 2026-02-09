@@ -14,21 +14,21 @@ export class SectorController {
      */
     generateSector = (req: Request, res: Response) => {
         try {
-            const { systemCount, sectorSize, seed, zone } = req.body as GenerationRequest;
+            const { systemCount, sectorVolume, seed, zone } = req.body as GenerationRequest;
 
             // Validate input
-            if (typeof systemCount !== 'number' || systemCount <= 0 || systemCount > 1000) {
+            if (typeof systemCount !== 'number' || systemCount <= 0 || systemCount > 10000) {
                 res.status(400).json({
                     success: false,
-                    error: 'systemCount must be a positive number between 1 and 1000'
+                    error: 'systemCount must be a positive number between 1 and 10000'
                 } as GenerationResponse);
                 return;
             }
 
-            if (typeof sectorSize !== 'number' || sectorSize <= 0 || sectorSize > 100000) {
+            if (typeof sectorVolume !== 'number' || sectorVolume <= 0 || sectorVolume > 10000000) {
                 res.status(400).json({
                     success: false,
-                    error: 'sectorSize must be a positive number between 1 and 100000'
+                    error: 'sectorVolume must be a positive number between 1 and 10000000'
                 } as GenerationResponse);
                 return;
             }
@@ -36,7 +36,7 @@ export class SectorController {
             const startTime = Date.now();
 
             // Generate the sector
-            const sector = this.stellarService.generateSector(systemCount, sectorSize, seed, zone);
+            const sector = this.stellarService.generateSector(systemCount, sectorVolume, seed, zone);
 
             const generationTimeMs = Date.now() - startTime;
 

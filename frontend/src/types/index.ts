@@ -33,7 +33,7 @@ export interface Sector {
 
 export interface GenerationRequest {
     systemCount: number;
-    sectorSize: number;
+    sectorVolume: number;
     seed?: string | number;
     zone?: SectorZone;
 }

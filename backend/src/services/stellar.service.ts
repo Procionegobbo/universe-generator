@@ -10,9 +10,9 @@ export class StellarService {
     /**
      * Generate a sector with the given parameters
      */
-    generateSector(systemCount: number, sectorSize: number, seed?: string | number, zone?: SectorZone): Sector {
+    generateSector(systemCount: number, sectorVolume: number, seed?: string | number, zone?: SectorZone): Sector {
         const generator = new StellarGenerator(seed, zone);
-        return generator.generateSector(systemCount, sectorSize);
+        return generator.generateSector(systemCount, sectorVolume);
     }
 
     /**
