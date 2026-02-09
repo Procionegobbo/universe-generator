@@ -77,14 +77,14 @@
                     <div class="space-y-4">
                         <div v-for="(desc, code) in filteredPlanetDescriptions" :key="code" 
                              class="flex items-start gap-4 p-4 bg-gray-900/50 border border-gray-800 rounded-xl group hover:bg-gray-800/30 transition-all">
-                            <div :class="getPlanetTypeColor(code)" 
+                            <div :class="getPlanetTypeColor(String(code))" 
                                  class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-110 transition-transform">
                                 {{ code }}
                             </div>
                             <div>
                                 <h4 class="text-lg font-bold text-gray-100 mb-1">{{ desc }}</h4>
                                 <p class="text-sm text-gray-400 leading-relaxed">
-                                    {{ getPlanetDetailDescription(code) }}
+                                    {{ getPlanetDetailDescription(String(code)) }}
                                 </p>
                             </div>
                         </div>

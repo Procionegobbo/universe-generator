@@ -1,4 +1,4 @@
-import { StellarGenerator } from '../../lib/example_star_generator';
+import { StellarGenerator } from '../lib/example_star_generator';
 import { Sector } from '../types';
 
 export class StellarService {
