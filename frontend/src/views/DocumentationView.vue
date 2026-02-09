@@ -50,19 +50,26 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div v-for="(desc, code) in STAR_TYPE_DESCRIPTIONS" :key="code" 
-                             class="p-4 bg-gray-900/50 border border-gray-800 rounded-xl hover:border-blue-500/30 transition-all flex items-center gap-4 group">
-                            <div class="relative w-16 h-16 flex-shrink-0">
-                                <img :src="getStarImage(String(code))" 
-                                     :alt="desc"
-                                     class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-300">
-                                <div :class="getStarClassColor(String(code).substring(0,2))"
-                                     class="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ring-gray-950">
+                             class="p-4 bg-gray-900/50 border border-gray-800 rounded-xl hover:border-blue-500/30 transition-all flex items-center gap-6 group">
+                            <div class="relative w-20 h-20 flex-shrink-0">
+                                <!-- Round container for the star image -->
+                                <div class="w-full h-full rounded-full overflow-hidden bg-gray-950 border-2 border-gray-800 group-hover:border-blue-500/50 transition-colors duration-300 flex items-center justify-center">
+                                    <img :src="getStarImage(String(code))" 
+                                         :alt="desc"
+                                         class="w-full h-full object-cover filter brightness-110 group-hover:scale-125 transition-transform duration-500">
+                                </div>
+                                <!-- Superimposed class badge -->
+                                <div :class="getStarClassColor(String(code))"
+                                     class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded backdrop-blur-sm bg-black/40 border border-white/20 text-[10px] font-black tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-xl">
                                     {{ code }}
                                 </div>
                             </div>
-                            <div>
-                                <h4 class="font-bold text-gray-100 mb-1">{{ desc }}</h4>
-                                <p class="text-xs text-gray-400 group-hover:text-blue-300 transition-colors">Spectral Class {{ code }}</p>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-100 mb-1 leading-tight">{{ desc }}</h4>
+                                <div class="flex items-center gap-2">
+                                    <div :class="getStarClassColor(String(code))" class="w-2 h-2 rounded-full"></div>
+                                    <span class="text-xs text-gray-500 group-hover:text-blue-300 transition-colors">Class {{ code }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
