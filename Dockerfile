@@ -27,7 +27,10 @@ COPY --from=backend-builder /app/node_modules ./backend/node_modules
 RUN mkdir -p /app/backend/public
 COPY --from=frontend-builder /app/dist ./backend/public
 
-EXPOSE 3000
+EXPOSE 80
+
+# Set the port to 80
+ENV PORT=80
 
 # Start backend (it will serve the static frontend from /public)
 CMD ["node", "backend/dist/index.js"]
