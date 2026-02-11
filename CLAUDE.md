@@ -16,6 +16,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` – Start with nodemon (hot reload)
 - `npm run build` – Compile TypeScript to JavaScript
 - `npm start` – Run compiled JavaScript
+- `npm test` – Run Jest test suite
+- `npm run test:unit` – Run unit tests only
+- `npm run test:integration` – Run integration tests only
+- `npm run test:watch` – Watch mode
+- `npm run test:coverage` – Generate coverage report
 
 ### Frontend (in `/frontend`)
 - `npm run dev` – Start Vite dev server
@@ -110,8 +115,18 @@ When modifying data structures, update both type definitions.
 - **Build Tools**: TypeScript compiler, Vite, multi‑stage Docker
 - **Development**: concurrently, nodemon, ts‑node
 
+## Testing
+- **Backend**: Jest test framework with ts-jest for TypeScript, supertest for HTTP integration tests
+- **Test Structure**: Unit tests in `backend/__tests__/unit/`, integration tests in `backend/__tests__/integration/`
+- **Coverage**: Run `npm run test:coverage` in the backend directory to generate coverage reports
+- **Test Scripts**:
+  - `npm test` – Run all tests
+  - `npm run test:unit` – Run unit tests only
+  - `npm run test:integration` – Run integration tests only
+  - `npm run test:watch` – Watch mode
+  - `npm run test:coverage` – Generate coverage report
+
 ## Notable Absences
-- No test framework (jest, vitest, etc.) configured
 - No linting (eslint, prettier) configured
 - No CI/CD configuration files
 

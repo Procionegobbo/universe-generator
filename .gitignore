@@ -44,3 +44,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Testing
+coverage/
+*.lcov
+__tests__/**/*.js
+__tests__/**/*.js.map
+__tests__/**/*.d.ts
+__tests__/**/*.d.ts.map
+
+# Claude Code
+.claude/
