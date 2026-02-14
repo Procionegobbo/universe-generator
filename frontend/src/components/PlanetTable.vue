@@ -51,10 +51,13 @@
                         <td class="font-mono">{{ planet.starId }}</td>
                         <td class="font-mono">{{ planet.orbitalNumber }}</td>
                         <td>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                                :class="getPlanetTypeColor(planet.planetType)">
-                                {{ planet.planetType }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <img :src="getPlanetImage(planet.planetType)" :alt="getPlanetTypeDescription(planet.planetType)" class="w-8 h-8 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                    :class="getPlanetTypeColor(planet.planetType)">
+                                    {{ planet.planetType }}
+                                </span>
+                            </div>
                         </td>
                         <td class="text-gray-400 text-sm">
                             {{ getPlanetTypeDescription(planet.planetType) }}
@@ -265,5 +268,25 @@ const getZoneColor = (orbit: number) => {
     if (orbit <= 2) return 'bg-red-900/30 text-red-300';
     if (orbit <= 4) return 'bg-green-900/30 text-green-300';
     return 'bg-blue-900/30 text-blue-300';
+};
+
+// Add this function to map planet codes to image filenames
+const getPlanetImage = (code: string) => {
+    const imageMap: Record<string, string> = {
+        'A': 'asteroid.png',
+        'G': 'gasgiant.png',
+        'R': 'rocky.png',
+        'C': 'carbon.png',
+        'D': 'desert.png',
+        'H': 'hell.png',
+        'M': 'molten.png',
+        'E': 'earthlike.png',
+        '#': 'unknown.png'
+    };
+    const imageName = imageMap[code];
+    if (imageName) {
+        return `/images/planets/${imageName}`;
+    }
+    return '/images/planets/unknown.png';
 };
 </script>

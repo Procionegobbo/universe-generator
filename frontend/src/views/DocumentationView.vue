@@ -87,8 +87,11 @@
                     <div class="space-y-4">
                         <div v-for="(desc, code) in filteredPlanetDescriptions" :key="code" 
                              class="flex items-start gap-4 p-4 bg-gray-900/50 border border-gray-800 rounded-xl group hover:bg-gray-800/30 transition-all">
-                            <div :class="getPlanetTypeColor(String(code))" 
-                                 class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-110 transition-transform">
+                            <div class="w-20 h-20 flex-shrink-0 flex items-center justify-center">
+                                <img :src="getPlanetImage(String(code))" :alt="desc" class="w-full h-full object-contain rounded-full border-2 border-gray-800 bg-black" />
+                            </div>
+                            <div :class="getPlanetTypeColor(String(code))"
+                                 class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-110 transition-transform ml-2">
                                 {{ code }}
                             </div>
                             <div>
@@ -208,6 +211,25 @@ const getStarImage = (code: string) => {
     }
 
     return '/images/stars/star-default.png';
+};
+// Add this function to map planet codes to image filenames
+const getPlanetImage = (code: string) => {
+    const imageMap: Record<string, string> = {
+        'A': 'asteroid.png',
+        'G': 'gasgiant.png',
+        'R': 'rocky.png',
+        'C': 'carbon.png',
+        'D': 'desert.png',
+        'H': 'hell.png',
+        'M': 'molten.png',
+        'E': 'earthlike.png',
+        '#': 'unknown.png'
+    };
+    const imageName = imageMap[code];
+    if (imageName) {
+        return `/images/planets/${imageName}`;
+    }
+    return '/images/planets/unknown.png';
 };
 </script>
 

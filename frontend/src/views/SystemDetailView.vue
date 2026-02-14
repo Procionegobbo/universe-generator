@@ -45,10 +45,10 @@
                             <div class="flex flex-col md:flex-row gap-6 items-start">
                                 <!-- Star Info -->
                                 <div class="flex items-center gap-4 min-w-[250px]">
-                                    <div class="relative w-16 h-16 flex-shrink-0">
+                                    <div class="relative w-32 h-32 flex-shrink-0"> <!-- doubled from w-16 h-16 -->
                                         <img :src="getStarImage(star.spectralClass)"
                                              :alt="getStarDescription(star.spectralClass)"
-                                             class="w-16 h-16 rounded-full object-cover shadow-lg ring-2"
+                                             class="w-32 h-32 rounded-full object-cover shadow-lg ring-2"
                                              :class="getStarRingColor(star.spectralClass)" />
                                     </div>
                                     <div>
@@ -71,7 +71,8 @@
                                         <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)" 
                                              class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 transition-colors">
                                             <div class="flex items-start gap-3">
-                                                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300">
+                                                <img :src="getPlanetImage(planet.planetType)" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" /> <!-- doubled from w-10 h-10 -->
+                                                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
                                                 </div>
                                                 <div class="min-w-0">
@@ -169,4 +170,24 @@ const getStarRingColor = (spectralClass: string) => {
 
 const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';
 const getPlanetDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown Planet';
+
+// Add this function to map planet codes to image filenames
+const getPlanetImage = (code: string) => {
+    const imageMap: Record<string, string> = {
+        'A': 'asteroid.png',
+        'G': 'gasgiant.png',
+        'R': 'rocky.png',
+        'C': 'carbon.png',
+        'D': 'desert.png',
+        'H': 'hell.png',
+        'M': 'molten.png',
+        'E': 'earthlike.png',
+        '#': 'unknown.png'
+    };
+    const imageName = imageMap[code];
+    if (imageName) {
+        return `/images/planets/${imageName}`;
+    }
+    return '/images/planets/unknown.png';
+};
 </script>
