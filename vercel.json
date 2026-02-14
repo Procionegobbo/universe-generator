@@ -12,10 +12,7 @@
       "src": "api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": [
-          "backend/**",
-          "api/**"
-        ]
+        "includeFiles": ["backend/**"]
       }
     }
   ],
@@ -29,8 +26,12 @@
       "dest": "/frontend/dist/assets/$1"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json))",
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot|json))",
       "dest": "/frontend/dist/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/dist/index.html"
     },
     {
       "src": "/(.*)",
