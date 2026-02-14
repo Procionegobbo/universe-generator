@@ -126,16 +126,67 @@ export class StellarGenerator {
 
     // Planet types table (simulated)
     private planetTypes: Record<string, PlanetType> = {
-        'A': { shortType: 'A', diameterFormula: '0', diameterMultiplier: 0 },
-        'G': { shortType: 'G', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'R': { shortType: 'R', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'C': { shortType: 'C', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'D': { shortType: 'D', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'H': { shortType: 'H', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'M': { shortType: 'M', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        'E': { shortType: 'E', diameterFormula: '2d6', diameterMultiplier: 1000 },
-        '#': { shortType: '#', diameterFormula: '2d6', diameterMultiplier: 1000 }
+        'A': { shortType: 'A', diameterFormula: '0', diameterMultiplier: 0 }, // Asteroid Belt
+        'G': { shortType: 'G', diameterFormula: '1d10+4', diameterMultiplier: 10000 }, // Gas Giant
+        'Q': { shortType: 'Q', diameterFormula: '1d10+4', diameterMultiplier: 10000 }, // Hot Gas Giant
+        'U': { shortType: 'U', diameterFormula: '1d4+2', diameterMultiplier: 10000 }, // Uranian/Ice Giant
+        'S': { shortType: 'S', diameterFormula: '1d7+8', diameterMultiplier: 1000 }, // Super-Earth
+        'R': { shortType: 'R', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Rocky
+        'E': { shortType: 'E', diameterFormula: '1d2+5', diameterMultiplier: 1000 }, // Earth-like
+        'O': { shortType: 'O', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ocean
+        'I': { shortType: 'I', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ice
+        'D': { shortType: 'D', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Desert
+        'C': { shortType: 'C', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Carbon
+        'L': { shortType: 'L', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Silicate
+        'F': { shortType: 'F', diameterFormula: '1d5+2', diameterMultiplier: 1000 }, // Iron
+        'T': { shortType: 'T', diameterFormula: '1d12+3', diameterMultiplier: 1000 }, // Toxic
+        'N': { shortType: 'N', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ammonia
+        'B': { shortType: 'B', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Methane
+        'J': { shortType: 'J', diameterFormula: '1d4+5', diameterMultiplier: 1000 }, // Jungle
+        'W': { shortType: 'W', diameterFormula: '1d20+5', diameterMultiplier: 100 }, // Dwarf (range: 600-2500 km)
+        'H': { shortType: 'H', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Hell
+        'M': { shortType: 'M', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Molten
+        'X': { shortType: 'X', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Cold Desert
+        '#': { shortType: '#', diameterFormula: '1d7+2', diameterMultiplier: 1000 } // Unknown
     };
+
+    // Weighted probability distribution for planet types (sum to 100)
+    private planetTypeWeights: { code: string, weight: number }[] = [
+        { code: 'G', weight: 15 }, // Gas Giant
+        { code: 'U', weight: 10 }, // Uranian/Ice Giant
+        { code: 'S', weight: 15 }, // Super-Earth
+        { code: 'R', weight: 10 }, // Rocky
+        { code: 'E', weight: 5 },  // Earth-like
+        { code: 'O', weight: 5 },  // Ocean
+        { code: 'I', weight: 7 },  // Ice
+        { code: 'D', weight: 7 },  // Desert
+        { code: 'C', weight: 3 },  // Carbon
+        { code: 'L', weight: 3 },  // Silicate
+        { code: 'F', weight: 3 },  // Iron
+        { code: 'T', weight: 3 },  // Toxic
+        { code: 'N', weight: 2 },  // Ammonia
+        { code: 'B', weight: 2 },  // Methane
+        { code: 'J', weight: 2 },  // Jungle
+        { code: 'Q', weight: 2 },  // Hot Gas Giant
+        { code: 'W', weight: 5 },  // Dwarf
+        { code: 'A', weight: 3 },  // Asteroid Belt
+        { code: 'H', weight: 2 },  // Hell
+        { code: 'M', weight: 2 },  // Molten
+        { code: 'X', weight: 2 }   // Cold Desert
+    ];
+
+    /**
+     * Selects a planet type using weighted random selection
+     */
+    private selectPlanetTypeWeighted(): string {
+        const totalWeight = this.planetTypeWeights.reduce((sum, t) => sum + t.weight, 0);
+        let r = this.prng() * totalWeight;
+        for (const t of this.planetTypeWeights) {
+            if (r < t.weight) return t.code;
+            r -= t.weight;
+        }
+        return '#'; // fallback
+    }
 
     /**
      * Determines the habitable zone of a planet
@@ -172,68 +223,23 @@ export class StellarGenerator {
 
     /**
      * Creates a planet
-     * @param zone Habitable zone
+     * @param _zone Habitable zone (unused)
      * @param orbit Orbit number
      * @param starId Parent star ID
      * @returns Generated planet
      */
-    createPlanet(zone: number, orbit: number, starId: number): Planet {
-        const diceRoll = Math.floor(this.prng() * 100) + 1;
-        let planetType = '#';
-        let diameter = 0;
-        let moonCount = 0;
-
-        // Determine planet type based on zone and dice roll
-        if (diceRoll <= 5) {
-            planetType = 'A';
+    createPlanet(_zone: number, orbit: number, starId: number): Planet {
+        // Use weighted random for planet type
+        const planetType = this.selectPlanetTypeWeighted();
+        const type = this.planetTypes[planetType] || this.planetTypes['#'];
+        let diameter;
+        let moonCount;
+        if (planetType === 'A') {
             diameter = 0;
             moonCount = 0;
-        } else if ((zone === ZONE_B && diceRoll <= 8) || (zone === ZONE_C && diceRoll <= 75)) {
-            planetType = 'G';
-            const type = this.planetTypes[planetType];
+        } else {
             diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
             moonCount = DiceParser.parse('2d10', this.prng);
-        } else if ((zone === ZONE_A && diceRoll <= 60) ||
-            (zone === ZONE_B && diceRoll <= 40) ||
-            (zone === ZONE_C && diceRoll <= 80)) {
-            planetType = 'R';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else if (zone === ZONE_C && diceRoll <= 80) {
-            planetType = 'C';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else if ((zone === ZONE_A && diceRoll <= 70) ||
-            (zone === ZONE_B && diceRoll <= 60) ||
-            (zone === ZONE_C && diceRoll <= 95)) {
-            planetType = 'D';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else if ((zone === ZONE_A && diceRoll <= 100) ||
-            (zone === ZONE_B && diceRoll <= 80) ||
-            (zone === ZONE_C && diceRoll <= 100)) {
-            planetType = 'H';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else if (zone === ZONE_B && diceRoll <= 90) {
-            planetType = 'M';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else if (zone === ZONE_B && diceRoll <= 100) {
-            planetType = 'E';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
-        } else {
-            planetType = '#';
-            const type = this.planetTypes[planetType];
-            diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = Math.floor(DiceParser.parse('1d6', this.prng) * DiceParser.parse('1d6', this.prng) / 10);
         }
 
         return {

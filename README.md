@@ -4,7 +4,7 @@ A web application for generating procedural star systems with realistic astronom
 
 ## Features
 
-- **Procedural Generation**: Generate realistic star systems with 24 spectral classes and 9 planet types
+- **Procedural Generation**: Generate realistic star systems with 24 spectral classes and 21+ planet types
 - **3D Spatial Coordinates**: Systems are placed in a 3D sector with random coordinates
 - **Habitable Zones**: Planets are distributed across inner, habitable, and outer zones
 - **Dice Notation Formulas**: Uses dice notation (e.g., "2d6+3") for probabilistic calculations
@@ -140,17 +140,41 @@ The generator supports 24 spectral classes:
 
 ## Planet Types
 
-9 planet types with different characteristics:
+21+ planet types with realistic characteristics and diameters:
 
-- **A**: Asteroid Belt
-- **G**: Gas Giant
-- **R**: Rocky Planet
-- **C**: Carbon Planet
-- **D**: Desert Planet
-- **H**: Hell Planet
-- **M**: Molten Planet
-- **E**: Earth-like Planet
+- **A**: Asteroid Belt (0 km)
+- **G**: Gas Giant (50,000–140,000 km)
+- **Q**: Hot Gas Giant (50,000–140,000 km)
+- **U**: Uranian/Ice Giant (30,000–60,000 km)
+- **S**: Super-Earth (9,000–15,000 km)
+- **R**: Rocky Planet (3,000–9,000 km)
+- **E**: Earth-like Planet (6,000–7,000 km)
+- **O**: Ocean Planet (6,000–15,000 km)
+- **I**: Ice Planet (6,000–15,000 km)
+- **D**: Desert Planet (3,000–9,000 km)
+- **C**: Carbon Planet (3,000–9,000 km)
+- **L**: Silicate Planet (3,000–9,000 km)
+- **F**: Iron Planet (3,000–7,000 km)
+- **T**: Toxic Planet (4,000–15,000 km)
+- **N**: Ammonia Planet (6,000–15,000 km)
+- **B**: Methane Planet (6,000–15,000 km)
+- **J**: Jungle Planet (6,000–9,000 km)
+- **W**: Dwarf Planet (600–2,500 km)
+- **H**: Hell Planet (3,000–9,000 km)
+- **M**: Molten Planet (3,000–9,000 km)
+- **X**: Cold Desert Planet (3,000–9,000 km)
 - **#**: Unknown Planet Type
+
+### Planet Diameter Formulas
+
+Each planet type uses a dice formula to generate a realistic diameter (in km). Example formulas:
+
+- Gas Giant: `1d10+4` × 10,000 km
+- Super-Earth: `1d7+8` × 1,000 km
+- Rocky: `1d7+2` × 1,000 km
+- Dwarf: `1d20+5` × 100 km
+
+See `backend/lib/example_star_generator.ts` for the full table and scientific references.
 
 ## Generation Logic
 
@@ -160,9 +184,8 @@ The generator supports 24 spectral classes:
 - Planet count determined by dice formulas per star type
 
 ### Planet Generation
-- Habitable zone determined by total planets and position
-- Planet type weighted differently in each zone
-- Diameter calculated using dice formulas with multipliers
+- Planet type is selected using a weighted random distribution based on exoplanet statistics and scientific plausibility
+- Each planet type has a realistic diameter formula (see above)
 - Moon count determined probabilistically
 
 ### System Generation

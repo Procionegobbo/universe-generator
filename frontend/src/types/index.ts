@@ -54,12 +54,25 @@ export interface GenerationResponse {
 export const PLANET_TYPE_DESCRIPTIONS: Record<string, string> = {
     'A': 'Asteroid Belt',
     'G': 'Gas Giant',
+    'Q': 'Hot Gas Giant',
+    'U': 'Uranian/Ice Giant',
+    'S': 'Super-Earth',
     'R': 'Rocky Planet',
-    'C': 'Carbon Planet',
+    'E': 'Earth-like Planet',
+    'O': 'Ocean Planet',
+    'I': 'Ice Planet',
     'D': 'Desert Planet',
+    'C': 'Carbon Planet',
+    'L': 'Silicate Planet',
+    'F': 'Iron Planet',
+    'T': 'Toxic Planet',
+    'N': 'Ammonia Planet',
+    'B': 'Methane Planet',
+    'J': 'Jungle Planet',
+    'W': 'Dwarf Planet',
     'H': 'Hell Planet',
     'M': 'Molten Planet',
-    'E': 'Earth-like Planet',
+    'X': 'Cold Desert Planet',
     '#': 'Unknown Planet Type'
 };
 
