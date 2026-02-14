@@ -48,9 +48,14 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 API available at http://localhost:${PORT}`);
-    console.log(`🔧 Health check: http://localhost:${PORT}/api/sector/health`);
-});
+// Export for Vercel serverless functions
+export default app;
+
+// Start server only in development (not on Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📡 API available at http://localhost:${PORT}`);
+        console.log(`🔧 Health check: http://localhost:${PORT}/api/sector/health`);
+    });
+}
