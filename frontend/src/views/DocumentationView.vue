@@ -145,18 +145,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getStarClassColor, getStarImage } from '../utils/starColors';
 import { getPlanetImage } from '../utils/planetImages';
 
 const router = useRouter();
-
-const filteredPlanetDescriptions = computed(() => {
-    const { '#': _, ...rest } = PLANET_TYPE_DESCRIPTIONS;
-    return rest;
-});
 
 const getPlanetTypeColor = (type: string) => {
     const colors: Record<string, string> = {
