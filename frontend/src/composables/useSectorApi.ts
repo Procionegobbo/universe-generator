@@ -2,7 +2,10 @@ import { ref } from 'vue';
 import axios from 'axios';
 import type { GenerationRequest, GenerationResponse } from '../types';
 
-const API_BASE_URL = '/api/sector';
+// Usa localhost in sviluppo, path relativo in produzione (Vercel)
+const API_BASE_URL = import.meta.env.DEV
+    ? 'http://localhost:3000/api/sector'  // Sviluppo locale
+    : '/api/sector';                       // Produzione su Vercel
 
 export function useSectorApi() {
     const isLoading = ref(false);
