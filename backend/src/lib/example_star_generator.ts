@@ -126,28 +126,28 @@ export class StellarGenerator {
 
     // Planet types table (simulated)
     private planetTypes: Record<string, PlanetType> = {
-        'A': { shortType: 'A', diameterFormula: '0', diameterMultiplier: 0 }, // Asteroid Belt
-        'G': { shortType: 'G', diameterFormula: '1d10+4', diameterMultiplier: 10000 }, // Gas Giant
-        'Q': { shortType: 'Q', diameterFormula: '1d10+4', diameterMultiplier: 10000 }, // Hot Gas Giant
-        'U': { shortType: 'U', diameterFormula: '1d4+2', diameterMultiplier: 10000 }, // Uranian/Ice Giant
-        'S': { shortType: 'S', diameterFormula: '1d7+8', diameterMultiplier: 1000 }, // Super-Earth
-        'R': { shortType: 'R', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Rocky
-        'E': { shortType: 'E', diameterFormula: '1d2+5', diameterMultiplier: 1000 }, // Earth-like
-        'O': { shortType: 'O', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ocean
-        'I': { shortType: 'I', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ice
-        'D': { shortType: 'D', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Desert
-        'C': { shortType: 'C', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Carbon
-        'L': { shortType: 'L', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Silicate
-        'F': { shortType: 'F', diameterFormula: '1d5+2', diameterMultiplier: 1000 }, // Iron
-        'T': { shortType: 'T', diameterFormula: '1d12+3', diameterMultiplier: 1000 }, // Toxic
-        'N': { shortType: 'N', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Ammonia
-        'B': { shortType: 'B', diameterFormula: '1d10+5', diameterMultiplier: 1000 }, // Methane
-        'J': { shortType: 'J', diameterFormula: '1d4+5', diameterMultiplier: 1000 }, // Jungle
-        'W': { shortType: 'W', diameterFormula: '1d20+5', diameterMultiplier: 100 }, // Dwarf (range: 600-2500 km)
-        'H': { shortType: 'H', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Hell
-        'M': { shortType: 'M', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Molten
-        'X': { shortType: 'X', diameterFormula: '1d7+2', diameterMultiplier: 1000 }, // Cold Desert
-        '#': { shortType: '#', diameterFormula: '1d7+2', diameterMultiplier: 1000 } // Unknown
+        'A': { shortType: 'A', diameterFormula: '0', diameterMultiplier: 1, moonFormula: '0' }, // Asteroid
+        'G': { shortType: 'G', diameterFormula: '2d6+8', diameterMultiplier: 10000, moonFormula: '1d6+4' }, // Gas Giant
+        'Q': { shortType: 'Q', diameterFormula: '2d6+8', diameterMultiplier: 9000, moonFormula: '1d6+4' }, // Hot Gas Giant
+        'U': { shortType: 'U', diameterFormula: '2d6+6', diameterMultiplier: 7000, moonFormula: '1d6+4' }, // Ice Giant
+        'S': { shortType: 'S', diameterFormula: '1d8+6', diameterMultiplier: 2000, moonFormula: '1d2-1' }, // Super-Earth
+        'R': { shortType: 'R', diameterFormula: '1d8+4', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Rocky
+        'E': { shortType: 'E', diameterFormula: '1d6+6', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Earth-like
+        'O': { shortType: 'O', diameterFormula: '1d6+6', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Ocean
+        'I': { shortType: 'I', diameterFormula: '1d6+4', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Ice
+        'D': { shortType: 'D', diameterFormula: '1d6+4', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Desert
+        'C': { shortType: 'C', diameterFormula: '1d6+4', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Carbon
+        'L': { shortType: 'L', diameterFormula: '1d7+2', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Silicate
+        'F': { shortType: 'F', diameterFormula: '1d5+2', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Iron
+        'T': { shortType: 'T', diameterFormula: '1d12+3', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Toxic
+        'N': { shortType: 'N', diameterFormula: '1d10+5', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Ammonia
+        'B': { shortType: 'B', diameterFormula: '1d10+5', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Methane
+        'J': { shortType: 'J', diameterFormula: '1d4+5', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Jungle
+        'W': { shortType: 'W', diameterFormula: '1d20+5', diameterMultiplier: 100, moonFormula: '1d2-1' }, // Dwarf
+        'H': { shortType: 'H', diameterFormula: '1d7+2', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Hell
+        'M': { shortType: 'M', diameterFormula: '1d7+2', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Molten
+        'X': { shortType: 'X', diameterFormula: '1d7+2', diameterMultiplier: 1000, moonFormula: '1d2-1' }, // Cold Desert
+        '#': { shortType: '#', diameterFormula: '1d7+2', diameterMultiplier: 1000, moonFormula: '1d2-1' } // Unknown
     };
 
     // Weighted probability distribution for planet types (sum to 100)
@@ -234,12 +234,13 @@ export class StellarGenerator {
         const type = this.planetTypes[planetType] || this.planetTypes['#'];
         let diameter;
         let moonCount;
+        // Usa la formula per le lune dal planetType
         if (planetType === 'A') {
             diameter = 0;
             moonCount = 0;
         } else {
             diameter = DiceParser.parse(type.diameterFormula, this.prng) * type.diameterMultiplier;
-            moonCount = DiceParser.parse('2d10', this.prng);
+            moonCount = Math.max(0, DiceParser.parse(type.moonFormula, this.prng));
         }
 
         return {
