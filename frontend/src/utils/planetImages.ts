@@ -1,5 +1,5 @@
 // Utility to get the image path for a planet type
-export const getPlanetImage = (code: string): string => {
+export const getPlanetImage = (code: string, size?: 'thumbs' | 'medium'): string => {
     const imageMap: Record<string, string> = {
         'A': 'asteroid.png',
         'G': 'gasgiant.png',
@@ -12,9 +12,9 @@ export const getPlanetImage = (code: string): string => {
         '#': 'unknown.png'
     };
     const imageName = imageMap[code];
+    const base = size ? `/images/planets/${size}` : '/images/planets';
     if (imageName) {
-        return `/images/planets/${imageName}`;
+        return `${base}/${imageName}`;
     }
-    return '/images/planets/unknown.png';
+    return `${base}/unknown.png`;
 };
-

@@ -1,5 +1,4 @@
-
-export const getStarImage = (spectralClass: string): string => {
+export const getStarImage = (spectralClass: string, size?: 'thumbs' | 'medium'): string => {
     const imageMap: Record<string, string> = {
         // Main sequence stars
         'O': 'star-O.png',
@@ -33,11 +32,11 @@ export const getStarImage = (spectralClass: string): string => {
     };
 
     const imageName = imageMap[spectralClass];
+    const base = size ? `/images/stars/${size}` : '/images/stars';
     if (imageName) {
-        return `/images/stars/${imageName}`;
+        return `${base}/${imageName}`;
     }
-
-    return '/images/stars/star-default.png';
+    return `${base}/star-default.png`;
 };
 
 export const getStarClassColor = (spectralClass: string): string => {

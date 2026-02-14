@@ -45,8 +45,8 @@
                             <div class="flex flex-col md:flex-row gap-6 items-start">
                                 <!-- Star Info -->
                                 <div class="flex items-center gap-4 min-w-62.5">
-                                    <div class="relative w-32 h-32 shrink-0"> <!-- doubled from w-16 h-16 -->
-                                        <img :src="getStarImage(star.spectralClass)"
+                                    <div class="relative w-32 h-32 shrink-0">
+                                        <img :src="getStarImage(star.spectralClass, 'medium')"
                                              :alt="getStarDescription(star.spectralClass)"
                                              class="w-32 h-32 rounded-full object-cover shadow-lg ring-2"
                                              :class="getStarRingColor(star.spectralClass)" />
@@ -71,7 +71,7 @@
                                         <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)" 
                                              class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 transition-colors">
                                             <div class="flex items-start gap-3">
-                                                <img :src="getPlanetImage(planet.planetType)" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" /> <!-- doubled from w-10 h-10 -->
+                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" /> <!-- doubled from w-10 h-10 -->
                                                 <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
                                                 </div>

@@ -52,7 +52,7 @@
                         <td class="font-mono">{{ planet.orbitalNumber }}</td>
                         <td>
                             <div class="flex items-center gap-2">
-                                <img :src="getPlanetImage(planet.planetType)" :alt="getPlanetTypeDescription(planet.planetType)" class="w-8 h-8 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                <img :src="getPlanetImage(planet.planetType, 'thumbs')" :alt="getPlanetTypeDescription(planet.planetType)" class="w-8 h-8 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
                                     :class="getPlanetTypeColor(planet.planetType)">
                                     {{ planet.planetType }}

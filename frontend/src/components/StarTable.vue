@@ -64,8 +64,8 @@
                         <td class="font-medium">{{ star.name }}</td>
                         <td>
                             <div class="flex items-center gap-2">
-                                <div class="relative w-8 h-8 flex-shrink-0">
-                                    <img :src="getStarImage(star.spectralClass)"
+                                <div class="relative w-8 h-8 shrink-0">
+                                    <img :src="getStarImage(star.spectralClass, 'thumbs')"
                                          :alt="getStarDescription(star.spectralClass)"
                                          class="w-8 h-8 rounded-full object-cover ring-1"
                                          :class="getStarRingColor(star.spectralClass)" />
