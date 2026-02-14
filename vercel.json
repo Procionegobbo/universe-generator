@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist",
+  "devCommand": "npm run dev",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/backend/src/index.ts" },
+    { "source": "/(.*)", "destination": "/frontend/dist/$1" }
+  ]
+}
