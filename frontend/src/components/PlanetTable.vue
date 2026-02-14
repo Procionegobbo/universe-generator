@@ -27,6 +27,14 @@
                     </option>
                 </select>
             </div>
+            <div class="w-full sm:w-48">
+                <label class="form-label" for="goldilocksFilter">Goldilocks Zone</label>
+                <select id="goldilocksFilter" v-model="goldilocksFilter" class="form-input">
+                    <option value="">All</option>
+                    <option value="1">Only Goldilocks</option>
+                    <option value="0">Exclude Goldilocks</option>
+                </select>
+            </div>
         </div>
 
         <div v-if="filteredPlanets.length === 0" class="text-center py-12 text-gray-500">
@@ -43,11 +51,14 @@
                         <th>Description</th>
                         <th>Diameter (km)</th>
                         <th>Moons</th>
-                        <th>Habitable Zone</th>
+                        <th>Orbital Zone</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="planet in paginatedPlanets" :key="`${planet.starId}-${planet.orbitalNumber}`" class="cursor-pointer hover:bg-blue-900/20 transition-colors" @click="goToSystemDetail(getSystemIdForStar(planet.starId))">
+                    <tr v-for="planet in paginatedPlanets" :key="`${planet.starId}-${planet.orbitalNumber}`"
+                        class="cursor-pointer hover:bg-blue-900/20 transition-colors"
+                        :class="[getZoneColor(planet.orbitalZone), planet.orbitalZone === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
+                        @click="goToSystemDetail(getSystemIdForStar(planet.starId))">
                         <td class="font-mono">{{ planet.starId }}</td>
                         <td class="font-mono">{{ planet.orbitalNumber }}</td>
                         <td>
@@ -56,6 +67,7 @@
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
                                     :class="getPlanetTypeColor(planet.planetType)">
                                     {{ planet.planetType }}
+                                    <svg v-if="planet.orbitalZone === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                 </span>
                             </div>
                         </td>
@@ -73,8 +85,8 @@
                         </td>
                         <td>
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                                :class="getZoneColor(planet.orbitalNumber)">
-                                {{ getHabitableZone(planet.orbitalNumber) }}
+                                :class="getZoneColor(planet.orbitalZone)">
+                                {{ planet.orbitalZone === 'Goldilocks' ? 'Goldilocks' : planet.orbitalZone }}
                             </span>
                         </td>
                     </tr>
@@ -165,6 +177,7 @@ const props = defineProps<{
 
 const searchQuery = ref('');
 const planetTypeFilter = ref(props.initialTypeFilter || '');
+const goldilocksFilter = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const router = useRouter();
@@ -175,9 +188,17 @@ const availablePlanetTypes = computed(() => {
     return Array.from(types).sort();
 });
 
+// Correggi: planet.orbitalZone non esiste su Planet. Serve una computed property che calcoli la zona orbitale o Goldilocks per ogni pianeta.
+// 1. Aggiungi una computed property derivedPlanets che aggiunge orbitalZone a ciascun planet:
+const derivedPlanets = computed(() => props.planets.map(planet => ({
+    ...planet,
+    orbitalZone: planet.habitableZone ? 'Goldilocks' : getOrbitalZone(planet.orbitalNumber)
+})));
+
 // Filter planets based on search query and type filter
+// Fix: la logica del filtro Goldilocks deve filtrare su planet.orbitalZone === 'Goldilocks' (per Only Goldilocks) e planet.orbitalZone !== 'Goldilocks' (per Exclude Goldilocks)
 const filteredPlanets = computed(() => {
-    let filtered = [...props.planets];
+    let filtered = [...derivedPlanets.value];
 
     // Apply type filter
     if (planetTypeFilter.value) {
@@ -192,6 +213,13 @@ const filteredPlanets = computed(() => {
             planet.starId.toString().includes(query) ||
             planet.orbitalNumber.toString().includes(query)
         );
+    }
+
+    // Apply Goldilocks zone filter (fix: use planet.orbitalZone === 'Goldilocks')
+    if (goldilocksFilter.value === '1') {
+        filtered = filtered.filter(planet => planet.orbitalZone === 'Goldilocks');
+    } else if (goldilocksFilter.value === '0') {
+        filtered = filtered.filter(planet => planet.orbitalZone !== 'Goldilocks');
     }
 
     return filtered;
@@ -240,7 +268,7 @@ const earthLikeCount = computed(() => {
 });
 
 // Reset pagination when filters change
-watch([searchQuery, planetTypeFilter], () => {
+watch([searchQuery, planetTypeFilter, goldilocksFilter], () => {
     currentPage.value = 1;
 });
 
@@ -270,16 +298,25 @@ const getPlanetTypeDescription = (type: string) => {
     return PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
 };
 
-const getHabitableZone = (orbit: number) => {
+const getOrbitalZone = (orbit: number) => {
     if (orbit <= 2) return 'Inner';
-    if (orbit <= 4) return 'Habitable';
+    if (orbit <= 4) return 'Medium';
     return 'Outer';
 };
 
-const getZoneColor = (orbit: number) => {
-    if (orbit <= 2) return 'bg-red-900/30 text-red-300';
-    if (orbit <= 4) return 'bg-green-900/30 text-green-300';
-    return 'bg-blue-900/30 text-blue-300';
+const getZoneColor = (zone: string) => {
+    switch (zone) {
+        case 'Inner':
+            return 'bg-red-900/30 text-red-300';
+        case 'Medium':
+            return 'bg-yellow-900/30 text-yellow-200';
+        case 'Outer':
+            return 'bg-blue-900/30 text-blue-300';
+        case 'Goldilocks':
+            return 'bg-green-700/80 text-green-100 font-bold shadow';
+        default:
+            return 'bg-gray-800/30 text-gray-400';
+    }
 };
 
 function getSystemIdForStar(starId: number): number | undefined {
@@ -299,51 +336,51 @@ function goToSystemDetail(systemId: number | undefined) {
 </script>
 
 <style scoped>
-.table-container {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th, .table td {
-    padding: 12px 15px;
-    border: 1px solid #2d3748;
-}
-
-.table th {
-    background-color: #1a202c;
-    color: #cbd5e0;
-    text-align: left;
-}
-
-.table td {
-    background-color: #2d3748;
-    color: #e2e8f0;
-}
-
-.table tr:hover {
-    background-color: #4a5568;
-}
-
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0.375rem; /* rounded-md */
+    border-radius: 6px;
     font-weight: 600;
     transition: all 0.2s;
 }
 
 .btn-secondary {
-    background-color: #2d3748; /* bg-gray-800 */
+    background-color: #2d3748;
     color: #fff;
 }
 
 .btn-secondary:hover {
-    background-color: #4a5568; /* hover:bg-gray-700 */
+    background-color: #4a5568;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #d1d5db;
+    margin-bottom: 0.25rem;
+}
+
+.form-input {
+    display: block;
+    width: 100%;
+    background-color: #1f2937;
+    color: #fff;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 2px #22d3ee33;
+}
+
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
 }
 </style>

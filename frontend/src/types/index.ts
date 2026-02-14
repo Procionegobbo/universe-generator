@@ -18,6 +18,8 @@ export interface Planet {
     moonCount: number;
     mass: number;
     gravity: number;
+    semiMajorAxis: number; // AU
+    habitableZone: boolean;
 }
 
 export interface System {

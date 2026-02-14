@@ -68,12 +68,13 @@
                                     </h4>
                                     <div v-if="getPlanetsForStar(star.starId).length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                         <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)"
-                                             class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer"
+                                             :class="['bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer', getZoneColor(getOrbitalZone(planet)), getOrbitalZone(planet) === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
                                              @click="openPlanetDetail(planet)">
                                             <div class="flex items-start gap-3">
                                                 <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                                 <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
+                                                    <svg v-if="getOrbitalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                                 </div>
                                                 <div class="min-w-0">
                                                     <div class="font-medium text-gray-200 text-sm truncate" :title="getPlanetDescription(planet.planetType)">
@@ -183,4 +184,44 @@ function openPlanetDetail(planet: any) {
 function closePlanetDetail() {
   selectedPlanet.value = null;
 }
+
+// Correggi la dichiarazione delle funzioni e la loro visibilità nel template
+// Sposta getOrbitalZone e getZoneColor sopra e assicurati che restituiscano sempre una stringa
+// Tipizza i parametri delle funzioni per eliminare i warning TS7006
+function getOrbitalZone(planet: any): string {
+  if (planet.habitableZone) return 'Goldilocks';
+  if (planet.orbitalNumber <= 2) return 'Inner';
+  if (planet.orbitalNumber <= 4) return 'Medium';
+  return 'Outer';
+}
+function getZoneColor(zone: string): string {
+  switch (zone) {
+    case 'Inner':
+      return 'bg-red-900/30 text-red-300';
+    case 'Medium':
+      return 'bg-yellow-900/30 text-yellow-200';
+    case 'Outer':
+      return 'bg-blue-900/30 text-blue-300';
+    case 'Goldilocks':
+      return 'bg-green-700/80 text-green-100 font-bold shadow';
+    default:
+      return 'bg-gray-800/30 text-gray-400';
+  }
+}
 </script>
+
+<style scoped>
+.card {
+    /* Usa solo classi Tailwind standard, non @apply */
+    background-color: #1f2937; /* bg-gray-800 */
+    border-color: #374151;     /* border-gray-700 */
+    border-radius: 0.5rem;     /* rounded-lg */
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06); /* shadow-md */
+    transition: box-shadow 0.3s;
+}
+
+.card:hover {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05); /* shadow-lg */
+}
+</style>

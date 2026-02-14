@@ -11,10 +11,12 @@ export const ZONE_B = 2;
 export const ZONE_C = 3;
 
 // Interface for star types
+// Estensione StarType per includere luminosità relativa al Sole (L_sun = 1)
 export interface StarType {
     spectralClass: string;
     hasSubclass?: boolean;
     planetCountFormula?: string;
+    luminosity?: number; // in unità solari
     [key: string]: any;
 }
 
@@ -44,6 +46,8 @@ export interface Planet {
     moonCount: number;
     mass: number;
     gravity: number;
+    semiMajorAxis: number; // AU
+    habitableZone: boolean;
 }
 
 // Interface for a System
@@ -100,30 +104,30 @@ export class StellarGenerator {
 
     // Star types table (simulated - normally from database)
     private starTypes: Record<string, StarType> = {
-        'O': { spectralClass: 'O', hasSubclass: true, planetCountFormula: '2d6' },
-        'B': { spectralClass: 'B', hasSubclass: true, planetCountFormula: '2d6' },
-        'A': { spectralClass: 'A', hasSubclass: true, planetCountFormula: '2d6' },
-        'F': { spectralClass: 'F', hasSubclass: true, planetCountFormula: '2d6' },
-        'G': { spectralClass: 'G', hasSubclass: true, planetCountFormula: '2d6' },
-        'K': { spectralClass: 'K', hasSubclass: true, planetCountFormula: '2d6' },
-        'M': { spectralClass: 'M', hasSubclass: true, planetCountFormula: '2d6' },
-        'DB': { spectralClass: 'DB', hasSubclass: false, planetCountFormula: '1d6' },
-        'DA': { spectralClass: 'DA', hasSubclass: false, planetCountFormula: '1d6' },
-        'DF': { spectralClass: 'DF', hasSubclass: false, planetCountFormula: '1d6' },
-        'DG': { spectralClass: 'DG', hasSubclass: false, planetCountFormula: '1d6' },
-        'DK': { spectralClass: 'DK', hasSubclass: false, planetCountFormula: '1d6' },
-        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6' },
-        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6' },
-        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6' },
-        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6' },
-        'NS': { spectralClass: 'NS', hasSubclass: false, planetCountFormula: '0' },
-        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3' },
-        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3' },
-        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3' },
-        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3' },
-        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3' },
-        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3' },
-        'BH': { spectralClass: 'BH', hasSubclass: false, planetCountFormula: '0' }
+        'O': { spectralClass: 'O', hasSubclass: true, planetCountFormula: '2d6', luminosity: 50000 },
+        'B': { spectralClass: 'B', hasSubclass: true, planetCountFormula: '2d6', luminosity: 20000 },
+        'A': { spectralClass: 'A', hasSubclass: true, planetCountFormula: '2d6', luminosity: 80 },
+        'F': { spectralClass: 'F', hasSubclass: true, planetCountFormula: '2d6', luminosity: 6 },
+        'G': { spectralClass: 'G', hasSubclass: true, planetCountFormula: '2d6', luminosity: 1 },
+        'K': { spectralClass: 'K', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.4 },
+        'M': { spectralClass: 'M', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.04 },
+        'DB': { spectralClass: 'DB', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
+        'DA': { spectralClass: 'DA', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
+        'DF': { spectralClass: 'DF', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
+        'DG': { spectralClass: 'DG', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
+        'DK': { spectralClass: 'DK', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
+        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6', luminosity: 60 },
+        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6', luminosity: 10 },
+        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6', luminosity: 2 },
+        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6', luminosity: 0.2 },
+        'NS': { spectralClass: 'NS', hasSubclass: false, planetCountFormula: '0', luminosity: 0 },
+        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3', luminosity: 20000 },
+        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3', luminosity: 80 },
+        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3', luminosity: 6 },
+        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3', luminosity: 1 },
+        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.4 },
+        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.04 },
+        'BH': { spectralClass: 'BH', hasSubclass: false, planetCountFormula: '0', luminosity: 0 }
     };
 
     // Planet types table (simulated)
@@ -261,7 +265,9 @@ export class StellarGenerator {
             diameter,
             moonCount,
             mass,
-            gravity
+            gravity,
+            semiMajorAxis: 0, // Default value, will be updated in the system generation
+            habitableZone: false // Default value, will be updated in the system generation
         };
     }
 
@@ -441,10 +447,24 @@ export class StellarGenerator {
                 const excess = starCount > 1 ? DiceParser.parse('1d6+1', this.prng) : 0;
                 const actualPlanetCount = Math.max(0, totalPlanets - excess);
 
+                // Calcolo la zona abitabile reale (Goldilocks zone)
+                // a_inner = sqrt(L/1.1), a_outer = sqrt(L/0.53)
+                const L = starType.luminosity || 1;
+                const a_inner = Math.sqrt(L / 1.1);
+                const a_outer = Math.sqrt(L / 0.53);
+
                 if (actualPlanetCount > 0) {
                     for (let p = 1; p <= actualPlanetCount; p++) {
                         const zone = this.determineHabitableZone(totalPlanets, p);
                         const planet = this.createPlanet(zone, p, star.starId);
+                        // Calcolo la distanza orbitale (Titius-Bode): a = 0.4 + 0.3 * 2^n
+                        // n = p-1 (prima orbita n=0)
+                        const n = p - 1;
+                        const semiMajorAxis = 0.4 + 0.3 * Math.pow(2, n); // AU
+                        // Determina se nella zona abitabile
+                        const habitableZone = semiMajorAxis >= a_inner && semiMajorAxis <= a_outer;
+                        planet.semiMajorAxis = semiMajorAxis;
+                        planet.habitableZone = habitableZone;
                         planets.push(planet);
                     }
                 }
