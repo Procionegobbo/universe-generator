@@ -193,14 +193,14 @@
                         <h3 class="text-xl font-bold mb-6">Star Type Distribution</h3>
                         <div class="max-h-[500px] overflow-y-auto pr-4 space-y-3 custom-scrollbar">
                             <div v-for="([type, count], index) in Object.entries(starTypeDistribution).sort((a, b) => b[1] - a[1])"
-                                 :key="type" 
+                                 :key="type"
                                  class="flex items-center hover:bg-gray-800/30 p-2 rounded-lg transition-colors animate-slide-in"
                                  :style="{ animationDelay: `${index * 50}ms` }">
                                 <div class="w-10 flex-shrink-0">
-                                    <span :class="getStarClassColor(type)"
-                                          class="inline-flex w-10 h-10 rounded-full items-center justify-center text-sm font-bold shadow-sm">
-                                        {{ type }}
-                                    </span>
+                                    <img :src="getStarImage(type)"
+                                         :alt="getStarDescription(type)"
+                                         class="w-10 h-10 rounded-full object-cover shadow ring-1"
+                                         :class="getStarRingColor(type)" />
                                 </div>
                                 <div class="flex-1 ml-4">
                                     <div class="flex justify-between items-center mb-1">
@@ -258,7 +258,7 @@ import StarTable from './StarTable.vue';
 import PlanetTable from './PlanetTable.vue';
 import type { System, Star, Planet } from '../types';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
-import { getStarClassColor, getStarBarColor } from '../utils/starColors';
+import { getStarClassColor, getStarBarColor, getStarImage } from '../utils/starColors';
 
 const props = defineProps<{
     systems: System[];
@@ -348,6 +348,41 @@ const maxPlanetCount = computed(() => {
 // Description helpers
 const getStarDescription = (spectralClass: string) => {
     return STAR_TYPE_DESCRIPTIONS[spectralClass] || 'Unknown star type';
+};
+
+const getStarRingColor = (spectralClass: string) => {
+    const colors: Record<string, string> = {
+        // Main sequence
+        'O': 'ring-blue-500/50',
+        'B': 'ring-blue-300/50',
+        'A': 'ring-white/50',
+        'F': 'ring-yellow-100/50',
+        'G': 'ring-yellow-500/50',
+        'K': 'ring-orange-500/50',
+        'M': 'ring-red-500/50',
+        // White dwarfs
+        'DB': 'ring-blue-200/50',
+        'DA': 'ring-blue-100/50',
+        'DF': 'ring-purple-200/50',
+        'DG': 'ring-green-200/50',
+        'DK': 'ring-yellow-200/50',
+        // Giants
+        'gF': 'ring-yellow-200/50',
+        'gG': 'ring-yellow-400/50',
+        'gK': 'ring-orange-400/50',
+        'gM': 'ring-red-500/50',
+        // Supergiants
+        'cB': 'ring-blue-400/50',
+        'cA': 'ring-white/50',
+        'cF': 'ring-yellow-200/50',
+        'cG': 'ring-yellow-500/50',
+        'cK': 'ring-orange-500/50',
+        'cM': 'ring-red-600/50',
+        // Exotics
+        'NS': 'ring-purple-500/50',
+        'BH': 'ring-gray-950/50'
+    };
+    return colors[spectralClass] || 'ring-gray-500/50';
 };
 
 const getPlanetTypeColor = (type: string) => {

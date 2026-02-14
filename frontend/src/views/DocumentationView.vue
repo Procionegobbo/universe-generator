@@ -133,7 +133,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
-import { getStarClassColor } from '../utils/starColors';
+import { getStarClassColor, getStarImage } from '../utils/starColors';
 
 const router = useRouter();
 
@@ -170,20 +170,43 @@ const getPlanetDetailDescription = (type: string) => {
     return details[type] || 'Standard planetary body classification.';
 };
 const getStarImage = (code: string) => {
-    // Extract base class (first letter or first char if not g/c/D)
-    let base = code[0];
-    if (code.startsWith('g') || code.startsWith('c')) {
-        base = code[1];
-    } else if (code.startsWith('D')) {
-        base = code[1];
+    // Direct mappings for star types that have specific images
+    const imageMap: Record<string, string> = {
+        // Main sequence stars
+        'O': 'star-O.png',
+        'B': 'star-B.png',
+        'A': 'star-A.png',
+        'F': 'star-F.png',
+        'G': 'star-G.png',
+        'K': 'star-K.png',
+        'M': 'star-M.png',
+        // Giant stars
+        'gF': 'star-gF.png',
+        'gG': 'star-gG.png',
+        'gK': 'star-gK.png',
+        'gM': 'star-gM.png',
+        // Supergiant stars
+        'cB': 'star-cB.png',
+        'cA': 'star-cA.png',
+        'cF': 'star-cF.png',
+        'cG': 'star-cG.png',
+        'cK': 'star-cK.png',
+        'cM': 'star-cM.png',
+        // Special objects
+        'DA': 'star-DA.png',
+        'DB': 'star-DA.png', // Use DA image for other white dwarfs
+        'DF': 'star-DA.png',
+        'DG': 'star-DA.png',
+        'DK': 'star-DA.png',
+        'NS': 'star-NS.png',
+        'BH': 'star-BH.png'
+    };
+
+    const imageName = imageMap[code];
+    if (imageName) {
+        return `/images/stars/${imageName}`;
     }
-    
-    // Check if image exists for base class
-    const availableClasses = ['O', 'B', 'A', 'F', 'G'];
-    if (availableClasses.includes(base)) {
-        return `/images/stars/star-${base}.png`;
-    }
-    
+
     return '/images/stars/star-default.png';
 };
 </script>

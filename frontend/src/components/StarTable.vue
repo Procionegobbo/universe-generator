@@ -63,10 +63,18 @@
                         <td class="font-mono">{{ star.systemId }}</td>
                         <td class="font-medium">{{ star.name }}</td>
                         <td>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                                :class="getStarClassColor(star.spectralClass)">
-                                {{ star.spectralClass }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <div class="relative w-8 h-8 flex-shrink-0">
+                                    <img :src="getStarImage(star.spectralClass)"
+                                         :alt="getStarDescription(star.spectralClass)"
+                                         class="w-8 h-8 rounded-full object-cover ring-1"
+                                         :class="getStarRingColor(star.spectralClass)" />
+                                </div>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium"
+                                    :class="getStarClassColor(star.spectralClass)">
+                                    {{ star.spectralClass }}
+                                </span>
+                            </div>
                         </td>
                         <td>
                             <span v-if="star.subclass" class="text-gray-300">
@@ -129,6 +137,7 @@
 import { computed, ref, watch } from 'vue';
 import type { Star } from '../types';
 import { STAR_TYPE_DESCRIPTIONS } from '../types';
+import { getStarImage } from '../utils/starColors';
 
 const props = defineProps<{
     stars: Star[];
@@ -230,6 +239,41 @@ const getStarClassColor = (spectralClass: string) => {
 
 const getStarDescription = (spectralClass: string) => {
     return STAR_TYPE_DESCRIPTIONS[spectralClass] || 'Unknown star type';
+};
+
+const getStarRingColor = (spectralClass: string) => {
+    const colors: Record<string, string> = {
+        // Main sequence
+        'O': 'ring-blue-500/50',
+        'B': 'ring-blue-300/50',
+        'A': 'ring-white/50',
+        'F': 'ring-yellow-100/50',
+        'G': 'ring-yellow-500/50',
+        'K': 'ring-orange-500/50',
+        'M': 'ring-red-500/50',
+        // White dwarfs
+        'DB': 'ring-blue-200/50',
+        'DA': 'ring-blue-100/50',
+        'DF': 'ring-purple-200/50',
+        'DG': 'ring-green-200/50',
+        'DK': 'ring-yellow-200/50',
+        // Giants
+        'gF': 'ring-yellow-200/50',
+        'gG': 'ring-yellow-400/50',
+        'gK': 'ring-orange-400/50',
+        'gM': 'ring-red-500/50',
+        // Supergiants
+        'cB': 'ring-blue-400/50',
+        'cA': 'ring-white/50',
+        'cF': 'ring-yellow-200/50',
+        'cG': 'ring-yellow-500/50',
+        'cK': 'ring-orange-500/50',
+        'cM': 'ring-red-600/50',
+        // Exotics
+        'NS': 'ring-purple-500/50',
+        'BH': 'ring-gray-950/50'
+    };
+    return colors[spectralClass] || 'ring-gray-500/50';
 };
 </script>
 

@@ -1,4 +1,45 @@
 
+export const getStarImage = (spectralClass: string): string => {
+    const imageMap: Record<string, string> = {
+        // Main sequence stars
+        'O': 'star-O.png',
+        'B': 'star-B.png',
+        'A': 'star-A.png',
+        'F': 'star-F.png',
+        'G': 'star-G.png',
+        'K': 'star-K.png',
+        'M': 'star-M.png',
+        // Giant stars
+        'gF': 'star-gF.png',
+        'gG': 'star-gG.png',
+        'gK': 'star-gK.png',
+        'gM': 'star-gM.png',
+        // Supergiant stars
+        'cB': 'star-cB.png',
+        'cA': 'star-cA.png',
+        'cF': 'star-cF.png',
+        'cG': 'star-cG.png',
+        'cK': 'star-cK.png',
+        'cM': 'star-cM.png',
+        // White dwarfs
+        'DA': 'star-DA.png',
+        'DB': 'star-DA.png',
+        'DF': 'star-DA.png',
+        'DG': 'star-DA.png',
+        'DK': 'star-DA.png',
+        // Special objects
+        'NS': 'star-NS.png',
+        'BH': 'star-BH.png'
+    };
+
+    const imageName = imageMap[spectralClass];
+    if (imageName) {
+        return `/images/stars/${imageName}`;
+    }
+
+    return '/images/stars/star-default.png';
+};
+
 export const getStarClassColor = (spectralClass: string): string => {
     const colors: Record<string, string> = {
         // Main sequence

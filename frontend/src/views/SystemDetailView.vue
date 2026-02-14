@@ -46,14 +46,10 @@
                                 <!-- Star Info -->
                                 <div class="flex items-center gap-4 min-w-[250px]">
                                     <div class="relative w-16 h-16 flex-shrink-0">
-                                        <img :src="getStarImagePath(star.spectralClass)" 
-                                             alt="Star" 
+                                        <img :src="getStarImage(star.spectralClass)"
+                                             :alt="getStarDescription(star.spectralClass)"
                                              class="w-16 h-16 rounded-full object-cover shadow-lg ring-2"
-                                             :class="getStarRingColor(star.spectralClass)"
-                                             :style="getStarFilter(star.spectralClass)" />
-                                        <div class="absolute inset-0 flex items-center justify-center text-xl font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                                            {{ star.spectralClass }}
-                                        </div>
+                                             :class="getStarRingColor(star.spectralClass)" />
                                     </div>
                                     <div>
                                         <div class="text-xl font-bold text-white">{{ star.name }}</div>
@@ -117,6 +113,7 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import { PLANET_TYPE_DESCRIPTIONS, STAR_TYPE_DESCRIPTIONS } from '../types';
+import { getStarImage } from '../utils/starColors';
 
 const route = useRoute();
 const router = useRouter();
@@ -135,22 +132,9 @@ const systemStars = computed(() => {
         return store.sectorData.planets.filter(p => p.starId === starId).sort((a, b) => a.orbitalNumber - b.orbitalNumber);
     };
 
-const getStarImagePath = (spectralClass: string) => {
-    const mainClass = spectralClass[0];
-    const available = ['O', 'B', 'A', 'F', 'G'];
-    if (available.includes(mainClass)) {
-        return `/images/stars/star-${mainClass}.png`;
-    }
-    // Fallbacks
-    if (mainClass === 'K' || mainClass === 'M') return '/images/stars/star-G.png';
-    if (mainClass === 'N' || spectralClass === 'NS') return '/images/stars/star-A.png';
-    if (spectralClass === 'BH') return '/images/stars/star-default.png';
-    return '/images/stars/star-default.png';
-};
-
 const getStarRingColor = (spectralClass: string) => {
-    const mainClass = spectralClass[0];
     const colors: Record<string, string> = {
+        // Main sequence
         'O': 'ring-blue-500/50',
         'B': 'ring-blue-300/50',
         'A': 'ring-white/50',
@@ -158,19 +142,29 @@ const getStarRingColor = (spectralClass: string) => {
         'G': 'ring-yellow-500/50',
         'K': 'ring-orange-500/50',
         'M': 'ring-red-500/50',
-        'N': 'ring-purple-500/50',
+        // White dwarfs
+        'DB': 'ring-blue-200/50',
+        'DA': 'ring-blue-100/50',
+        'DF': 'ring-purple-200/50',
+        'DG': 'ring-green-200/50',
+        'DK': 'ring-yellow-200/50',
+        // Giants
+        'gF': 'ring-yellow-200/50',
+        'gG': 'ring-yellow-400/50',
+        'gK': 'ring-orange-400/50',
+        'gM': 'ring-red-500/50',
+        // Supergiants
+        'cB': 'ring-blue-400/50',
+        'cA': 'ring-white/50',
+        'cF': 'ring-yellow-200/50',
+        'cG': 'ring-yellow-500/50',
+        'cK': 'ring-orange-500/50',
+        'cM': 'ring-red-600/50',
+        // Exotics
+        'NS': 'ring-purple-500/50',
         'BH': 'ring-gray-950/50'
     };
-    return colors[mainClass] || 'ring-blue-500/50';
-};
-
-const getStarFilter = (spectralClass: string) => {
-    const mainClass = spectralClass[0];
-    if (mainClass === 'K') return 'filter: hue-rotate(-20deg) saturate(1.5)';
-    if (mainClass === 'M') return 'filter: hue-rotate(-50deg) saturate(2)';
-    if (mainClass === 'N' || spectralClass === 'NS') return 'filter: hue-rotate(250deg) brightness(1.5)';
-    if (spectralClass === 'BH') return 'filter: brightness(0.2) contrast(2)';
-    return '';
+    return colors[spectralClass] || 'ring-blue-500/50';
 };
 
 const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';

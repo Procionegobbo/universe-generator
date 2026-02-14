@@ -12,10 +12,19 @@
     "build": "npm run build:backend && npm run build:frontend",
     "start": "cd backend && npm start"
   },
-  "keywords": ["stellar", "generator", "vue", "node", "typescript"],
+  "keywords": [
+    "stellar",
+    "generator",
+    "vue",
+    "node",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
   }
 }
