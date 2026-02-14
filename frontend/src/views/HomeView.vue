@@ -25,24 +25,52 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold mb-4">Welcome to the Stellar Generator</h2>
-                    <p class="text-gray-400 mb-6 max-w-md mx-auto">
-                        Generate realistic star systems with planets, moons, and habitable zones.
+                    <h2 class="text-2xl font-bold mb-4">Welcome to Universe Generator</h2>
+                    <p class="text-gray-400 mb-6 mx-auto">
+                        Generate realistic star systems with planets, moons, and habitable zones.<br>
+                        Planets are distributed across <strong>inner</strong>, <strong>medium</strong>, and <strong>outer</strong> orbits, with those in the <a href="https://en.wikipedia.org/wiki/Circumstellar_habitable_zone" class="underline hover:text-green-300" target="_blank">Goldilocks zone</a> (habitable zone) highlighted.
                         Adjust the parameters on the left and click "Generate Sector" to begin.
                     </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mx-auto">
                         <div class="text-center p-4 bg-blue-900/20 rounded-lg">
                             <div class="text-2xl font-bold text-blue-300">24</div>
                             <div class="text-sm text-gray-400">Star Types</div>
                         </div>
                         <div class="text-center p-4 bg-purple-900/20 rounded-lg">
-                            <div class="text-2xl font-bold text-purple-300">9</div>
+                            <div class="text-2xl font-bold text-purple-300">22</div>
                             <div class="text-sm text-gray-400">Planet Types</div>
                         </div>
                         <div class="text-center p-4 bg-green-900/20 rounded-lg">
                             <div class="text-2xl font-bold text-green-300">3</div>
                             <div class="text-sm text-gray-400">Habitable Zones</div>
                         </div>
+                    </div>
+                </div>
+                <div class="mt-10 max-w-2xl mx-auto text-left text-gray-300 text-base space-y-4">
+                    <h3 class="text-xl font-semibold mb-2">About this Project</h3>
+                    <ul class="list-disc list-inside mb-2">
+                        <li>Procedural generation of star systems with 24 star types and 22 planet types</li>
+                        <li>Planets are distributed across <strong>inner</strong>, <strong>medium</strong>, and <strong>outer</strong> orbits; those in the <a href="https://en.wikipedia.org/wiki/Circumstellar_habitable_zone" class="underline hover:text-green-300" target="_blank">Goldilocks zone</a> are highlighted</li>
+                        <li>Dice notation formulas for realistic diameters and statistics</li>
+                        <li>Modern, responsive UI with real-time data visualization</li>
+                        <li>REST API backend (Node.js + Express) and Vue.js 3 frontend</li>
+                        <li>Export generated data as JSON</li>
+                    </ul>
+                    <h4 class="font-semibold mt-4">How it works</h4>
+                    <ul class="list-disc list-inside mb-2">
+                        <li>Star and planet types are generated using scientific probability distributions</li>
+                        <li>Each planet type has a unique diameter formula and physical characteristics</li>
+                        <li>Systems are placed in a 3D sector with random coordinates</li>
+                        <li>Supports multi-star systems and probabilistic moon generation</li>
+                    </ul>
+                    <h4 class="font-semibold mt-4">Tech Stack</h4>
+                    <ul class="list-disc list-inside mb-2">
+                        <li>Backend: Node.js, Express, TypeScript</li>
+                        <li>Frontend: Vue.js 3, Vite, TypeScript, Tailwind CSS</li>
+                        <li>API communication via Axios</li>
+                    </ul>
+                    <div class="mt-4 text-sm text-gray-400">
+                        <strong>Source & Documentation:</strong> See the <a href="https://github.com/federicomaiorini/universe-generator" class="underline hover:text-blue-300" target="_blank">GitHub repository</a> for full documentation, API details, and scientific references.
                     </div>
                 </div>
             </div>
