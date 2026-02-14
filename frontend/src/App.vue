@@ -1,18 +1,14 @@
 <template>
-    <div class="h-screen bg-gradient-to-br from-gray-900 to-gray-950 flex flex-col overflow-hidden">
+    <div class="h-screen bg-linear-to-br from-gray-900 to-gray-950 flex flex-col overflow-hidden">
         <!-- Header -->
         <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm z-10 flex-none">
             <div class="container py-6">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div class="flex items-center gap-4 cursor-pointer" @click="router.push('/')">
-                        <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
-                            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                        </div>
+                        <img src="/images/logo.png" alt="Logo" class="w-10 h-10 rounded-full shadow-lg object-cover" />
                         <div>
-                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-                                Stellar Universe Generator
+                            <h1 class="text-2xl font-bold bg-linear-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
+                                Universe Generator
                             </h1>
                             <p class="text-gray-400 text-sm">Generate procedural star systems with realistic characteristics</p>
                         </div>
@@ -69,15 +65,15 @@
             <div class="container py-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="text-gray-500 text-sm">
-                        <p>Stellar Universe Generator v1.0.0</p>
+                        <p>Universe Generator v1.0.0</p>
                         <p class="mt-1">Powered by procedural generation algorithms</p>
                     </div>
                     <div class="flex items-center gap-4 text-sm">
-                        <router-link to="/documentation" class="text-gray-400 hover:text-white transition-colors underline decoration-purple-500/30 hover:decoration-purple-500 transition-all underline-offset-4">
+                        <router-link to="/documentation" class="text-gray-400 hover:text-white transition-all underline decoration-purple-500/30 hover:decoration-purple-500 underline-offset-4">
                             Documentation
                         </router-link>
-                        <a href="https://github.com/Procionegobbo/universe-generator" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
-                        <router-link to="/api-reference" class="text-gray-400 hover:text-white transition-colors underline decoration-blue-500/30 hover:decoration-blue-500 transition-all underline-offset-4">
+                        <a href="https://github.com/Procionegobbo/universe-generator" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-all">GitHub</a>
+                        <router-link to="/api-reference" class="text-gray-400 hover:text-white transition-all underline decoration-blue-500/30 hover:decoration-blue-500 underline-offset-4">
                             API Reference
                         </router-link>
                     </div>
@@ -138,21 +134,4 @@ const exportData = () => {
 
 <style>
 /* Additional global styles */
-.gradient-text {
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-/* Route transitions */
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-    opacity: 0;
-}
 </style>

@@ -1,19 +1,7 @@
 <template>
     <div class="animate-fade-in pb-12">
-        <div class="mb-8 flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold text-white mb-2">Project Documentation</h2>
-                <p class="text-gray-400">Understanding the procedural generation and stellar mechanics</p>
-            </div>
-            <button @click="router.push('/')" class="btn btn-secondary">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Generator
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Contenitore principale -->
+        <div class="max-w-7xl mx-auto px-4 lg:px-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Sidebar Navigation -->
             <div class="lg:col-span-1">
                 <nav class="sticky top-24 space-y-1">
@@ -24,14 +12,31 @@
                 </nav>
             </div>
 
-            <!-- Content -->
+            <!-- Colonna principale: header + contenuto -->
             <div class="lg:col-span-3 space-y-12">
+                <!-- Header allineato -->
+                <div class="mb-8 flex flex-col md:flex-row items-center md:items-end justify-between w-full">
+                    <div class="flex flex-col items-center md:items-end md:flex-row md:gap-6">
+                        <img src="/images/logo.png" alt="Logo" class="w-32 h-32 rounded-full shadow-xl mb-4 md:mb-0 object-cover" />
+                        <div>
+                            <h2 class="text-3xl font-bold text-white mb-2">Project Documentation</h2>
+                            <p class="text-gray-400">Understanding the procedural generation and stellar mechanics</p>
+                        </div>
+                    </div>
+                    <button @click="router.push('/')" class="btn btn-secondary mt-4 md:mt-0 md:self-start">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Generator
+                    </button>
+                </div>
+
                 <!-- Overview Section -->
                 <section id="overview" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-4">Overview</h3>
                     <div class="prose prose-invert max-w-none text-gray-400 space-y-4">
                         <p>
-                            The **Stellar Universe Generator** is a procedural engine designed to create realistic star systems based on scientific spectral classifications and orbital probability models.
+                            The **Universe Generator** is a procedural engine designed to create realistic star systems based on scientific spectral classifications and orbital probability models.
                         </p>
                         <p>
                             Each generated sector is a 3D coordinate space where systems are distributed, stars are instantiated with specific physical properties, and planetary bodies are simulated with consistent orbital hierarchies.
