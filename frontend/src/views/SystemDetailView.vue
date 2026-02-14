@@ -66,12 +66,12 @@
                                         </svg>
                                         Planets ({{ getPlanetsForStar(star.starId).length }})
                                     </h4>
-                                    
                                     <div v-if="getPlanetsForStar(star.starId).length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)" 
-                                             class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 transition-colors">
+                                        <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)"
+                                             class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer"
+                                             @click="openPlanetDetail(planet)">
                                             <div class="flex items-start gap-3">
-                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" /> <!-- doubled from w-10 h-10 -->
+                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                                 <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
                                                 </div>
@@ -106,16 +106,20 @@
             <h3 class="text-xl text-red-400 mb-4">System Not Found</h3>
             <button @click="router.push('/')" class="btn btn-primary">Return to Home</button>
         </div>
+
+        <!-- Planet Detail Modal -->
+        <PlanetDetailModal v-if="selectedPlanet" :planet="selectedPlanet" :close="closePlanetDetail" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import { PLANET_TYPE_DESCRIPTIONS, STAR_TYPE_DESCRIPTIONS } from '../types';
 import { getStarImage } from '../utils/starColors';
 import { getPlanetImage } from '../utils/planetImages';
+import PlanetDetailModal from '../components/PlanetDetailModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -129,10 +133,10 @@ const systemStars = computed(() => {
     return store.sectorData.stars.filter(s => s.systemId === system.value?.systemId);
 });
 
-    const getPlanetsForStar = (starId: number) => {
-        if (!store.sectorData) return [];
-        return store.sectorData.planets.filter(p => p.starId === starId).sort((a, b) => a.orbitalNumber - b.orbitalNumber);
-    };
+const getPlanetsForStar = (starId: number) => {
+    if (!store.sectorData) return [];
+    return store.sectorData.planets.filter(p => p.starId === starId).sort((a, b) => a.orbitalNumber - b.orbitalNumber);
+};
 
 const getStarRingColor = (spectralClass: string) => {
     const colors: Record<string, string> = {
@@ -171,4 +175,12 @@ const getStarRingColor = (spectralClass: string) => {
 
 const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';
 const getPlanetDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown Planet';
+
+const selectedPlanet = ref(null);
+function openPlanetDetail(planet: any) {
+  selectedPlanet.value = planet;
+}
+function closePlanetDetail() {
+  selectedPlanet.value = null;
+}
 </script>
