@@ -137,6 +137,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getStarClassColor, getStarImage } from '../utils/starColors';
+import { getPlanetImage } from '../utils/planetImages';
 
 const router = useRouter();
 
@@ -171,65 +172,6 @@ const getPlanetDetailDescription = (type: string) => {
         'E': 'Planets located in the circumstellar habitable zone with potential for liquid water.'
     };
     return details[type] || 'Standard planetary body classification.';
-};
-const getStarImage = (code: string) => {
-    // Direct mappings for star types that have specific images
-    const imageMap: Record<string, string> = {
-        // Main sequence stars
-        'O': 'star-O.png',
-        'B': 'star-B.png',
-        'A': 'star-A.png',
-        'F': 'star-F.png',
-        'G': 'star-G.png',
-        'K': 'star-K.png',
-        'M': 'star-M.png',
-        // Giant stars
-        'gF': 'star-gF.png',
-        'gG': 'star-gG.png',
-        'gK': 'star-gK.png',
-        'gM': 'star-gM.png',
-        // Supergiant stars
-        'cB': 'star-cB.png',
-        'cA': 'star-cA.png',
-        'cF': 'star-cF.png',
-        'cG': 'star-cG.png',
-        'cK': 'star-cK.png',
-        'cM': 'star-cM.png',
-        // Special objects
-        'DA': 'star-DA.png',
-        'DB': 'star-DA.png', // Use DA image for other white dwarfs
-        'DF': 'star-DA.png',
-        'DG': 'star-DA.png',
-        'DK': 'star-DA.png',
-        'NS': 'star-NS.png',
-        'BH': 'star-BH.png'
-    };
-
-    const imageName = imageMap[code];
-    if (imageName) {
-        return `/images/stars/${imageName}`;
-    }
-
-    return '/images/stars/star-default.png';
-};
-// Add this function to map planet codes to image filenames
-const getPlanetImage = (code: string) => {
-    const imageMap: Record<string, string> = {
-        'A': 'asteroid.png',
-        'G': 'gasgiant.png',
-        'R': 'rocky.png',
-        'C': 'carbon.png',
-        'D': 'desert.png',
-        'H': 'hell.png',
-        'M': 'molten.png',
-        'E': 'earthlike.png',
-        '#': 'unknown.png'
-    };
-    const imageName = imageMap[code];
-    if (imageName) {
-        return `/images/planets/${imageName}`;
-    }
-    return '/images/planets/unknown.png';
 };
 </script>
 

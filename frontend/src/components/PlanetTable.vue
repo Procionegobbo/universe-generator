@@ -153,6 +153,7 @@
 import { computed, ref, watch } from 'vue';
 import type { Planet } from '../types';
 import { PLANET_TYPE_DESCRIPTIONS } from '../types';
+import { getPlanetImage } from '../utils/planetImages';
 
 const props = defineProps<{
     planets: Planet[];
@@ -268,25 +269,5 @@ const getZoneColor = (orbit: number) => {
     if (orbit <= 2) return 'bg-red-900/30 text-red-300';
     if (orbit <= 4) return 'bg-green-900/30 text-green-300';
     return 'bg-blue-900/30 text-blue-300';
-};
-
-// Add this function to map planet codes to image filenames
-const getPlanetImage = (code: string) => {
-    const imageMap: Record<string, string> = {
-        'A': 'asteroid.png',
-        'G': 'gasgiant.png',
-        'R': 'rocky.png',
-        'C': 'carbon.png',
-        'D': 'desert.png',
-        'H': 'hell.png',
-        'M': 'molten.png',
-        'E': 'earthlike.png',
-        '#': 'unknown.png'
-    };
-    const imageName = imageMap[code];
-    if (imageName) {
-        return `/images/planets/${imageName}`;
-    }
-    return '/images/planets/unknown.png';
 };
 </script>

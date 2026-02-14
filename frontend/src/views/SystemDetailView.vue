@@ -115,6 +115,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import { PLANET_TYPE_DESCRIPTIONS, STAR_TYPE_DESCRIPTIONS } from '../types';
 import { getStarImage } from '../utils/starColors';
+import { getPlanetImage } from '../utils/planetImages';
 
 const route = useRoute();
 const router = useRouter();
@@ -170,24 +171,4 @@ const getStarRingColor = (spectralClass: string) => {
 
 const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';
 const getPlanetDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown Planet';
-
-// Add this function to map planet codes to image filenames
-const getPlanetImage = (code: string) => {
-    const imageMap: Record<string, string> = {
-        'A': 'asteroid.png',
-        'G': 'gasgiant.png',
-        'R': 'rocky.png',
-        'C': 'carbon.png',
-        'D': 'desert.png',
-        'H': 'hell.png',
-        'M': 'molten.png',
-        'E': 'earthlike.png',
-        '#': 'unknown.png'
-    };
-    const imageName = imageMap[code];
-    if (imageName) {
-        return `/images/planets/${imageName}`;
-    }
-    return '/images/planets/unknown.png';
-};
 </script>
