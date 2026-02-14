@@ -16,6 +16,8 @@ export interface Planet {
     planetType: string;
     diameter: number;
     moonCount: number;
+    mass: number;
+    gravity: number;
 }
 
 export interface System {

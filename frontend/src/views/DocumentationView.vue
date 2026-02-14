@@ -86,7 +86,7 @@
                 <section id="planetary-types" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Planetary Types</h3>
                     <p class="text-gray-400 mb-6">
-                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. Each type has a realistic diameter formula and physical description. See below for all supported types and their typical diameter ranges.
+                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges.
                     </p>
                     <div class="space-y-4">
                         <div v-for="(desc, code) in PLANET_TYPE_DESCRIPTIONS" :key="code"
@@ -103,6 +103,11 @@
                                 <p class="text-sm text-gray-400 leading-relaxed">
                                     {{ getPlanetDetailDescription(String(code)) }}
                                 </p>
+                                <div v-if="getPlanetTypeStats(String(code))" class="mt-2 text-xs text-gray-400">
+                                  <span v-if="getPlanetTypeStats(String(code)).diameter">Diameter: <b>{{ getPlanetTypeStats(String(code)).diameter }}</b> km</span>
+                                  <span v-if="getPlanetTypeStats(String(code)).mass"> | Mass: <b>{{ getPlanetTypeStats(String(code)).mass }}</b> Earth masses</span>
+                                  <span v-if="getPlanetTypeStats(String(code)).gravity"> | Gravity: <b>{{ getPlanetTypeStats(String(code)).gravity }}</b> m/s²</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -208,6 +213,34 @@ const getPlanetDetailDescription = (type: string) => {
     };
     return details[type] || 'Standard planetary body classification.';
 };
+
+// Statistiche indicative per tipo di pianeta (diameter, mass, gravity)
+const PLANET_TYPE_STATS: Record<string, { diameter: string, mass: string, gravity: string }> = {
+  'A': { diameter: '0', mass: '-', gravity: '-' },
+  'G': { diameter: '50,000–140,000', mass: '30–320', gravity: '10–25' },
+  'Q': { diameter: '50,000–140,000', mass: '30–320', gravity: '10–25' },
+  'U': { diameter: '30,000–60,000', mass: '10–20', gravity: '7–15' },
+  'S': { diameter: '9,000–15,000', mass: '2–10', gravity: '12–25' },
+  'R': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'E': { diameter: '6,000–7,000', mass: '0.5–2', gravity: '7–12' },
+  'O': { diameter: '6,000–15,000', mass: '0.5–10', gravity: '5–15' },
+  'I': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'D': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–10' },
+  'C': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'L': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'F': { diameter: '3,000–7,000', mass: '0.5–3', gravity: '10–25' },
+  'T': { diameter: '4,000–15,000', mass: '0.5–10', gravity: '5–20' },
+  'N': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'B': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'J': { diameter: '6,000–9,000', mass: '0.5–2', gravity: '5–12' },
+  'W': { diameter: '600–2,500', mass: '0.0001–0.01', gravity: '0.01–0.2' },
+  'H': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'M': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'X': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–10' },
+  '#': { diameter: '-', mass: '-', gravity: '-' }
+};
+
+const getPlanetTypeStats = (type: string) => PLANET_TYPE_STATS[type] || null;
 </script>
 
 <style scoped>
