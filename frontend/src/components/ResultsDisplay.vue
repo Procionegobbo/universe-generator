@@ -197,7 +197,7 @@
                                  class="flex items-center hover:bg-gray-800/30 p-2 rounded-lg transition-colors animate-slide-in"
                                  :style="{ animationDelay: `${index * 50}ms` }">
                                 <div class="w-10 shrink-0">
-                                    <img :src="getStarImage(type)"
+                                    <img :src="getStarImage(type, 'thumbs')"
                                          :alt="getStarDescription(type)"
                                          class="w-10 h-10 rounded-full object-cover shadow ring-1"
                                          :class="getStarRingColor(type)" />
@@ -228,7 +228,7 @@
                                  class="bg-gray-800/50 p-6 rounded-xl hover:bg-gray-700/50 transition-colors shadow-lg hover:shadow-xl">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-2">
-                                        <img :src="getPlanetImage(type)" :alt="getPlanetTypeDescription(type)" class="w-10 h-10 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                        <img :src="getPlanetImage(type, 'thumbs')" :alt="getPlanetTypeDescription(type)" class="w-10 h-10 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                     </div>
                                     <span class="text-3xl font-bold">{{ count }}</span>
                                 </div>

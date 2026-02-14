@@ -59,7 +59,7 @@
                             <div class="relative w-20 h-20 shrink-0">
                                 <!-- Round container for the star image -->
                                 <div class="w-full h-full rounded-full overflow-hidden bg-gray-950 border-2 border-gray-800 group-hover:border-blue-500/50 transition-colors duration-300 flex items-center justify-center">
-                                    <img :src="getStarImage(String(code))" 
+                                    <img :src="getStarImage(String(code), 'thumbs')"
                                          :alt="desc"
                                          class="w-full h-full object-cover filter brightness-110 group-hover:scale-125 transition-transform duration-500">
                                 </div>
@@ -93,7 +93,7 @@
                         <div v-for="(desc, code) in filteredPlanetDescriptions" :key="code" 
                              class="flex items-start gap-4 p-4 bg-gray-900/50 border border-gray-800 rounded-xl group hover:bg-gray-800/30 transition-all">
                             <div class="w-20 h-20 shrink-0 flex items-center justify-center">
-                                <img :src="getPlanetImage(String(code))" :alt="desc" class="w-full h-full object-contain rounded-full border-2 border-gray-800 bg-black" />
+                                <img :src="getPlanetImage(String(code), 'thumbs')" :alt="desc" class="w-full h-full object-contain rounded-full border-2 border-gray-800 bg-black" />
                             </div>
                             <div :class="getPlanetTypeColor(String(code))"
                                  class="w-12 h-12 rounded-full shrink-0 flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-110 transition-transform ml-2">
