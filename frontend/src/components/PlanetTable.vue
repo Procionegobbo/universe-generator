@@ -160,10 +160,11 @@ const props = defineProps<{
     planets: Planet[];
     systems: System[];
     stars: Star[];
+    initialTypeFilter?: string | null;
 }>();
 
 const searchQuery = ref('');
-const planetTypeFilter = ref('');
+const planetTypeFilter = ref(props.initialTypeFilter || '');
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const router = useRouter();
@@ -243,6 +244,12 @@ watch([searchQuery, planetTypeFilter], () => {
     currentPage.value = 1;
 });
 
+watch(() => props.initialTypeFilter, (newVal) => {
+    if (typeof newVal === 'string') {
+        planetTypeFilter.value = newVal;
+    }
+});
+
 // Helper functions
 const getPlanetTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -290,3 +297,53 @@ function goToSystemDetail(systemId: number | undefined) {
     }
 }
 </script>
+
+<style scoped>
+.table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    padding: 12px 15px;
+    border: 1px solid #2d3748;
+}
+
+.table th {
+    background-color: #1a202c;
+    color: #cbd5e0;
+    text-align: left;
+}
+
+.table td {
+    background-color: #2d3748;
+    color: #e2e8f0;
+}
+
+.table tr:hover {
+    background-color: #4a5568;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem; /* rounded-md */
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background-color: #2d3748; /* bg-gray-800 */
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #4a5568; /* hover:bg-gray-700 */
+}
+</style>

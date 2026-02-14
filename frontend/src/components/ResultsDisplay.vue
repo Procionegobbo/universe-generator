@@ -69,7 +69,7 @@
 
             <!-- Planets Tab -->
             <div v-if="activeTab === 'planets'" class="animate-fade-in">
-                <PlanetTable :planets="planets" :systems="systems" :stars="stars" />
+                <PlanetTable :planets="planets" :systems="systems" :stars="stars" :initialTypeFilter="planetTypeTabFilter" />
             </div>
 
             <!-- Systems Tab -->
@@ -225,7 +225,8 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                             <div v-for="([type, count]) in Object.entries(planetTypeDistribution).sort((a, b) => b[1] - a[1])"
                                  :key="type"
-                                 class="bg-gray-800/50 p-6 rounded-xl hover:bg-gray-700/50 transition-colors shadow-lg hover:shadow-xl">
+                                 class="bg-gray-800/50 p-6 rounded-xl hover:bg-gray-700/50 transition-colors shadow-lg hover:shadow-xl cursor-pointer"
+                                 @click="filterPlanetsByType(type)">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-2">
                                         <img :src="getPlanetImage(type, 'thumbs')" :alt="getPlanetTypeDescription(type)" class="w-10 h-10 rounded-full object-contain border-2 border-gray-800 bg-black" />
@@ -389,6 +390,13 @@ const getStarRingColor = (spectralClass: string) => {
 const getPlanetTypeDescription = (type: string) => {
     return PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
 };
+
+const planetTypeTabFilter = ref<string | null>(null);
+
+function filterPlanetsByType(type: string) {
+    activeTab.value = 'planets';
+    planetTypeTabFilter.value = type;
+}
 </script>
 
 <style scoped>
