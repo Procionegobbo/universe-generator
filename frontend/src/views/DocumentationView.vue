@@ -86,11 +86,10 @@
                 <section id="planetary-types" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Planetary Types</h3>
                     <p class="text-gray-400 mb-6">
-                        Planets are generated with specific compositions and atmospheres based on their orbital distance and the host star's radiant flux.
+                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges.
                     </p>
-                    
                     <div class="space-y-4">
-                        <div v-for="(desc, code) in filteredPlanetDescriptions" :key="code" 
+                        <div v-for="(desc, code) in PLANET_TYPE_DESCRIPTIONS" :key="code"
                              class="flex items-start gap-4 p-4 bg-gray-900/50 border border-gray-800 rounded-xl group hover:bg-gray-800/30 transition-all">
                             <div class="w-20 h-20 shrink-0 flex items-center justify-center">
                                 <img :src="getPlanetImage(String(code), 'thumbs')" :alt="desc" class="w-full h-full object-contain rounded-full border-2 border-gray-800 bg-black" />
@@ -104,8 +103,16 @@
                                 <p class="text-sm text-gray-400 leading-relaxed">
                                     {{ getPlanetDetailDescription(String(code)) }}
                                 </p>
+                                <div v-if="getPlanetTypeStats(String(code))" class="mt-2 text-xs text-gray-400">
+                                  <span v-if="getPlanetTypeStats(String(code)).diameter">Diameter: <b>{{ getPlanetTypeStats(String(code)).diameter }}</b> km</span>
+                                  <span v-if="getPlanetTypeStats(String(code)).mass"> | Mass: <b>{{ getPlanetTypeStats(String(code)).mass }}</b> Earth masses</span>
+                                  <span v-if="getPlanetTypeStats(String(code)).gravity"> | Gravity: <b>{{ getPlanetTypeStats(String(code)).gravity }}</b> m/s²</span>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="mt-8 text-sm text-gray-400">
+                        <b>Diameter formulas (km):</b> Gas Giant: <code>1d10+4 × 10,000</code> | Super-Earth: <code>1d7+8 × 1,000</code> | Rocky: <code>1d7+2 × 1,000</code> | Dwarf: <code>1d20+5 × 100</code> | ...
                     </div>
                 </section>
 
@@ -138,7 +145,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getStarClassColor, getStarImage } from '../utils/starColors';
@@ -146,21 +152,30 @@ import { getPlanetImage } from '../utils/planetImages';
 
 const router = useRouter();
 
-const filteredPlanetDescriptions = computed(() => {
-    const { '#': _, ...rest } = PLANET_TYPE_DESCRIPTIONS;
-    return rest;
-});
-
 const getPlanetTypeColor = (type: string) => {
     const colors: Record<string, string> = {
         'A': 'bg-gray-700 text-gray-400',
         'G': 'bg-yellow-800 text-yellow-300',
+        'Q': 'bg-yellow-900 text-yellow-200',
+        'U': 'bg-blue-900 text-blue-200',
+        'S': 'bg-green-800 text-green-200',
         'R': 'bg-orange-900 text-orange-300',
-        'C': 'bg-gray-900 text-gray-300',
+        'E': 'bg-green-900 text-green-300',
+        'O': 'bg-blue-700 text-blue-300',
+        'I': 'bg-cyan-900 text-cyan-200',
         'D': 'bg-yellow-900 text-yellow-200',
+        'C': 'bg-gray-900 text-gray-300',
+        'L': 'bg-gray-800 text-gray-200',
+        'F': 'bg-gray-900 text-yellow-100',
+        'T': 'bg-purple-900 text-purple-200',
+        'N': 'bg-blue-900 text-blue-100',
+        'B': 'bg-blue-800 text-blue-100',
+        'J': 'bg-green-900 text-green-200',
+        'W': 'bg-gray-800 text-gray-400',
         'H': 'bg-red-900 text-red-300',
         'M': 'bg-red-800 text-red-200',
-        'E': 'bg-green-900 text-green-300'
+        'X': 'bg-blue-950 text-blue-200',
+        '#': 'bg-gray-800 text-gray-400'
     };
     return colors[type] || 'bg-gray-800 text-gray-400';
 };
@@ -168,16 +183,58 @@ const getPlanetTypeColor = (type: string) => {
 const getPlanetDetailDescription = (type: string) => {
     const details: Record<string, string> = {
         'A': 'Remnants of planetary formation, primarily composed of rock, metal, and ice.',
-        'G': 'Massive worlds composed primarily of hydrogen and helium, often with complex moon systems.',
-        'R': 'Terrestrial bodies with solid surfaces and differentiated internal structures.',
-        'C': 'Theoretically predicted planets formed in carbon-rich protoplanetary disks.',
-        'D': 'Arid worlds with extremely low liquid water availability but habitable temperature ranges.',
-        'H': 'Inhospitable worlds subject to tidal heating or extreme greenhouse effects.',
-        'M': 'Worlds with high surface temperatures where geological activity results in persistent lava flows.',
-        'E': 'Planets located in the circumstellar habitable zone with potential for liquid water.'
+        'G': 'Massive worlds composed primarily of hydrogen and helium, often with complex moon systems. Diameter: 50,000–140,000 km.',
+        'Q': 'Hot gas giants orbiting close to their star, with high temperatures and dynamic atmospheres. Diameter: 50,000–140,000 km.',
+        'U': 'Ice giants with thick atmospheres of hydrogen, helium, and methane. Diameter: 30,000–60,000 km.',
+        'S': 'Large rocky planets, more massive than Earth but smaller than ice giants. Diameter: 9,000–15,000 km.',
+        'R': 'Terrestrial bodies with solid surfaces and differentiated internal structures. Diameter: 3,000–9,000 km.',
+        'E': 'Planets located in the circumstellar habitable zone with potential for liquid water. Diameter: 6,000–7,000 km.',
+        'O': 'Worlds covered almost entirely by deep oceans. Diameter: 6,000–15,000 km.',
+        'I': 'Frozen planets with icy surfaces, possibly with subsurface oceans. Diameter: 6,000–15,000 km.',
+        'D': 'Arid worlds with extremely low liquid water availability but habitable temperature ranges. Diameter: 3,000–9,000 km.',
+        'C': 'Theoretically predicted planets formed in carbon-rich protoplanetary disks. Diameter: 3,000–9,000 km.',
+        'L': 'Rocky planets with high silicate content and thin or no atmosphere. Diameter: 3,000–9,000 km.',
+        'F': 'Dense planets with iron-rich surfaces and cores. Diameter: 3,000–7,000 km.',
+        'T': 'Planets with highly poisonous atmospheres, uninhabitable for Earth life. Diameter: 4,000–15,000 km.',
+        'N': 'Planets with ammonia-rich atmospheres and possibly ammonia oceans. Diameter: 6,000–15,000 km.',
+        'B': 'Planets with methane-rich atmospheres and surfaces, possibly with methane lakes. Diameter: 6,000–15,000 km.',
+        'J': 'Lush worlds covered in dense forests and rich vegetation. Diameter: 6,000–9,000 km.',
+        'W': 'Small planetary bodies, not massive enough to clear their orbit. Diameter: 600–2,500 km.',
+        'H': 'Inhospitable worlds subject to tidal heating or extreme greenhouse effects. Diameter: 3,000–9,000 km.',
+        'M': 'Worlds with high surface temperatures and persistent lava flows. Diameter: 3,000–9,000 km.',
+        'X': 'Cold, arid worlds with very low temperatures. Diameter: 3,000–9,000 km.',
+        '#': 'Unknown or unclassified planetary body.'
     };
     return details[type] || 'Standard planetary body classification.';
 };
+
+// Statistiche indicative per tipo di pianeta (diameter, mass, gravity)
+const PLANET_TYPE_STATS: Record<string, { diameter: string, mass: string, gravity: string }> = {
+  'A': { diameter: '0', mass: '-', gravity: '-' },
+  'G': { diameter: '50,000–140,000', mass: '30–320', gravity: '10–25' },
+  'Q': { diameter: '50,000–140,000', mass: '30–320', gravity: '10–25' },
+  'U': { diameter: '30,000–60,000', mass: '10–20', gravity: '7–15' },
+  'S': { diameter: '9,000–15,000', mass: '2–10', gravity: '12–25' },
+  'R': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'E': { diameter: '6,000–7,000', mass: '0.5–2', gravity: '7–12' },
+  'O': { diameter: '6,000–15,000', mass: '0.5–10', gravity: '5–15' },
+  'I': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'D': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–10' },
+  'C': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'L': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'F': { diameter: '3,000–7,000', mass: '0.5–3', gravity: '10–25' },
+  'T': { diameter: '4,000–15,000', mass: '0.5–10', gravity: '5–20' },
+  'N': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'B': { diameter: '6,000–15,000', mass: '0.1–2', gravity: '2–10' },
+  'J': { diameter: '6,000–9,000', mass: '0.5–2', gravity: '5–12' },
+  'W': { diameter: '600–2,500', mass: '0.0001–0.01', gravity: '0.01–0.2' },
+  'H': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'M': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–15' },
+  'X': { diameter: '3,000–9,000', mass: '0.1–2', gravity: '2–10' },
+  '#': { diameter: '-', mass: '-', gravity: '-' }
+};
+
+const getPlanetTypeStats = (type: string) => PLANET_TYPE_STATS[type] || null;
 </script>
 
 <style scoped>
