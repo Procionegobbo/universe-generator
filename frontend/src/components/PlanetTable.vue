@@ -47,7 +47,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="planet in paginatedPlanets" :key="`${planet.starId}-${planet.orbitalNumber}`">
+                    <tr v-for="planet in paginatedPlanets" :key="`${planet.starId}-${planet.orbitalNumber}`" class="cursor-pointer hover:bg-blue-900/20 transition-colors" @click="goToSystemDetail(getSystemIdForStar(planet.starId))">
                         <td class="font-mono">{{ planet.starId }}</td>
                         <td class="font-mono">{{ planet.orbitalNumber }}</td>
                         <td>
@@ -151,18 +151,22 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { Planet } from '../types';
+import type { Planet, System, Star } from '../types';
 import { PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getPlanetImage } from '../utils/planetImages';
+import { useRouter } from 'vue-router';
 
 const props = defineProps<{
     planets: Planet[];
+    systems: System[];
+    stars: Star[];
 }>();
 
 const searchQuery = ref('');
 const planetTypeFilter = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 20;
+const router = useRouter();
 
 // Get unique planet types
 const availablePlanetTypes = computed(() => {
@@ -270,4 +274,19 @@ const getZoneColor = (orbit: number) => {
     if (orbit <= 4) return 'bg-green-900/30 text-green-300';
     return 'bg-blue-900/30 text-blue-300';
 };
+
+function getSystemIdForStar(starId: number): number | undefined {
+    if (!props.stars) {
+        console.warn('PlanetTable: stars prop is missing. Navigation to system detail will not work.');
+        return undefined;
+    }
+    const star = props.stars.find(s => s.starId === starId);
+    return star?.systemId;
+}
+
+function goToSystemDetail(systemId: number | undefined) {
+    if (systemId !== undefined) {
+        router.push({ name: 'system-detail', params: { id: systemId } });
+    }
+}
 </script>

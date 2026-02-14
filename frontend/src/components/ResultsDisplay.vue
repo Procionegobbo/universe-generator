@@ -69,7 +69,7 @@
 
             <!-- Planets Tab -->
             <div v-if="activeTab === 'planets'" class="animate-fade-in">
-                <PlanetTable :planets="planets" />
+                <PlanetTable :planets="planets" :systems="systems" :stars="stars" />
             </div>
 
             <!-- Systems Tab -->
@@ -191,12 +191,12 @@
                     <!-- Star Type Distribution -->
                     <div>
                         <h3 class="text-xl font-bold mb-6">Star Type Distribution</h3>
-                        <div class="max-h-[500px] overflow-y-auto pr-4 space-y-3 custom-scrollbar">
+                        <div class="max-h-125 overflow-y-auto pr-4 space-y-3 custom-scrollbar">
                             <div v-for="([type, count], index) in Object.entries(starTypeDistribution).sort((a, b) => b[1] - a[1])"
                                  :key="type"
                                  class="flex items-center hover:bg-gray-800/30 p-2 rounded-lg transition-colors animate-slide-in"
                                  :style="{ animationDelay: `${index * 50}ms` }">
-                                <div class="w-10 flex-shrink-0">
+                                <div class="w-10 shrink-0">
                                     <img :src="getStarImage(type)"
                                          :alt="getStarDescription(type)"
                                          class="w-10 h-10 rounded-full object-cover shadow ring-1"
@@ -205,7 +205,7 @@
                                 <div class="flex-1 ml-4">
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="text-gray-300 text-sm">{{ getStarDescription(type) }}</span>
-                                        <span class="font-bold text-base min-w-[2rem] text-right">{{ count }}</span>
+                                        <span class="font-bold text-base min-w-8 text-right">{{ count }}</span>
                                     </div>
                                     <div class="h-2 bg-gray-700/50 rounded-full overflow-hidden">
                                         <div
@@ -227,19 +227,18 @@
                                  :key="type"
                                  class="bg-gray-800/50 p-6 rounded-xl hover:bg-gray-700/50 transition-colors shadow-lg hover:shadow-xl">
                                 <div class="flex items-center justify-between mb-4">
-                                    <span :class="getPlanetTypeColor(type)"
-                                          class="px-4 py-2 rounded-full text-base font-bold shadow-md">
-                                        {{ type }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <img :src="getPlanetImage(type)" :alt="getPlanetTypeDescription(type)" class="w-10 h-10 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                    </div>
                                     <span class="text-3xl font-bold">{{ count }}</span>
                                 </div>
-                                <div class="text-base text-gray-300 mb-4 min-h-[3rem]">
+                                <div class="text-base text-gray-300 mb-4 min-h-12">
                                     {{ getPlanetTypeDescription(type) }}
                                 </div>
                                 <div class="h-3 bg-gray-700/50 rounded-full overflow-hidden shadow-inner">
                                     <div
                                         :style="{ width: `${(count / maxPlanetCount) * 100}%` }"
-                                        class="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-700"
+                                        class="h-full bg-linear-to-r from-green-500 to-emerald-400 transition-all duration-700"
                                     ></div>
                                 </div>
                             </div>
@@ -259,6 +258,7 @@ import PlanetTable from './PlanetTable.vue';
 import type { System, Star, Planet } from '../types';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getStarClassColor, getStarBarColor, getStarImage } from '../utils/starColors';
+import { getPlanetImage } from '../utils/planetImages';
 
 const props = defineProps<{
     systems: System[];
@@ -385,20 +385,6 @@ const getStarRingColor = (spectralClass: string) => {
     return colors[spectralClass] || 'ring-gray-500/50';
 };
 
-const getPlanetTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-        'A': 'bg-gray-700 text-gray-400',
-        'G': 'bg-yellow-800 text-yellow-300',
-        'R': 'bg-orange-900 text-orange-300',
-        'C': 'bg-gray-900 text-gray-300',
-        'D': 'bg-yellow-900 text-yellow-200',
-        'H': 'bg-red-900 text-red-300',
-        'M': 'bg-red-800 text-red-200',
-        'E': 'bg-green-900 text-green-300',
-        '#': 'bg-purple-900 text-purple-300'
-    };
-    return colors[type] || 'bg-gray-800 text-gray-400';
-};
 
 const getPlanetTypeDescription = (type: string) => {
     return PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
