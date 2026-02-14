@@ -7,7 +7,7 @@
                 </svg>
                 Back to Sector
             </button>
-            <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <h2 class="text-3xl font-bold bg-linear-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 System Details
             </h2>
         </div>
@@ -44,8 +44,8 @@
                         <div class="card bg-gray-800/50 border border-gray-700">
                             <div class="flex flex-col md:flex-row gap-6 items-start">
                                 <!-- Star Info -->
-                                <div class="flex items-center gap-4 min-w-[250px]">
-                                    <div class="relative w-32 h-32 flex-shrink-0"> <!-- doubled from w-16 h-16 -->
+                                <div class="flex items-center gap-4 min-w-62.5">
+                                    <div class="relative w-32 h-32 shrink-0"> <!-- doubled from w-16 h-16 -->
                                         <img :src="getStarImage(star.spectralClass)"
                                              :alt="getStarDescription(star.spectralClass)"
                                              class="w-32 h-32 rounded-full object-cover shadow-lg ring-2"
@@ -72,7 +72,7 @@
                                              class="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-gray-600 transition-colors">
                                             <div class="flex items-start gap-3">
                                                 <img :src="getPlanetImage(planet.planetType)" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" /> <!-- doubled from w-10 h-10 -->
-                                                <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
+                                                <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
                                                 </div>
                                                 <div class="min-w-0">
