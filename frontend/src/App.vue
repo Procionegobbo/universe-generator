@@ -1,5 +1,6 @@
 <template>
     <div class="h-screen bg-linear-to-br from-gray-900 to-gray-950 flex flex-col overflow-hidden">
+        <Analytics />
         <!-- Header -->
         <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm z-10 flex-none">
             <div class="container py-6">
@@ -87,6 +88,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSectorStore } from './stores/sectorStore';
+import { Analytics } from '@vercel/analytics/vue';
 
 const router = useRouter();
 const store = useSectorStore();
