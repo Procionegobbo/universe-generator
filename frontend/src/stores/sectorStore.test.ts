@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useSectorStore } from './sectorStore';
-import { nextTick } from 'vue';
 import { vi } from 'vitest';
 
 // Mock axios prima di importare lo store

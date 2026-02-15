@@ -36,7 +36,6 @@ describe('sectorData JSON size estimation', () => {
     sectorVolume: 1000,
     zone: 'medium'
   };
-  const STORAGE_KEY = 'universe-generator-sector';
 
   function getSizeInKB(obj: any) {
     return Buffer.byteLength(JSON.stringify(obj), 'utf8') / 1024;
@@ -56,4 +55,3 @@ describe('sectorData JSON size estimation', () => {
     expect(results[5000]).toBeLessThan(50000);
   });
 });
-

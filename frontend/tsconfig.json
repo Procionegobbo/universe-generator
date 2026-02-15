@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Vue e Vite */
-    "types": ["vue", "vite/client"]
+    "types": ["vue", "vite/client", "vitest"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]

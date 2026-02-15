@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import type { Sector, GenerationRequest, SectorZone } from '../types';
 import axios from 'axios';
 
@@ -63,6 +63,17 @@ export const useSectorStore = defineStore('sector', () => {
     const generateSector = async (request: GenerationRequest) => {
         isLoading.value = true;
         error.value = null;
+
+        // Aggiorna i valori dello store con quelli della request
+        if (request.systemCount !== undefined) {
+            systemCount.value = request.systemCount;
+        }
+        if (request.sectorVolume !== undefined) {
+            sectorVolume.value = request.sectorVolume;
+        }
+        if (request.zone !== undefined) {
+            zone.value = request.zone;
+        }
 
         // If request doesn't have a seed, use the current store seed
         if (request.seed === undefined) {
