@@ -1,18 +1,54 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import type { Sector, GenerationRequest, SectorZone } from '../types';
 import axios from 'axios';
 
 export const useSectorStore = defineStore('sector', () => {
+    // --- LocalStorage Key ---
+    const STORAGE_KEY = 'universe-generator-sector-params';
+
+    // --- Caricamento iniziale dei parametri da LocalStorage ---
+    let initial: Record<string, unknown> = {};
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) initial = JSON.parse(raw);
+    } catch (e) { initial = {}; }
+
+    function isNumber(val: unknown): val is number {
+        return typeof val === 'number' && !isNaN(val);
+    }
+    function isString(val: unknown): val is string {
+        return typeof val === 'string';
+    }
+    function isZone(val: unknown): val is SectorZone {
+        return isString(val) && ['extragalactic','galactic edge','medium','central zone','core'].includes(val);
+    }
+
     const sectorData = ref<Sector | null>(null);
     const isLoading = ref(false);
     const error = ref<string | null>(null);
     const currentSeed = ref<number | string>(Math.floor(Math.random() * 1000000));
-
-    // Generation Settings Persistence
     const systemCount = ref(100);
     const sectorVolume = ref(1000);
     const zone = ref<SectorZone>('medium');
+    if (isNumber(initial['currentSeed']) || isString(initial['currentSeed'])) currentSeed.value = initial['currentSeed'] as number | string;
+    if (isNumber(initial['systemCount'])) systemCount.value = initial['systemCount'] as number;
+    if (isNumber(initial['sectorVolume'])) sectorVolume.value = initial['sectorVolume'] as number;
+    if (isZone(initial['zone'])) zone.value = initial['zone'] as SectorZone;
+
+    // --- Persistenza automatica SOLO parametri su LocalStorage ---
+    // (RIMOSSO IL WATCHER)
+
+    // Funzione per caricare i parametri salvati
+    function loadSavedParams() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) {
+            return null;
+        }
+    }
 
     // Actions
     const checkHealth = async (): Promise<boolean> => {
@@ -34,6 +70,16 @@ export const useSectorStore = defineStore('sector', () => {
         } else {
             currentSeed.value = request.seed;
         }
+
+        // Salva i parametri SOLO ora
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                currentSeed: currentSeed.value,
+                systemCount: systemCount.value,
+                sectorVolume: sectorVolume.value,
+                zone: zone.value
+            }));
+        } catch (e) { /* ignore */ }
 
         try {
             const response = await axios.post('/api/sector/generate', request);
@@ -60,8 +106,15 @@ export const useSectorStore = defineStore('sector', () => {
         return null;
     };
 
-    // We should probably add IDs to systems if they don't have them, 
-    // but for now let's use index as ID for simplicity in routing.
+    // Funzione per azzerare la memoria persistente
+    const clearPersistentMemory = () => {
+        localStorage.removeItem(STORAGE_KEY);
+        sectorData.value = null;
+        currentSeed.value = Math.floor(Math.random() * 1000000);
+        systemCount.value = 100;
+        sectorVolume.value = 1000;
+        zone.value = 'medium';
+    };
 
     return {
         sectorData,
@@ -73,6 +126,8 @@ export const useSectorStore = defineStore('sector', () => {
         zone,
         checkHealth,
         generateSector,
-        getSystemById
+        getSystemById,
+        clearPersistentMemory,
+        loadSavedParams
     };
 });

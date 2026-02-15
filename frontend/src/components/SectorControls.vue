@@ -1,5 +1,16 @@
 <template>
     <div class="card">
+        <div v-if="showRestoreModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div class="bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full">
+                <h3 class="text-lg font-bold mb-2">Restore previous sector?</h3>
+                <p class="mb-4">A previous sector generation was found. Do you want to regenerate it using the saved parameters?</p>
+                <div class="flex gap-4 justify-end">
+                    <button class="btn btn-secondary" @click="onRestoreCancel">No, start fresh</button>
+                    <button class="btn btn-primary" @click="onRestoreConfirm">Yes, regenerate</button>
+                </div>
+            </div>
+        </div>
+
         <h2 class="text-2xl font-bold mb-6 text-center">Generate Stellar Sector</h2>
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
@@ -117,7 +128,6 @@
                     <span v-if="isLoading" class="loading mr-2"></span>
                     {{ isLoading ? 'Generating...' : 'Generate Sector' }}
                 </button>
-
                 <button
                     type="button"
                     @click="resetForm"
@@ -125,6 +135,14 @@
                     :disabled="isLoading"
                 >
                     Reset
+                </button>
+                <button
+                    type="button"
+                    @click="resetMemory"
+                    class="btn btn-danger flex-1"
+                    :disabled="isLoading"
+                >
+                    Reset memoria
                 </button>
             </div>
 
@@ -158,7 +176,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import type { GenerationRequest, SectorZone } from '../types';
 import { storeToRefs } from 'pinia';
 import { useSectorStore } from '../stores/sectorStore';
@@ -174,6 +192,30 @@ const emit = defineEmits<{
 const error = ref<string | null>(null);
 const isLoading = ref(false);
 const lastStats = ref<{ systemCount: number; starCount: number; planetCount: number; generationTimeMs: number } | null>(null);
+
+const showRestoreModal = ref(false);
+let savedParams: any = null;
+
+onMounted(() => {
+    savedParams = store.loadSavedParams();
+    if (savedParams && savedParams.currentSeed && savedParams.systemCount && savedParams.sectorVolume && savedParams.zone) {
+        showRestoreModal.value = true;
+    }
+});
+
+function onRestoreConfirm() {
+    showRestoreModal.value = false;
+    // Update store parameters and re-trigger generation
+    seed.value = savedParams.currentSeed;
+    systemCount.value = savedParams.systemCount;
+    sectorVolume.value = savedParams.sectorVolume;
+    zone.value = savedParams.zone;
+    handleSubmit();
+}
+function onRestoreCancel() {
+    showRestoreModal.value = false;
+    store.clearPersistentMemory();
+}
 
 const randomizeSeed = () => {
     seed.value = Math.floor(Math.random() * 1000000);
@@ -201,7 +243,7 @@ const DENSITY_MAP: Record<SectorZone, number> = {
 
 // Automatically calculate suggested system count based on volume and zone
 watch([sectorVolume, zone], ([newVolume, newZone]) => {
-    const density = DENSITY_MAP[newZone] || 0.14;
+    const density = DENSITY_MAP[newZone as SectorZone] || 0.14;
     const suggestedCount = Math.max(1, Math.round(newVolume * density));
     // Limit to a reasonable number for simulation
     systemCount.value = Math.min(suggestedCount, 5000);
@@ -242,6 +284,12 @@ const resetForm = () => {
     error.value = null;
     lastStats.value = null;
     emit('reset');
+};
+
+const resetMemory = () => {
+    store.clearPersistentMemory();
+    error.value = null;
+    lastStats.value = null;
 };
 
 // Expose methods to update stats
