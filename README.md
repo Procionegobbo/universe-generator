@@ -1,4 +1,5 @@
 # Stellar Universe Generator
+![logo.png](frontend/public/images/logo.png)
 
 A web application for generating procedural star systems with realistic astronomical characteristics. Features a Vue.js frontend and Node.js backend.
 
@@ -10,6 +11,8 @@ A web application for generating procedural star systems with realistic astronom
 - **Dice Notation Formulas**: Uses dice notation (e.g., "2d6+3") for probabilistic calculations
 - **Responsive UI**: Modern Vue.js interface with real-time data visualization
 - **REST API**: Node.js backend with Express for generation logic
+- **Persistent Parameters**: Generation parameters (seed, system count, sector volume, zone) are saved in localStorage only when a new sector is generated
+- **Regeneration on Reload**: When the user returns, the app offers to regenerate the sector using saved parameters (with confirmation)
 
 ## Project Structure
 
@@ -89,6 +92,26 @@ npm run build
 Start production backend:
 ```bash
 npm start
+```
+
+## Persistent Memory (Frontend)
+
+- The app saves only the generation parameters (seed, systemCount, sectorVolume, zone) in localStorage.
+- Parameters are saved **only** when a new sector is generated (not on every change).
+- On reload, if parameters are found, the app shows a confirmation message (in English):
+  > "A previous sector generation was found. Do you want to regenerate it using the saved parameters?"
+- If confirmed, the sector is regenerated using the saved parameters.
+- If declined, the parameters are cleared.
+- No sector data is stored, only parameters.
+
+## Testing
+
+- Unit tests cover the persistence logic: parameters are saved only after generation, restored on reload, and cleared on reset.
+- Tests use Vitest and TypeScript.
+- To run tests:
+
+```bash
+npm run test
 ```
 
 ## API Endpoints
@@ -200,6 +223,8 @@ See `backend/lib/example_star_generator.ts` for the full table and scientific re
 - **Statistics**: Visual distribution charts and averages
 - **Export**: Download generated data as JSON
 - **Responsive Design**: Works on desktop and mobile
+- **Persistent Parameters**: Parameters are saved only on generation, not on every change
+- **Regeneration Prompt**: Confirmation message on reload if parameters are found
 
 ## Technology Stack
 
@@ -221,6 +246,8 @@ See `backend/lib/example_star_generator.ts` for the full table and scientific re
 - TypeScript interfaces are shared between frontend and backend
 - Frontend proxies API calls to backend during development
 - CORS is configured to allow frontend communication
+- Persistent memory logic is in `frontend/src/stores/sectorStore.ts`
+- Tests for persistence are in `frontend/src/stores/sectorStore.test.ts`
 
 ## License
 
