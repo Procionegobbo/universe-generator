@@ -198,7 +198,7 @@ let savedParams: any = null;
 
 onMounted(() => {
     savedParams = store.loadSavedParams();
-    if (savedParams && savedParams.currentSeed && savedParams.systemCount && savedParams.sectorVolume && savedParams.zone) {
+    if (!store.sectorData && savedParams && savedParams.currentSeed && savedParams.systemCount && savedParams.sectorVolume && savedParams.zone) {
         showRestoreModal.value = true;
     }
 });
