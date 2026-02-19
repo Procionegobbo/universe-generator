@@ -70,7 +70,7 @@
                         <li>API communication via Axios</li>
                     </ul>
                     <div class="mt-4 text-sm text-gray-400">
-                        <strong>Source & Documentation:</strong> See the <a href="https://github.com/federicomaiorini/universe-generator" class="underline hover:text-blue-300" target="_blank">GitHub repository</a> for full documentation, API details, and scientific references.
+                        <strong>Source & Documentation:</strong> See the <a href="https://github.com/Procionegobbo/universe-generator" class="underline hover:text-blue-300" target="_blank">GitHub repository</a> for full documentation, API details, and scientific references.
                     </div>
                 </div>
             </div>
