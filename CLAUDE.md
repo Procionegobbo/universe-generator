@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Root-Level Commands
 - `npm run install:all` – Install dependencies for root, backend, and frontend
-- `npm run dev` – Start both backend and frontend in development mode (concurrently)
-- `npm run backend` – Start backend only (http://localhost:3000)
-- `npm run frontend` – Start frontend only (http://localhost:5173)
-- `npm run build` – Build both backend and frontend for production
-- `npm start` – Start production backend server (serves built frontend from `/backend/public`)
+- `npm run dev` – Start both backend and frontend concurrently (backend on 3000, frontend on 5173)
+- `npm run backend` – Start backend only in dev mode with hot reload (http://localhost:3000)
+- `npm run frontend` – Start frontend only in dev mode (http://localhost:5173)
+- `npm run build` – Build frontend for production (output to `frontend/dist`)
+- `npm start` – Start production backend (serves built frontend from `/backend/public`)
 
 ### Backend (in `/backend`)
 - `npm run dev` – Start with nodemon (hot reload)
@@ -28,8 +28,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run preview` – Preview production build
 
 ### Docker
-- `docker build -t universe-generator .` – Build multi‑stage Docker image
-- The final image serves the frontend statically from the backend at `/backend/public`
+- `docker build -t universe-generator .` – Build multi-stage Docker image
+- **Build Process** (3-stage):
+  1. **Frontend builder**: Compiles Vue.js frontend to `/dist`
+  2. **Backend builder**: Compiles TypeScript backend to `/dist`
+  3. **Production**: Copies both artifacts; serves frontend as static files from `backend/public`
+- **Runtime**: Starts the backend (port 80 via `NODE_ENV=production`), which serves the built frontend statically
 
 ## High‑Level Architecture
 
@@ -103,6 +107,7 @@ When modifying data structures, update both type definitions.
 - **Reactive State**: The Pinia store uses `ref` and `computed` for reactivity.
 - **Component Organization**: Views (`/views`) assemble components (`/components`); composables provide reusable logic.
 - **Tailwind CSS v4**: Styling uses utility classes with PostCSS.
+- **State Persistence**: Generation parameters (seed, systemCount, sectorVolume, zone) are saved to localStorage **only** after a sector is generated (not on every change). On reload, the app offers to regenerate using saved parameters. See `sectorStore.ts` for implementation.
 
 ### Backend Patterns
 - **Express with TypeScript**: Routes and controllers are fully typed.
@@ -116,19 +121,33 @@ When modifying data structures, update both type definitions.
 - **Development**: concurrently, nodemon, ts‑node
 
 ## Testing
-- **Backend**: Jest test framework with ts-jest for TypeScript, supertest for HTTP integration tests
+
+### Backend
+- **Framework**: Jest with ts-jest for TypeScript, supertest for HTTP integration tests
 - **Test Structure**: Unit tests in `backend/__tests__/unit/`, integration tests in `backend/__tests__/integration/`
-- **Coverage**: Run `npm run test:coverage` in the backend directory to generate coverage reports
-- **Test Scripts**:
+- **Test Scripts** (run from `/backend`):
   - `npm test` – Run all tests
   - `npm run test:unit` – Run unit tests only
   - `npm run test:integration` – Run integration tests only
   - `npm run test:watch` – Watch mode
   - `npm run test:coverage` – Generate coverage report
 
+### Frontend
+- **Framework**: Vitest for unit tests
+- **Test Files**: `frontend/src/stores/*.test.ts` (covers Pinia store and state persistence)
+- **Note**: No dedicated test script in frontend package.json; tests can be run manually or integrated into CI/CD
+
+## Deployment & Hosting
+
+This project is configured for **Vercel** hosting:
+- Root package.json includes `vercel-build` script that builds the frontend
+- Frontend includes `@vercel/analytics` for Web Analytics integration
+- Frontend is built and served statically from the backend's `/public` folder in production
+- Environment: Set `PORT` environment variable if needed (Docker sets it to 80)
+
 ## Notable Absences
 - No linting (eslint, prettier) configured
-- No CI/CD configuration files
+- No CI/CD configuration files (GitHub Actions, etc.)
 
 ## Useful References
 - `stellar_prompts.md` contains AI image generation prompts for all 24 star classes.
