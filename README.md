@@ -1,7 +1,8 @@
 # Stellar Universe Generator
-![logo.png](frontend/public/images/logo.png)
 
 A web application for generating procedural star systems with realistic astronomical characteristics. Features a Vue.js frontend and Node.js backend.
+
+![logo.png](frontend/public/images/logo.png)
 
 ## Features
 
