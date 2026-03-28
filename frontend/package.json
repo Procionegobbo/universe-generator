@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/three": "^0.183.1",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.6.7",
     "pinia": "^3.0.4",
+    "three": "^0.183.2",
     "vue": "^3.4.21",
     "vue-router": "^4.6.4"
   },
