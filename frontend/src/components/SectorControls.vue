@@ -102,7 +102,7 @@
                    'border-gray-700/50': densityStatus.color === 'gray',
                  }">
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Densità stellare</span>
+                    <span class="text-gray-400">Stellar density</span>
                     <span class="font-semibold px-2 py-0.5 rounded text-xs"
                           :class="{
                             'bg-green-900/50 text-green-300': densityStatus.color === 'green',
@@ -115,8 +115,8 @@
                     </span>
                 </div>
                 <div class="mt-1 text-gray-300">
-                    {{ currentStarDensity.toFixed(3) }} stelle/pc³
-                    <span class="text-gray-500 ml-1">(attesa: {{ DENSITY_MAP[zone] }} stelle/pc³)</span>
+                    {{ currentStarDensity.toFixed(3) }} stars/pc³
+                    <span class="text-gray-500 ml-1">(expected: {{ DENSITY_MAP[zone] }} stars/pc³)</span>
                 </div>
             </div>
 
@@ -169,7 +169,7 @@
                     class="btn btn-danger flex-1"
                     :disabled="isLoading"
                 >
-                    Reset memoria
+                    Reset Memory
                 </button>
             </div>
 
@@ -278,11 +278,11 @@ const currentStarDensity = computed(() => {
 const densityStatus = computed(() => {
     const expected = DENSITY_MAP[zone.value as SectorZone] || 0.14;
     const ratio = currentStarDensity.value / expected;
-    if (ratio < 0.05) return { label: 'Molto sparso', color: 'gray', ratio };
-    if (ratio < 0.5)  return { label: 'Sparso', color: 'yellow', ratio };
-    if (ratio <= 2.0) return { label: 'Realistico', color: 'green', ratio };
-    if (ratio <= 10)  return { label: 'Denso', color: 'orange', ratio };
-    return { label: 'Molto denso', color: 'red', ratio };
+    if (ratio < 0.05) return { label: 'Very sparse', color: 'gray', ratio };
+    if (ratio < 0.5)  return { label: 'Sparse', color: 'yellow', ratio };
+    if (ratio <= 2.0) return { label: 'Realistic', color: 'green', ratio };
+    if (ratio <= 10)  return { label: 'Dense', color: 'orange', ratio };
+    return { label: 'Very dense', color: 'red', ratio };
 });
 
 // Automatically calculate suggested system count based on volume and zone
