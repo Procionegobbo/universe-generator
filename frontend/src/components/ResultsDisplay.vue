@@ -48,8 +48,23 @@
                 >
                     Planets ({{ planets.length }})
                 </button>
+                <button
+                    v-if="hasData"
+                    @click="show3D = true"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-800 text-indigo-400 hover:bg-indigo-900/40 hover:text-indigo-300 border border-indigo-800/50"
+                >
+                    3D View
+                </button>
             </div>
         </div>
+
+        <SectorVisualization3D
+            v-if="show3D && hasData"
+            :systems="systems"
+            :stars="stars"
+            :sectorVolume="sectorVolume"
+            :onClose="() => show3D = false"
+        />
 
         <div v-if="!hasData" class="text-center py-12">
             <div class="text-gray-500 mb-4">
@@ -256,6 +271,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import StarTable from './StarTable.vue';
 import PlanetTable from './PlanetTable.vue';
+import SectorVisualization3D from './SectorVisualization3D.vue';
 import type { System, Star, Planet } from '../types';
 import { STAR_TYPE_DESCRIPTIONS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getStarClassColor, getStarBarColor, getStarImage } from '../utils/starColors';
@@ -265,7 +281,10 @@ const props = defineProps<{
     systems: System[];
     stars: Star[];
     planets: Planet[];
+    sectorVolume: number;
 }>();
+
+const show3D = ref(false);
 
 const activeTab = ref<'stars' | 'planets' | 'systems' | 'stats'>('stats');
 const currentSystemPage = ref(1);

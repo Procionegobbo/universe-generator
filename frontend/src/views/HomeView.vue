@@ -16,6 +16,7 @@
                 :systems="store.sectorData.systems"
                 :stars="store.sectorData.stars"
                 :planets="store.sectorData.planets"
+                :sectorVolume="store.sectorVolume"
             />
 
             <div v-else class="card">
