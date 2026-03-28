@@ -93,6 +93,33 @@
                 </select>
             </div>
 
+            <div class="p-3 bg-gray-800/50 border rounded-lg text-sm"
+                 :class="{
+                   'border-green-700/50': densityStatus.color === 'green',
+                   'border-yellow-700/50': densityStatus.color === 'yellow',
+                   'border-orange-700/50': densityStatus.color === 'orange',
+                   'border-red-700/50': densityStatus.color === 'red',
+                   'border-gray-700/50': densityStatus.color === 'gray',
+                 }">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Densità stellare</span>
+                    <span class="font-semibold px-2 py-0.5 rounded text-xs"
+                          :class="{
+                            'bg-green-900/50 text-green-300': densityStatus.color === 'green',
+                            'bg-yellow-900/50 text-yellow-300': densityStatus.color === 'yellow',
+                            'bg-orange-900/50 text-orange-300': densityStatus.color === 'orange',
+                            'bg-red-900/50 text-red-300': densityStatus.color === 'red',
+                            'bg-gray-700/50 text-gray-400': densityStatus.color === 'gray',
+                          }">
+                        {{ densityStatus.label }}
+                    </span>
+                </div>
+                <div class="mt-1 text-gray-300">
+                    {{ currentStarDensity.toFixed(3) }} stelle/pc³
+                    <span class="text-gray-500 ml-1">(attesa: {{ DENSITY_MAP[zone] }} stelle/pc³)</span>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label class="form-label" for="seed">
                     Generation Seed
@@ -176,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import type { GenerationRequest, SectorZone } from '../types';
 import { storeToRefs } from 'pinia';
 import { useSectorStore } from '../stores/sectorStore';
@@ -240,6 +267,23 @@ const DENSITY_MAP: Record<SectorZone, number> = {
     'central zone': 1.0,
     'core': 10.0
 };
+
+const AVG_STARS_PER_SYSTEM = 1.71;
+
+const currentStarDensity = computed(() => {
+    if (!sectorVolume.value || sectorVolume.value === 0) return 0;
+    return (systemCount.value / sectorVolume.value) * AVG_STARS_PER_SYSTEM;
+});
+
+const densityStatus = computed(() => {
+    const expected = DENSITY_MAP[zone.value as SectorZone] || 0.14;
+    const ratio = currentStarDensity.value / expected;
+    if (ratio < 0.05) return { label: 'Molto sparso', color: 'gray', ratio };
+    if (ratio < 0.5)  return { label: 'Sparso', color: 'yellow', ratio };
+    if (ratio <= 2.0) return { label: 'Realistico', color: 'green', ratio };
+    if (ratio <= 10)  return { label: 'Denso', color: 'orange', ratio };
+    return { label: 'Molto denso', color: 'red', ratio };
+});
 
 // Automatically calculate suggested system count based on volume and zone
 watch([sectorVolume, zone], ([newVolume, newZone]) => {
