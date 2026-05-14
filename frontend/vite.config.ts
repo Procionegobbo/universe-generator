@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/', // Path assoluto dalla root per Vercel
+  base: '/',
   plugins: [vue()],
   server: {
     port: 5173,
@@ -11,6 +11,17 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+      }
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia'],
+          'vendor-three': ['three'],
+          'vendor-http': ['axios'],
+        }
       }
     }
   }
