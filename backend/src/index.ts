@@ -30,7 +30,7 @@ app.get('*', (req: Request, res: Response, next: NextFunction) => {
             if (req.path === '/') {
                 res.json({
                     message: 'Stellar Generator API',
-                    version: '1.0.0'
+                    version: '1.1.0'
                 });
             } else {
                 next();

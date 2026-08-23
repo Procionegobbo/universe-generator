@@ -68,7 +68,7 @@ export class SectorController {
         res.json({
             status: 'ok',
             service: 'stellar-generator-api',
-            version: '1.0.0',
+            version: '1.1.0',
             timestamp: new Date().toISOString()
         });
     };

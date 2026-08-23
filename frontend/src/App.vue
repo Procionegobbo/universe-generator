@@ -66,7 +66,7 @@
             <div class="container py-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="text-gray-500 text-sm">
-                        <p>Universe Generator v1.0.0</p>
+                        <p>Universe Generator v1.1.0</p>
                         <p class="mt-1">Powered by procedural generation algorithms</p>
                     </div>
                     <div class="flex items-center gap-4 text-sm">
