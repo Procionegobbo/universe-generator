@@ -58,7 +58,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="star in paginatedStars" :key="star.starId">
+                    <tr v-for="star in paginatedStars" :key="star.starId"
+                        class="cursor-pointer hover:bg-blue-900/20 transition-colors"
+                        :title="`View system #${star.systemId}`"
+                        @click="goToSystemDetail(star.systemId)">
                         <td class="font-mono">{{ star.starId }}</td>
                         <td class="font-mono">{{ star.systemId }}</td>
                         <td class="font-medium">{{ star.name }}</td>
@@ -135,9 +138,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import type { Star } from '../types';
 import { STAR_TYPE_DESCRIPTIONS } from '../types';
 import { getStarImage } from '../utils/starColors';
+
+const router = useRouter();
 
 const props = defineProps<{
     stars: Star[];
@@ -240,6 +246,10 @@ const getStarClassColor = (spectralClass: string) => {
 const getStarDescription = (spectralClass: string) => {
     return STAR_TYPE_DESCRIPTIONS[spectralClass] || 'Unknown star type';
 };
+
+function goToSystemDetail(systemId: number) {
+    router.push({ name: 'system-detail', params: { id: systemId } });
+}
 
 const getStarRingColor = (spectralClass: string) => {
     const colors: Record<string, string> = {
