@@ -38,7 +38,7 @@
 {
   "status": "ok",
   "service": "stellar-generator-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "timestamp": "2024-02-09T00:00:00.000Z"
 }</pre>
             </section>

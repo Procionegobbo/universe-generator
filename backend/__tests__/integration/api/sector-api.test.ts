@@ -23,7 +23,7 @@ describe('Sector API Integration', () => {
       expect(response.body).toEqual({
         status: 'ok',
         service: 'stellar-generator-api',
-        version: '1.0.0',
+        version: '1.1.0',
         timestamp: expect.any(String)
       });
 

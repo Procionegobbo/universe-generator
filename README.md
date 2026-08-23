@@ -8,7 +8,10 @@ A web application for generating procedural star systems with realistic astronom
 
 - **Procedural Generation**: Generate realistic star systems with 24 spectral classes and 21+ planet types
 - **3D Spatial Coordinates**: Systems are placed in a 3D sector with random coordinates
-- **Habitable Zones**: Planets are distributed across inner, habitable, and outer zones
+- **Habitable Zones**: Each orbit is classified against the star's optimistic Goldilocks bounds (recent Venus / early Mars, `√(L/1.78)` … `√(L/0.32)`); only planets in the habitable band are flagged
+- **Thermal Zoning**: Planet types are biased by orbital temperature — hot types (Molten, Hell) cluster near the star, frozen types (Ice, Methane) appear in the cold outer orbits
+- **Surface Temperature**: Every planet reports a surface temperature computed from stellar flux, corrected for the planet's albedo and greenhouse effect
+- **Realistic Orbits**: Refined Titius-Bode spacing with the special Mercury term and a damped outer growth ratio (so the outer planets match reality, e.g. Neptune ≈ 30 AU)
 - **Dice Notation Formulas**: Uses dice notation (e.g., "2d6+3") for probabilistic calculations
 - **Responsive UI**: Modern Vue.js interface with real-time data visualization
 - **REST API**: Node.js backend with Express for generation logic
@@ -151,6 +154,25 @@ npm run test
 }
 ```
 
+#### Planet Object
+
+```json
+{
+  "starId": 1,
+  "orbitalNumber": 3,
+  "planetType": "E",
+  "diameter": 12000,
+  "moonCount": 1,
+  "mass": 4.97e24,
+  "gravity": 9.23,
+  "semiMajorAxis": 1.0,
+  "temperature": 288,
+  "habitableZone": true
+}
+```
+
+`semiMajorAxis` is in AU, `temperature` is the surface temperature in Kelvin (albedo + greenhouse), and `habitableZone` is `true` only when the orbit falls in the star's habitable band.
+
 ## Star Types
 
 The generator supports 24 spectral classes:
@@ -198,7 +220,7 @@ Each planet type uses a dice formula to generate a realistic diameter (in km). E
 - Rocky: `1d7+2` × 1,000 km
 - Dwarf: `1d20+5` × 100 km
 
-See `backend/lib/example_star_generator.ts` for the full table and scientific references.
+See `backend/src/lib/example_star_generator.ts` for the full table and scientific references.
 
 ## Generation Logic
 
@@ -209,8 +231,23 @@ See `backend/lib/example_star_generator.ts` for the full table and scientific re
 
 ### Planet Generation
 - Planet type is selected using a weighted random distribution based on exoplanet statistics and scientific plausibility
+- Base weights are then biased by the orbital thermal zone (hot types near the star, frozen types far out), with rare exceptions still possible
 - Each planet type has a realistic diameter formula (see above)
 - Moon count determined probabilistically
+
+### Orbital Mechanics
+- Distances follow a refined Titius-Bode law computed by `orbitalDistance(orbit)`:
+  - orbit 1 uses the special Mercury term (`0.4 AU`)
+  - later orbits add a growing "excess" that doubles each step, then grows by only ×1.5 once it passes ~19 AU — this damps the classic law's overshoot beyond Uranus so the outer planets match reality (e.g. orbit 9 ≈ 29 AU, near Neptune's 30 AU)
+- The whole ladder is scaled by `√L` (stellar flux goes as `L/a²`, so each orbit index keeps the same insolation for every star class — without it a red dwarf's planets would all sit far outside its habitable zone), and pushed outward if the star is physically large so no orbit falls inside a bloated giant's envelope
+- Each orbit then gets a ±15% random spread, so systems differ instead of every star sharing an identical layout (small enough that orbits keep their ordering)
+- Reference ladder for the Sun, before jitter: `0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6, …` AU
+
+### Temperature & Habitability
+- Each orbit is classified into a thermal zone using the star's optimistic Goldilocks bounds (recent Venus / early Mars) `a_inner = √(L/1.78)` and `a_outer = √(L/0.32)` (~0.75–1.77 AU for the Sun): Zone A (hot, inside `a_inner`), Zone B (habitable, between), Zone C (cold, beyond `a_outer`). With the √L-scaled ladder this band lands on the Earth- and Mars-equivalent orbits (3 and 4) for every star class, with the jitter shifting which of them qualifies from system to system
+- Stellar remnants with no luminosity (neutron stars, black holes) get no planets: the flux-based model does not apply to them
+- The zone drives both planet-type selection and the `habitableZone` flag (`true` only in Zone B)
+- Surface temperature: `T_eq = 278.3 · ((1 − albedo) · L)^0.25 · a^−0.5`, then `T_surface = T_eq + greenhouse`, with albedo and greenhouse taken from the planet type — so a thick-atmosphere world can be hotter than a closer bare rock (as Venus is hotter than Mercury)
 
 ### System Generation
 - Random 3D positions within sector cube
@@ -243,7 +280,7 @@ See `backend/lib/example_star_generator.ts` for the full table and scientific re
 
 ## Development Notes
 
-- The core generator logic is in `backend/lib/example_star_generator.ts`
+- The core generator logic is in `backend/src/lib/example_star_generator.ts`
 - TypeScript interfaces are shared between frontend and backend
 - Frontend proxies API calls to backend during development
 - CORS is configured to allow frontend communication

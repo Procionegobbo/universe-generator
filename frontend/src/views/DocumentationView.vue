@@ -9,6 +9,7 @@
                     <a href="#stellar-classification" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Stellar Classification</a>
                     <a href="#planetary-types" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Planetary Types</a>
                     <a href="#orbital-mechanics" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Orbital Mechanics</a>
+                    <a href="#temperature" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Temperature &amp; Habitability</a>
                 </nav>
             </div>
 
@@ -86,7 +87,7 @@
                 <section id="planetary-types" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Planetary Types</h3>
                     <p class="text-gray-400 mb-6">
-                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges.
+                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. The base weights are then biased by the orbital thermal zone (see <a href="#temperature" class="text-blue-400 hover:underline">Temperature &amp; Habitability</a>): hot types such as Molten or Hell worlds cluster in the inner orbits, while frozen types such as Ice or Methane worlds appear in the cold outer orbits — with rare exceptions still possible. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges.
                     </p>
                     <div class="space-y-4">
                         <div v-for="(desc, code) in PLANET_TYPE_DESCRIPTIONS" :key="code"
@@ -119,7 +120,7 @@
                 <hr class="border-gray-800">
 
                 <!-- Orbital Mechanics -->
-                <section id="orbital-mechanics" class="scroll-mt-24 pb-12">
+                <section id="orbital-mechanics" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Orbital Mechanics</h3>
                     <div class="card bg-purple-900/10 border-purple-800/50 p-6">
                         <h4 class="text-lg font-bold text-purple-300 mb-4 flex items-center gap-2">
@@ -129,14 +130,82 @@
                             Titius-Bode Model
                         </h4>
                         <p class="text-gray-400 text-sm mb-4">
-                            Orbits are calculated using a modified version of the Titius-Bode law, ensuring stable and predictable planetary spacing.
+                            Orbits are spaced using a refined Titius-Bode law. The first orbit uses the special Mercury term (0.4 AU); subsequent orbits add a growing "excess" that classically doubles each step. Because pure doubling overshoots beyond Uranus (predicting ~38.8 AU for the 9th orbit while Neptune sits near 30 AU), the growth ratio is damped from 2 to 1.5 once the excess passes ~19 AU, matching the gentler spacing of the outer planets.
                         </p>
-                        <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400">
-                            a = 0.4 + 0.3 * 2^n
+                        <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 space-y-1">
+                            <div>orbit 1 → a = 0.4 AU&nbsp;&nbsp;(Mercury term)</div>
+                            <div>orbit n → a = 0.4 + excess</div>
+                            <div>excess ×2 each step, ×1.5 once excess ≥ 19 AU</div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-4 italic">
-                            Where 'a' is the semi-major axis in Astronomical Units (AU) and 'n' is the orbital sequence number.
+                        <p class="text-xs text-gray-500 mt-4 italic mb-4">
+                            Where 'a' is the semi-major axis in Astronomical Units (AU).
                         </p>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Two corrections finish the model. The whole ladder is scaled by √L (stellar flux goes as L/a², so this keeps each orbit index at the same insolation for every star class — without it a red dwarf's planets would all sit far outside its habitable zone), and it is pushed outward if the star is physically large, so no orbit falls inside a bloated giant's envelope. Finally each orbit gets a ±15% random spread, so systems differ from one another instead of every star sharing an identical layout.
+                        </p>
+                        <p class="text-gray-400 text-sm mb-3">Reference ladder (Sun, before jitter), matched against the Solar System:</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-gray-300 border-b border-gray-700">
+                                    <tr>
+                                        <th class="py-2 pr-4">Orbit</th>
+                                        <th class="py-2 pr-4">a (AU)</th>
+                                        <th class="py-2">Solar System</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-400 font-mono">
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">1</td><td class="py-1 pr-4">0.4</td><td class="py-1">Mercury (0.39)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">2</td><td class="py-1 pr-4">0.7</td><td class="py-1">Venus (0.72)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">3</td><td class="py-1 pr-4">1.0</td><td class="py-1">Earth (1.00)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">4</td><td class="py-1 pr-4">1.6</td><td class="py-1">Mars (1.52)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">5</td><td class="py-1 pr-4">2.8</td><td class="py-1">Asteroid belt (~2.7)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">6</td><td class="py-1 pr-4">5.2</td><td class="py-1">Jupiter (5.20)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">7</td><td class="py-1 pr-4">10.0</td><td class="py-1">Saturn (9.58)</td></tr>
+                                    <tr class="border-b border-gray-800/50"><td class="py-1 pr-4">8</td><td class="py-1 pr-4">19.6</td><td class="py-1">Uranus (19.2)</td></tr>
+                                    <tr><td class="py-1 pr-4">9</td><td class="py-1 pr-4">29.2</td><td class="py-1">Neptune (30.1)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="border-gray-800">
+
+                <!-- Temperature & Habitability -->
+                <section id="temperature" class="scroll-mt-24 pb-12">
+                    <h3 class="text-2xl font-bold text-white mb-6">Temperature &amp; Habitability</h3>
+                    <p class="text-gray-400 mb-6">
+                        Every planet reports a surface temperature derived from the stellar flux it receives, then corrected for its own atmosphere. The orbital position relative to the star's habitable (Goldilocks) bounds also defines a thermal zone that steers which planet types can form there.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="card bg-orange-900/10 border-orange-800/50 p-6">
+                            <h4 class="text-lg font-bold text-orange-300 mb-3">Surface Temperature</h4>
+                            <p class="text-gray-400 text-sm mb-4">
+                                The equilibrium temperature accounts for the planet's Bond albedo (reflected light cools it); a per-type greenhouse term then adds atmospheric warming.
+                            </p>
+                            <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 space-y-1">
+                                <div>T_eq = 278.3 · ((1 − A) · L)^0.25 · a^−0.5</div>
+                                <div>T_surface = T_eq + greenhouse</div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-4 italic">
+                                A = albedo, L = stellar luminosity (Sun = 1), a = distance (AU). Because greenhouse varies by type, a closer planet is not always the hottest — a thick-atmosphere world can outheat a nearer bare rock (as Venus does Mercury).
+                            </p>
+                        </div>
+                        <div class="card bg-green-900/10 border-green-800/50 p-6">
+                            <h4 class="text-lg font-bold text-green-300 mb-3">Thermal Zones</h4>
+                            <p class="text-gray-400 text-sm mb-4">
+                                The habitable bounds use the optimistic (recent Venus / early Mars) limits from the star's luminosity: a_inner = √(L/1.78), a_outer = √(L/0.32) — about 0.75–1.77 AU for the Sun. An orbit is classified accordingly and this drives type selection and the habitable flag; combined with the √L-scaled ladder, the band lands on the Earth- and Mars-equivalent orbits (3 and 4) for every star class, with the orbital jitter shifting which of them actually qualifies from system to system.
+                            </p>
+                            <ul class="text-sm text-gray-400 space-y-2">
+                                <li><span class="font-bold text-red-300">Zone A · Hot</span> — inside a_inner. Favors Molten, Hell, Silicate, Iron.</li>
+                                <li><span class="font-bold text-green-300">Zone B · Habitable</span> — between the bounds. Favors Earth-like, Ocean, Jungle.</li>
+                                <li><span class="font-bold text-blue-300">Zone C · Cold</span> — beyond a_outer. Favors Ice, Methane, Ammonia, gas &amp; ice giants.</li>
+                            </ul>
+                            <p class="text-xs text-gray-500 mt-4 italic">
+                                A planet is flagged as being in the habitable zone only when it falls in Zone B — necessary, but not sufficient, for life (a runaway greenhouse can still make it too hot).
+                            </p>
+                        </div>
                     </div>
                 </section>
             </div>

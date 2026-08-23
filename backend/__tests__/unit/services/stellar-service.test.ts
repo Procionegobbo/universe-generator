@@ -97,9 +97,9 @@ describe('StellarService', () => {
           { starId: 3, systemId: 2, name: '2-1', spectralClass: 'M' }
         ],
         planets: [
-          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 2 },
-          { starId: 1, orbitalNumber: 2, planetType: 'G', diameter: 8000, moonCount: 1 },
-          { starId: 2, orbitalNumber: 1, planetType: 'R', diameter: 6000, moonCount: 0 }
+          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 2, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
+          { starId: 1, orbitalNumber: 2, planetType: 'G', diameter: 8000, moonCount: 1, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
+          { starId: 2, orbitalNumber: 1, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false }
         ]
       };
 
@@ -122,9 +122,9 @@ describe('StellarService', () => {
           { starId: 2, systemId: 1, name: '1-2', spectralClass: 'G' }
         ],
         planets: [
-          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 0 },
-          { starId: 2, orbitalNumber: 1, planetType: 'G', diameter: 8000, moonCount: 0 },
-          { starId: 2, orbitalNumber: 2, planetType: 'R', diameter: 6000, moonCount: 0 }
+          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
+          { starId: 2, orbitalNumber: 1, planetType: 'G', diameter: 8000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
+          { starId: 2, orbitalNumber: 2, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false }
         ]
       };
 

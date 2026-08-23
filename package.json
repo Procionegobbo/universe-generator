@@ -1,6 +1,6 @@
 {
   "name": "universe-generator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Stellar generation system with Vue.js frontend and Node.js backend",
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",

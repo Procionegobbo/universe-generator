@@ -6,6 +6,8 @@ export interface StarType {
     spectralClass: string;
     hasSubclass?: boolean;
     planetCountFormula?: string;
+    luminosity?: number; // in solar units (L_sun = 1)
+    radius?: number; // in solar radii (R_sun = 1)
     [key: string]: any;
 }
 
@@ -30,6 +32,11 @@ export interface Planet {
     planetType: string;
     diameter: number;
     moonCount: number;
+    mass: number; // kg
+    gravity: number; // m/s^2
+    semiMajorAxis: number; // AU
+    temperature: number; // surface temperature in Kelvin (albedo + greenhouse)
+    habitableZone: boolean;
 }
 
 export interface System {
