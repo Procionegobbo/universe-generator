@@ -24,6 +24,7 @@ function generateSectorData(systemCount: number, planetsPerSystem = 5, starsPerS
     mass: 1.0,
     gravity: 1.0,
     semiMajorAxis: 1.0,
+    temperature: 288,
     habitableZone: true
   }));
   return { systems, stars, planets };

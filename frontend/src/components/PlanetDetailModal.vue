@@ -25,6 +25,7 @@
               <li><b>Moons:</b> {{ planet.moonCount }}</li>
               <li><b>Orbit:</b> {{ planet.orbitalNumber }}</li>
               <li><b>Semi-major axis:</b> {{ planet.semiMajorAxis.toFixed(2) }} AU</li>
+              <li><b>Temperature:</b> {{ Math.round(planet.temperature) }} K <span class='text-gray-400'>({{ Math.round(planet.temperature - 273.15) }} °C)</span></li>
               <li><b>Mass:</b> <span v-if="planet.mass > 0">{{ (planet.mass/5.972e24).toFixed(2) }} Earth masses</span><span v-else>-</span></li>
               <li><b>Gravity:</b> <span v-if="planet.gravity > 0">{{ planet.gravity.toFixed(2) }} m/s² <span class='text-gray-400'>(</span>{{ (planet.gravity/9.807).toFixed(2) }} G<span class='text-gray-400'>)</span></span><span v-else>-</span></li>
             </ul>

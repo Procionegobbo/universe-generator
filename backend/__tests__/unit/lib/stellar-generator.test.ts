@@ -29,91 +29,34 @@ describe('StellarGenerator', () => {
   });
 
   describe('determineHabitableZone', () => {
-    test('should return ZONE_B for first planet in small systems (1-3 planets)', () => {
+    // The zone is now derived from the orbital distance relative to the star's
+    // Goldilocks bounds: (semiMajorAxis, aInner, aOuter).
+    const A_INNER = 0.95; // e.g. sqrt(1/1.1)
+    const A_OUTER = 1.37; // e.g. sqrt(1/0.53)
+
+    test('should return ZONE_A when inside the inner (hot) edge', () => {
       const generator = new StellarGenerator(TEST_SEED);
       const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
 
-      expect(determineHabitableZone(1, 1)).toBe(ZONE_B);
-      expect(determineHabitableZone(2, 1)).toBe(ZONE_B);
-      expect(determineHabitableZone(3, 1)).toBe(ZONE_B);
+      expect(determineHabitableZone(0.4, A_INNER, A_OUTER)).toBe(ZONE_A);
+      expect(determineHabitableZone(A_INNER - 0.01, A_INNER, A_OUTER)).toBe(ZONE_A);
     });
 
-    test('should return ZONE_C for other planets in small systems', () => {
+    test('should return ZONE_B when within the habitable (Goldilocks) bounds', () => {
       const generator = new StellarGenerator(TEST_SEED);
       const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
 
-      expect(determineHabitableZone(2, 2)).toBe(ZONE_C);
-      expect(determineHabitableZone(3, 2)).toBe(ZONE_C);
-      expect(determineHabitableZone(3, 3)).toBe(ZONE_C);
+      expect(determineHabitableZone(A_INNER, A_INNER, A_OUTER)).toBe(ZONE_B); // inclusive
+      expect(determineHabitableZone(1.0, A_INNER, A_OUTER)).toBe(ZONE_B);
+      expect(determineHabitableZone(A_OUTER, A_INNER, A_OUTER)).toBe(ZONE_B); // inclusive
     });
 
-    test('should assign zones correctly for medium systems (4-5 planets)', () => {
+    test('should return ZONE_C when beyond the outer (cold) edge', () => {
       const generator = new StellarGenerator(TEST_SEED);
       const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
 
-      // 4 planets
-      expect(determineHabitableZone(4, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(4, 2)).toBe(ZONE_B);
-      expect(determineHabitableZone(4, 3)).toBe(ZONE_C);
-      expect(determineHabitableZone(4, 4)).toBe(ZONE_C);
-
-      // 5 planets
-      expect(determineHabitableZone(5, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(5, 2)).toBe(ZONE_B);
-      expect(determineHabitableZone(5, 3)).toBe(ZONE_C);
-      expect(determineHabitableZone(5, 4)).toBe(ZONE_C);
-      expect(determineHabitableZone(5, 5)).toBe(ZONE_C);
-    });
-
-    test('should assign zones correctly for large systems (6-7 planets)', () => {
-      const generator = new StellarGenerator(TEST_SEED);
-      const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
-
-      // 6 planets
-      expect(determineHabitableZone(6, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(6, 2)).toBe(ZONE_B);
-      expect(determineHabitableZone(6, 3)).toBe(ZONE_B);
-      expect(determineHabitableZone(6, 4)).toBe(ZONE_C);
-      expect(determineHabitableZone(6, 5)).toBe(ZONE_C);
-      expect(determineHabitableZone(6, 6)).toBe(ZONE_C);
-
-      // 7 planets
-      expect(determineHabitableZone(7, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(7, 2)).toBe(ZONE_B);
-      expect(determineHabitableZone(7, 3)).toBe(ZONE_B);
-      expect(determineHabitableZone(7, 4)).toBe(ZONE_C);
-      expect(determineHabitableZone(7, 5)).toBe(ZONE_C);
-      expect(determineHabitableZone(7, 6)).toBe(ZONE_C);
-      expect(determineHabitableZone(7, 7)).toBe(ZONE_C);
-    });
-
-    test('should assign zones correctly for very large systems (8+ planets)', () => {
-      const generator = new StellarGenerator(TEST_SEED);
-      const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
-
-      // 8 planets
-      expect(determineHabitableZone(8, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(8, 2)).toBe(ZONE_A);
-      expect(determineHabitableZone(8, 3)).toBe(ZONE_B);
-      expect(determineHabitableZone(8, 4)).toBe(ZONE_B);
-      expect(determineHabitableZone(8, 5)).toBe(ZONE_C);
-      expect(determineHabitableZone(8, 6)).toBe(ZONE_C);
-      expect(determineHabitableZone(8, 7)).toBe(ZONE_C);
-      expect(determineHabitableZone(8, 8)).toBe(ZONE_C);
-
-      // 12 planets (edge case)
-      expect(determineHabitableZone(12, 1)).toBe(ZONE_A);
-      expect(determineHabitableZone(12, 2)).toBe(ZONE_A);
-      expect(determineHabitableZone(12, 3)).toBe(ZONE_B);
-      expect(determineHabitableZone(12, 4)).toBe(ZONE_B);
-      expect(determineHabitableZone(12, 5)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 6)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 7)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 8)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 9)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 10)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 11)).toBe(ZONE_C);
-      expect(determineHabitableZone(12, 12)).toBe(ZONE_C);
+      expect(determineHabitableZone(A_OUTER + 0.01, A_INNER, A_OUTER)).toBe(ZONE_C);
+      expect(determineHabitableZone(10, A_INNER, A_OUTER)).toBe(ZONE_C);
     });
   });
 
@@ -278,6 +221,90 @@ describe('StellarGenerator', () => {
 
       const systemIds = sector.systems.map(s => s.systemId);
       expect(systemIds).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+  });
+
+  describe('temperature & thermal zoning', () => {
+    test('every planet has a positive surface temperature', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(30, 1000);
+
+      expect(sector.planets.length).toBeGreaterThan(0);
+      sector.planets.forEach(planet => {
+        expect(planet.temperature).toBeGreaterThan(0);
+      });
+    });
+
+    test('orbitalDistance: Mercury term and damped outer spacing (Neptune fix)', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const orbitalDistance = (generator as any).orbitalDistance.bind(generator);
+
+      // 0.4 AU Mercury term, classic doubling out to Uranus (19.6), then the
+      // ratio drops to 1.5 so the 9th orbit lands near Neptune (~29) not ~38.8.
+      const ladder = [0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6];
+      ladder.forEach((au, i) => {
+        expect(orbitalDistance(i + 1)).toBeCloseTo(au, 5);
+      });
+    });
+
+    test('generated planets place the first orbit at the Mercury term (0.4 AU)', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(40, 1000);
+
+      const orbit1 = sector.planets.filter(p => p.orbitalNumber === 1);
+      expect(orbit1.length).toBeGreaterThan(0);
+      orbit1.forEach(p => expect(p.semiMajorAxis).toBeCloseTo(0.4, 5));
+    });
+
+    test('surfaceTemperature: same type gets colder with distance', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+
+      // Fixed type & star: farther orbit must be colder (albedo/greenhouse constant).
+      expect(surfaceTemperature(1, 2.0, 'R')).toBeLessThan(surfaceTemperature(1, 1.0, 'R'));
+      expect(surfaceTemperature(1, 5.0, 'R')).toBeLessThan(surfaceTemperature(1, 2.0, 'R'));
+    });
+
+    test('surfaceTemperature: albedo cools and greenhouse warms', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+
+      // Same orbit/star: reflective Ice (albedo 0.6) is colder than bare Silicate.
+      expect(surfaceTemperature(1, 1.0, 'I')).toBeLessThan(surfaceTemperature(1, 1.0, 'L'));
+
+      // Earth-like calibration: ~255 K equilibrium + 33 K greenhouse ≈ 288 K.
+      expect(surfaceTemperature(1, 1.0, 'E')).toBeCloseTo(287.6, 0);
+
+      // Runaway greenhouse (Venus/Hell) beats a closer bare Rocky:
+      // Hell at 0.7 AU is hotter than Rocky at Mercury's 0.4 AU.
+      expect(surfaceTemperature(1, 0.7, 'H')).toBeGreaterThan(surfaceTemperature(1, 0.4, 'R'));
+    });
+
+    test('planet type is biased toward the orbital thermal zone (soft bias)', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const select = (generator as any).selectPlanetTypeWeighted.bind(generator);
+
+      const samples = 3000;
+      let hotTypesInA = 0;
+      let hotTypesInC = 0;
+      let coldTypesInA = 0;
+      let coldTypesInC = 0;
+
+      for (let i = 0; i < samples; i++) {
+        const a = select(ZONE_A);
+        const c = select(ZONE_C);
+        if (a === 'M' || a === 'H') hotTypesInA++;
+        if (c === 'M' || c === 'H') hotTypesInC++;
+        if (a === 'I' || a === 'B') coldTypesInA++;
+        if (c === 'I' || c === 'B') coldTypesInC++;
+      }
+
+      // Molten/Hell only appear hot; Ice/Methane only appear cold (zero affinity
+      // on the opposite side).
+      expect(hotTypesInA).toBeGreaterThan(0);
+      expect(hotTypesInC).toBe(0);
+      expect(coldTypesInC).toBeGreaterThan(0);
+      expect(coldTypesInA).toBe(0);
     });
   });
 });

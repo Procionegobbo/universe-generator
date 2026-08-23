@@ -30,6 +30,7 @@ export interface Planet {
     planetType: string;
     diameter: number;
     moonCount: number;
+    temperature: number; // surface temperature in Kelvin (albedo + greenhouse)
 }
 
 export interface System {

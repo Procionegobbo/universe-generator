@@ -19,6 +19,7 @@ export interface Planet {
     mass: number;
     gravity: number;
     semiMajorAxis: number; // AU
+    temperature: number; // surface temperature in Kelvin (albedo + greenhouse)
     habitableZone: boolean;
 }
 

@@ -82,7 +82,7 @@ universe-generator/
 ## Important Implementation Details
 
 ### Generation Logic
-- **Dice Notation**: Many formulas use dice notation (e.g., `"2d6+3"`). The `parseDiceFormula` function (in `backend/lib/example_star_generator.ts`) evaluates these.
+- **Dice Notation**: Many formulas use dice notation (e.g., `"2d6+3"`). The `DiceParser.parse` method (in `backend/src/lib/example_star_generator.ts`) evaluates these.
 - **Probability Cascade**: Star generation uses a 3‑level cascade for rare star types (see `generateStarType`).
 - **Sector Zones**: The sector is divided into zones (core, inner, outer) with different star‑type distributions.
 - **3D Coordinates**: Systems are placed randomly within a cubic sector volume; coordinates are stored as `{ x, y, z }`.
@@ -151,6 +151,6 @@ This project is configured for **Vercel** hosting:
 
 ## Useful References
 - `stellar_prompts.md` contains AI image generation prompts for all 24 star classes.
-- The core generation algorithm is in `backend/lib/example_star_generator.ts`.
+- The core generation algorithm is in `backend/src/lib/example_star_generator.ts`.
 - The frontend store includes state persistence logic (`sectorStore.ts`).
 - The Docker image serves the built frontend as static files from the backend.

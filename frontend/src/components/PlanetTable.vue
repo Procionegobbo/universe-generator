@@ -51,6 +51,7 @@
                         <th>Description</th>
                         <th>Diameter (km)</th>
                         <th>Moons</th>
+                        <th>Temp (K)</th>
                         <th>Orbital Zone</th>
                     </tr>
                 </thead>
@@ -82,6 +83,9 @@
                                 {{ planet.moonCount }}
                             </span>
                             <span v-else class="text-gray-500">—</span>
+                        </td>
+                        <td class="font-mono">
+                            {{ Math.round(planet.temperature) }}
                         </td>
                         <td>
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"

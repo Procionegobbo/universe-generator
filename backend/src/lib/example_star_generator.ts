@@ -47,6 +47,7 @@ export interface Planet {
     mass: number;
     gravity: number;
     semiMajorAxis: number; // AU
+    temperature: number; // surface temperature in Kelvin (albedo + greenhouse)
     habitableZone: boolean;
 }
 
@@ -181,62 +182,152 @@ export class StellarGenerator {
         { code: 'X', weight: 2 }   // Cold Desert
     ];
 
+    // Thermal affinity multipliers per orbital zone (ZONE_A hot/inner,
+    // ZONE_B temperate/habitable, ZONE_C cold/outer). Applied on top of the base
+    // weight so hot planet types cluster near the star and cold ones far from it,
+    // while still allowing rare exceptions (soft bias).
+    private planetZoneAffinity: Record<string, [number, number, number]> = {
+        // code: [ZONE_A, ZONE_B, ZONE_C]
+        'M': [1, 0.05, 0],    // Molten
+        'H': [1, 0.05, 0],    // Hell
+        'Q': [1, 0.1, 0],     // Hot Gas Giant
+        'L': [1, 0.3, 0],     // Silicate
+        'F': [1, 0.5, 0.2],   // Iron
+        'C': [1, 0.5, 0.2],   // Carbon
+        'D': [1, 1, 0.1],     // Desert
+        'T': [1, 1, 0.2],     // Toxic
+        'E': [0, 1, 0.05],    // Earth-like
+        'O': [0, 1, 0.2],     // Ocean
+        'J': [0, 1, 0],       // Jungle
+        'I': [0, 0.15, 1],    // Ice
+        'X': [0, 0.3, 1],     // Cold Desert
+        'N': [0, 0.2, 1],     // Ammonia
+        'B': [0, 0.1, 1],     // Methane
+        'G': [0.2, 0.5, 1],   // Gas Giant
+        'U': [0, 0.3, 1],     // Ice Giant
+        'S': [1, 1, 1],       // Super-Earth
+        'R': [1, 1, 0.7],     // Rocky
+        'W': [0.5, 1, 1],     // Dwarf
+        'A': [1, 1, 1]        // Asteroid Belt
+    };
+
     /**
-     * Selects a planet type using weighted random selection
+     * Selects a planet type using weighted random selection.
+     * When a thermal zone is provided, base weights are multiplied by the
+     * per-type zone affinity (soft bias). Without a zone, falls back to the
+     * unbiased base weights.
+     * @param zone Optional orbital thermal zone (ZONE_A, ZONE_B, or ZONE_C)
      */
-    private selectPlanetTypeWeighted(): string {
-        const totalWeight = this.planetTypeWeights.reduce((sum, t) => sum + t.weight, 0);
+    private selectPlanetTypeWeighted(zone?: number): string {
+        const zoneIndex = zone === ZONE_A ? 0 : zone === ZONE_B ? 1 : zone === ZONE_C ? 2 : -1;
+
+        const weighted = this.planetTypeWeights.map(t => {
+            if (zoneIndex === -1) return { code: t.code, weight: t.weight };
+            const affinity = this.planetZoneAffinity[t.code];
+            const multiplier = affinity ? affinity[zoneIndex] : 1;
+            return { code: t.code, weight: t.weight * multiplier };
+        });
+
+        const totalWeight = weighted.reduce((sum, t) => sum + t.weight, 0);
+        if (totalWeight <= 0) return '#'; // fallback (no eligible type)
+
         let r = this.prng() * totalWeight;
-        for (const t of this.planetTypeWeights) {
+        for (const t of weighted) {
             if (r < t.weight) return t.code;
             r -= t.weight;
         }
         return '#'; // fallback
     }
 
+    // Thermal properties per planet type used to turn incident stellar flux into a
+    // surface temperature: Bond albedo (fraction of light reflected, cools the
+    // planet) and greenhouse warming (extra Kelvin added by the atmosphere).
+    private planetThermal: Record<string, { albedo: number; greenhouse: number }> = {
+        'A': { albedo: 0.10, greenhouse: 0 },     // Asteroid (bare rock)
+        'G': { albedo: 0.30, greenhouse: 0 },     // Gas Giant (no surface)
+        'Q': { albedo: 0.10, greenhouse: 0 },     // Hot Gas Giant
+        'U': { albedo: 0.30, greenhouse: 0 },     // Ice Giant
+        'S': { albedo: 0.30, greenhouse: 40 },    // Super-Earth (thick atmosphere)
+        'R': { albedo: 0.12, greenhouse: 5 },     // Rocky (thin atmosphere, Mars-like)
+        'E': { albedo: 0.30, greenhouse: 33 },    // Earth-like (calibrated: 255K -> 288K)
+        'O': { albedo: 0.10, greenhouse: 30 },    // Ocean (dark water)
+        'I': { albedo: 0.60, greenhouse: 0 },     // Ice (highly reflective)
+        'D': { albedo: 0.30, greenhouse: 10 },    // Desert
+        'C': { albedo: 0.15, greenhouse: 20 },    // Carbon
+        'L': { albedo: 0.10, greenhouse: 0 },     // Silicate (bare)
+        'F': { albedo: 0.10, greenhouse: 0 },     // Iron (bare)
+        'T': { albedo: 0.40, greenhouse: 150 },   // Toxic (thick atmosphere)
+        'N': { albedo: 0.30, greenhouse: 20 },    // Ammonia
+        'B': { albedo: 0.30, greenhouse: 10 },    // Methane (Titan-like)
+        'J': { albedo: 0.20, greenhouse: 40 },    // Jungle (humid)
+        'W': { albedo: 0.40, greenhouse: 0 },     // Dwarf
+        'H': { albedo: 0.70, greenhouse: 500 },   // Hell (Venus-like runaway greenhouse)
+        'M': { albedo: 0.10, greenhouse: 100 },   // Molten
+        'X': { albedo: 0.35, greenhouse: 5 },     // Cold Desert
+        '#': { albedo: 0.30, greenhouse: 0 }      // Unknown
+    };
+
     /**
-     * Determines the habitable zone of a planet
-     * @param totalPlanets Total number of planets in the system
-     * @param planetNumber Position of the planet in the system
-     * @returns Zone number (A, B, or C)
+     * Estimates the surface temperature of a planet from stellar flux, correcting
+     * for the planet's albedo (reflection) and greenhouse warming.
+     * T_eq = 278.3 * ((1 - albedo) * L)^0.25 * a^-0.5, then + greenhouse.
+     * @param luminosity Stellar luminosity in solar units
+     * @param semiMajorAxis Orbital distance in AU
+     * @param planetType Planet type code (selects albedo/greenhouse)
+     * @returns Surface temperature in Kelvin
      */
-    determineHabitableZone(totalPlanets: number, planetNumber: number): number {
-        if (totalPlanets >= 1 && totalPlanets <= 3) {
-            return planetNumber === 1 ? ZONE_B : ZONE_C;
-        } else if (totalPlanets >= 4 && totalPlanets <= 5) {
-            switch (planetNumber) {
-                case 1: return ZONE_A;
-                case 2: return ZONE_B;
-                default: return ZONE_C;
-            }
-        } else if (totalPlanets >= 6 && totalPlanets <= 7) {
-            switch (planetNumber) {
-                case 1: return ZONE_A;
-                case 2:
-                case 3: return ZONE_B;
-                default: return ZONE_C;
-            }
-        } else {
-            switch (planetNumber) {
-                case 1:
-                case 2: return ZONE_A;
-                case 3:
-                case 4: return ZONE_B;
-                default: return ZONE_C;
-            }
+    surfaceTemperature(luminosity: number, semiMajorAxis: number, planetType: string): number {
+        const thermal = this.planetThermal[planetType] || this.planetThermal['#'];
+        const equilibrium =
+            278.3 * Math.pow((1 - thermal.albedo) * luminosity, 0.25) / Math.sqrt(semiMajorAxis);
+        return equilibrium + thermal.greenhouse;
+    }
+
+    /**
+     * Determines the orbital thermal zone of a planet from its distance relative
+     * to the star's habitable (Goldilocks) bounds. This single classification
+     * drives both planet-type selection and the habitableZone flag.
+     * @param semiMajorAxis Orbital distance in AU
+     * @param aInner Inner edge of the habitable zone in AU (sqrt(L/1.1))
+     * @param aOuter Outer edge of the habitable zone in AU (sqrt(L/0.53))
+     * @returns Zone number: ZONE_A (inner/hot), ZONE_B (habitable), ZONE_C (outer/cold)
+     */
+    determineHabitableZone(semiMajorAxis: number, aInner: number, aOuter: number): number {
+        if (semiMajorAxis < aInner) return ZONE_A;
+        if (semiMajorAxis > aOuter) return ZONE_C;
+        return ZONE_B;
+    }
+
+    /**
+     * Orbital distance for a given orbit number, in AU (Titius-Bode).
+     * The first orbit uses the special Mercury term (0.4 AU). The classic law
+     * doubles the "excess" each orbit and fits the Solar System superbly out to
+     * Uranus, but then overshoots (it predicts ~38.8 AU for the 9th orbit while
+     * Neptune sits at ~30 AU). We therefore damp the growth ratio from 2 to 1.5
+     * once the excess passes ~19 AU (beyond Uranus), matching the gentler real
+     * spacing of the outer planets.
+     * @param orbit Orbit number (1-based)
+     * @returns Semi-major axis in AU
+     */
+    orbitalDistance(orbit: number): number {
+        if (orbit === 1) return 0.4; // Mercury term
+        let excess = 0.3; // orbit 2 -> 0.7 AU
+        for (let p = 3; p <= orbit; p++) {
+            excess *= excess < 19 ? 2 : 1.5;
         }
+        return 0.4 + excess;
     }
 
     /**
      * Creates a planet
-     * @param _zone Habitable zone (unused)
+     * @param zone Orbital thermal zone (ZONE_A/B/C), biases the planet type
      * @param orbit Orbit number
      * @param starId Parent star ID
      * @returns Generated planet
      */
-    createPlanet(_zone: number, orbit: number, starId: number): Planet {
-        // Use weighted random for planet type
-        const planetType = this.selectPlanetTypeWeighted();
+    createPlanet(zone: number, orbit: number, starId: number): Planet {
+        // Use weighted random for planet type, biased by the orbital thermal zone
+        const planetType = this.selectPlanetTypeWeighted(zone);
         const type = this.planetTypes[planetType] || this.planetTypes['#'];
         let diameter;
         let moonCount;
@@ -267,6 +358,7 @@ export class StellarGenerator {
             mass,
             gravity,
             semiMajorAxis: 0, // Default value, will be updated in the system generation
+            temperature: 0, // Default value, will be updated in the system generation
             habitableZone: false // Default value, will be updated in the system generation
         };
     }
@@ -455,16 +547,18 @@ export class StellarGenerator {
 
                 if (actualPlanetCount > 0) {
                     for (let p = 1; p <= actualPlanetCount; p++) {
-                        const zone = this.determineHabitableZone(totalPlanets, p);
+                        // Distanza orbitale (Titius-Bode con termine di Mercurio e
+                        // crescita smorzata oltre Urano; vedi orbitalDistance).
+                        const semiMajorAxis = this.orbitalDistance(p); // AU
+                        // Zona termica dai limiti Goldilocks: guida sia il tipo sia l'abitabilità
+                        const zone = this.determineHabitableZone(semiMajorAxis, a_inner, a_outer);
                         const planet = this.createPlanet(zone, p, star.starId);
-                        // Calcolo la distanza orbitale (Titius-Bode): a = 0.4 + 0.3 * 2^n
-                        // n = p-1 (prima orbita n=0)
-                        const n = p - 1;
-                        const semiMajorAxis = 0.4 + 0.3 * Math.pow(2, n); // AU
-                        // Determina se nella zona abitabile
-                        const habitableZone = semiMajorAxis >= a_inner && semiMajorAxis <= a_outer;
+                        // Temperatura di superficie [K]: flusso stellare corretto per
+                        // albedo ed effetto serra del tipo di pianeta scelto.
+                        const temperature = this.surfaceTemperature(L, semiMajorAxis, planet.planetType);
                         planet.semiMajorAxis = semiMajorAxis;
-                        planet.habitableZone = habitableZone;
+                        planet.temperature = temperature;
+                        planet.habitableZone = zone === ZONE_B;
                         planets.push(planet);
                     }
                 }
