@@ -239,21 +239,36 @@ describe('StellarGenerator', () => {
       const generator = new StellarGenerator(TEST_SEED);
       const orbitalDistance = (generator as any).orbitalDistance.bind(generator);
 
-      // 0.4 AU Mercury term, classic doubling out to Uranus (19.6), then the
-      // ratio drops to 1.5 so the 9th orbit lands near Neptune (~29) not ~38.8.
+      // Solar reference (L=1): 0.4 AU Mercury term, classic doubling out to Uranus
+      // (19.6), then the ratio drops to 1.5 so the 9th orbit lands near Neptune
+      // (~29) not ~38.8.
       const ladder = [0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6];
       ladder.forEach((au, i) => {
         expect(orbitalDistance(i + 1)).toBeCloseTo(au, 5);
       });
+
+      // Flux-equivalent sqrt(L) scaling pulls a red dwarf's ladder inward.
+      expect(orbitalDistance(1, 0.04)).toBeCloseTo(0.08, 5); // 0.4 * sqrt(0.04)
+      expect(orbitalDistance(3, 0.04)).toBeCloseTo(0.20, 5); // 1.0 * sqrt(0.04)
     });
 
-    test('generated planets place the first orbit at the Mercury term (0.4 AU)', () => {
+    test('generateSector: only the 3rd orbit is habitable, with star-independent temperature', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const sector = generator.generateSector(40, 1000);
+      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+      const sector = generator.generateSector(80, 1000);
 
-      const orbit1 = sector.planets.filter(p => p.orbitalNumber === 1);
-      expect(orbit1.length).toBeGreaterThan(0);
-      orbit1.forEach(p => expect(p.semiMajorAxis).toBeCloseTo(0.4, 5));
+      const orbit3 = sector.planets.filter(p => p.orbitalNumber === 3);
+      expect(orbit3.length).toBeGreaterThan(0);
+
+      sector.planets.forEach(p => {
+        // With sqrt(L) scaling the flux at each orbit index is star-independent,
+        // so orbit 3 (and only orbit 3) falls in the habitable band for every star.
+        expect(p.habitableZone).toBe(p.orbitalNumber === 3);
+        if (p.orbitalNumber === 3) {
+          // Flux-equivalent: same surface temperature as the Solar orbit-3 for that type.
+          expect(p.temperature).toBeCloseTo(surfaceTemperature(1, 1.0, p.planetType), 5);
+        }
+      });
     });
 
     test('surfaceTemperature: same type gets colder with distance', () => {
@@ -305,6 +320,16 @@ describe('StellarGenerator', () => {
       expect(hotTypesInC).toBe(0);
       expect(coldTypesInC).toBeGreaterThan(0);
       expect(coldTypesInA).toBe(0);
+
+      // Soft (non-zero) affinity also matters: Ice is much rarer in the habitable
+      // zone (affinity 0.15) than in the cold zone (affinity 1).
+      let iceInB = 0;
+      let iceInC = 0;
+      for (let i = 0; i < samples; i++) {
+        if (select(ZONE_B) === 'I') iceInB++;
+        if (select(ZONE_C) === 'I') iceInC++;
+      }
+      expect(iceInC).toBeGreaterThan(iceInB);
     });
   });
 });

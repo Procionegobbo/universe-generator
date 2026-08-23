@@ -196,7 +196,7 @@ const availablePlanetTypes = computed(() => {
 // 1. Aggiungi una computed property derivedPlanets che aggiunge orbitalZone a ciascun planet:
 const derivedPlanets = computed(() => props.planets.map(planet => ({
     ...planet,
-    orbitalZone: planet.habitableZone ? 'Goldilocks' : getOrbitalZone(planet.orbitalNumber)
+    orbitalZone: planet.habitableZone ? 'Goldilocks' : getOrbitalZone(planet.temperature)
 })));
 
 // Filter planets based on search query and type filter
@@ -302,19 +302,22 @@ const getPlanetTypeDescription = (type: string) => {
     return PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
 };
 
-const getOrbitalZone = (orbit: number) => {
-    if (orbit <= 2) return 'Inner';
-    if (orbit <= 4) return 'Medium';
-    return 'Outer';
+// Label the thermal zone from the planet's surface temperature so it stays
+// consistent with the backend model (and the adjacent Temp column). The 285 K /
+// 237 K thresholds are the equilibrium temperatures at the habitable-zone edges.
+const getOrbitalZone = (temperature: number) => {
+    if (temperature >= 285) return 'Hot';
+    if (temperature >= 237) return 'Temperate';
+    return 'Cold';
 };
 
 const getZoneColor = (zone: string) => {
     switch (zone) {
-        case 'Inner':
+        case 'Hot':
             return 'bg-red-900/30 text-red-300';
-        case 'Medium':
+        case 'Temperate':
             return 'bg-yellow-900/30 text-yellow-200';
-        case 'Outer':
+        case 'Cold':
             return 'bg-blue-900/30 text-blue-300';
         case 'Goldilocks':
             return 'bg-green-700/80 text-green-100 font-bold shadow';

@@ -188,19 +188,21 @@ function closePlanetDetail() {
 // Correggi la dichiarazione delle funzioni e la loro visibilità nel template
 // Sposta getOrbitalZone e getZoneColor sopra e assicurati che restituiscano sempre una stringa
 // Tipizza i parametri delle funzioni per eliminare i warning TS7006
+// Thermal zone derived from the planet's surface temperature (consistent with
+// the backend model). 285 K / 237 K are the equilibrium temps at the HZ edges.
 function getOrbitalZone(planet: any): string {
   if (planet.habitableZone) return 'Goldilocks';
-  if (planet.orbitalNumber <= 2) return 'Inner';
-  if (planet.orbitalNumber <= 4) return 'Medium';
-  return 'Outer';
+  if (planet.temperature >= 285) return 'Hot';
+  if (planet.temperature >= 237) return 'Temperate';
+  return 'Cold';
 }
 function getZoneColor(zone: string): string {
   switch (zone) {
-    case 'Inner':
+    case 'Hot':
       return 'bg-red-900/30 text-red-300';
-    case 'Medium':
+    case 'Temperate':
       return 'bg-yellow-900/30 text-yellow-200';
-    case 'Outer':
+    case 'Cold':
       return 'bg-blue-900/30 text-blue-300';
     case 'Goldilocks':
       return 'bg-green-700/80 text-green-100 font-bold shadow';

@@ -1,5 +1,9 @@
 import seedrandom from 'seedrandom';
-import { SectorZone } from '../types';
+import { SectorZone, StarType, PlanetType, Star, Planet, System } from '../types';
+
+// Shared domain interfaces live in ../types (single source of truth); re-export
+// them here so existing importers of this module keep working.
+export type { StarType, PlanetType, Star, Planet, System } from '../types';
 
 // Globale.ts
 
@@ -9,55 +13,6 @@ export const BLOCK_SIZE = 10000;
 export const ZONE_A = 1;
 export const ZONE_B = 2;
 export const ZONE_C = 3;
-
-// Interface for star types
-// Estensione StarType per includere luminosità relativa al Sole (L_sun = 1)
-export interface StarType {
-    spectralClass: string;
-    hasSubclass?: boolean;
-    planetCountFormula?: string;
-    luminosity?: number; // in unità solari
-    [key: string]: any;
-}
-
-// Interface for planet types
-export interface PlanetType {
-    shortType: string;
-    diameterFormula: string;
-    diameterMultiplier: number;
-    [key: string]: any;
-}
-
-// Interface for a Star
-export interface Star {
-    starId: number;
-    systemId: number;
-    name: string;
-    spectralClass: string;
-    subclass?: number;
-}
-
-// Interface for a Planet
-export interface Planet {
-    starId: number;
-    orbitalNumber: number;
-    planetType: string;
-    diameter: number;
-    moonCount: number;
-    mass: number;
-    gravity: number;
-    semiMajorAxis: number; // AU
-    temperature: number; // surface temperature in Kelvin (albedo + greenhouse)
-    habitableZone: boolean;
-}
-
-// Interface for a System
-export interface System {
-    systemId: number;
-    xPos: number;
-    yPos: number;
-    zPos: number;
-}
 
 // Class for dice notation parsing
 export class DiceParser {
@@ -212,17 +167,15 @@ export class StellarGenerator {
     };
 
     /**
-     * Selects a planet type using weighted random selection.
-     * When a thermal zone is provided, base weights are multiplied by the
-     * per-type zone affinity (soft bias). Without a zone, falls back to the
-     * unbiased base weights.
-     * @param zone Optional orbital thermal zone (ZONE_A, ZONE_B, or ZONE_C)
+     * Selects a planet type using weighted random selection. Base weights are
+     * multiplied by the per-type affinity for the given orbital thermal zone
+     * (soft bias).
+     * @param zone Orbital thermal zone (ZONE_A, ZONE_B, or ZONE_C)
      */
-    private selectPlanetTypeWeighted(zone?: number): string {
-        const zoneIndex = zone === ZONE_A ? 0 : zone === ZONE_B ? 1 : zone === ZONE_C ? 2 : -1;
+    private selectPlanetTypeWeighted(zone: number): string {
+        const zoneIndex = zone === ZONE_A ? 0 : zone === ZONE_B ? 1 : 2;
 
         const weighted = this.planetTypeWeights.map(t => {
-            if (zoneIndex === -1) return { code: t.code, weight: t.weight };
             const affinity = this.planetZoneAffinity[t.code];
             const multiplier = affinity ? affinity[zoneIndex] : 1;
             return { code: t.code, weight: t.weight * multiplier };
@@ -242,13 +195,14 @@ export class StellarGenerator {
     // Thermal properties per planet type used to turn incident stellar flux into a
     // surface temperature: Bond albedo (fraction of light reflected, cools the
     // planet) and greenhouse warming (extra Kelvin added by the atmosphere).
+    // Giants use greenhouse 0: their internal heat is not modelled here.
     private planetThermal: Record<string, { albedo: number; greenhouse: number }> = {
         'A': { albedo: 0.10, greenhouse: 0 },     // Asteroid (bare rock)
         'G': { albedo: 0.30, greenhouse: 0 },     // Gas Giant (no surface)
         'Q': { albedo: 0.10, greenhouse: 0 },     // Hot Gas Giant
         'U': { albedo: 0.30, greenhouse: 0 },     // Ice Giant
         'S': { albedo: 0.30, greenhouse: 40 },    // Super-Earth (thick atmosphere)
-        'R': { albedo: 0.12, greenhouse: 5 },     // Rocky (thin atmosphere, Mars-like)
+        'R': { albedo: 0.12, greenhouse: 5 },     // Rocky (thin atmosphere, Moon/Mercury-like albedo)
         'E': { albedo: 0.30, greenhouse: 33 },    // Earth-like (calibrated: 255K -> 288K)
         'O': { albedo: 0.10, greenhouse: 30 },    // Ocean (dark water)
         'I': { albedo: 0.60, greenhouse: 0 },     // Ice (highly reflective)
@@ -306,16 +260,25 @@ export class StellarGenerator {
      * Neptune sits at ~30 AU). We therefore damp the growth ratio from 2 to 1.5
      * once the excess passes ~19 AU (beyond Uranus), matching the gentler real
      * spacing of the outer planets.
+     *
+     * The whole ladder is then scaled by sqrt(luminosity): stellar flux goes as
+     * L/a^2, so scaling distances by sqrt(L) keeps the flux (and thus the thermal
+     * zones and habitable band, which themselves scale as sqrt(L)) at the same
+     * orbit index for every star class. Without this a red dwarf's planets would
+     * all sit far outside its habitable zone. For the Sun (L=1) the ladder is
+     * unchanged.
      * @param orbit Orbit number (1-based)
+     * @param luminosity Stellar luminosity in solar units (default 1)
      * @returns Semi-major axis in AU
      */
-    orbitalDistance(orbit: number): number {
-        if (orbit === 1) return 0.4; // Mercury term
-        let excess = 0.3; // orbit 2 -> 0.7 AU
+    orbitalDistance(orbit: number, luminosity = 1): number {
+        const scale = Math.sqrt(luminosity);
+        if (orbit === 1) return 0.4 * scale; // Mercury term
+        let excess = 0.3; // orbit 2 -> 0.7 AU (solar reference)
         for (let p = 3; p <= orbit; p++) {
             excess *= excess < 19 ? 2 : 1.5;
         }
-        return 0.4 + excess;
+        return (0.4 + excess) * scale;
     }
 
     /**
@@ -541,15 +504,16 @@ export class StellarGenerator {
 
                 // Calcolo la zona abitabile reale (Goldilocks zone)
                 // a_inner = sqrt(L/1.1), a_outer = sqrt(L/0.53)
-                const L = starType.luminosity || 1;
+                const L = starType.luminosity ?? 1;
                 const a_inner = Math.sqrt(L / 1.1);
                 const a_outer = Math.sqrt(L / 0.53);
 
                 if (actualPlanetCount > 0) {
                     for (let p = 1; p <= actualPlanetCount; p++) {
-                        // Distanza orbitale (Titius-Bode con termine di Mercurio e
-                        // crescita smorzata oltre Urano; vedi orbitalDistance).
-                        const semiMajorAxis = this.orbitalDistance(p); // AU
+                        // Distanza orbitale (Titius-Bode con termine di Mercurio,
+                        // crescita smorzata oltre Urano e scala sqrt(L); vedi
+                        // orbitalDistance).
+                        const semiMajorAxis = this.orbitalDistance(p, L); // AU
                         // Zona termica dai limiti Goldilocks: guida sia il tipo sia l'abitabilità
                         const zone = this.determineHabitableZone(semiMajorAxis, a_inner, a_outer);
                         const planet = this.createPlanet(zone, p, star.starId);
