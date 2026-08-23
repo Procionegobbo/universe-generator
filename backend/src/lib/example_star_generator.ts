@@ -84,17 +84,22 @@ export class StellarGenerator {
         'DF': { spectralClass: 'DF', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
         'DG': { spectralClass: 'DG', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
         'DK': { spectralClass: 'DK', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
-        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6', luminosity: 60, radius: 5 },
-        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6', luminosity: 10, radius: 10 },
-        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6', luminosity: 2, radius: 20 },
-        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6', luminosity: 0.2, radius: 50 },
+        // Giants (class III): evolved, so far brighter than the main-sequence star
+        // of the same spectral class. L follows Stefan-Boltzmann from the radius
+        // and effective temperature: L = R^2 * (T/5772)^4.
+        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6', luminosity: 45, radius: 5 },      // T~6700K
+        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6', luminosity: 65, radius: 10 },     // T~5200K
+        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6', luminosity: 150, radius: 20 },    // T~4500K
+        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6', luminosity: 380, radius: 50 },    // T~3600K
         'NS': { spectralClass: 'NS', hasSubclass: false, planetCountFormula: '0', luminosity: 0, radius: 0.00002 },
-        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3', luminosity: 20000, radius: 25 },
-        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3', luminosity: 80, radius: 50 },
-        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3', luminosity: 6, radius: 80 },
-        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3', luminosity: 1, radius: 100 },
-        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.4, radius: 150 },
-        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.04, radius: 500 },
+        // Supergiants (class I): the most luminous stars, a roughly horizontal
+        // band near 10^4-10^5 L_sun regardless of colour.
+        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3', luminosity: 90000, radius: 25 },  // T~20000K
+        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3', luminosity: 21000, radius: 60 },  // T~9000K
+        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3', luminosity: 21000, radius: 100 }, // T~7000K
+        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3', luminosity: 21000, radius: 180 }, // T~5200K
+        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3', luminosity: 22000, radius: 280 }, // T~4200K
+        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3', luminosity: 66000, radius: 700 }, // T~3500K
         'BH': { spectralClass: 'BH', hasSubclass: false, planetCountFormula: '0', luminosity: 0, radius: 0 }
     };
 

@@ -148,6 +148,42 @@ describe('StellarGenerator', () => {
     });
   });
 
+  describe('luminosity classes', () => {
+    const starTypesOf = (g: StellarGenerator) => (g as any).starTypes;
+
+    test('giants outshine main-sequence stars, supergiants outshine giants', () => {
+      const starTypes = starTypesOf(new StellarGenerator(TEST_SEED));
+
+      (['F', 'G', 'K', 'M'] as const).forEach(cls => {
+        expect(starTypes[`g${cls}`].luminosity).toBeGreaterThan(starTypes[cls].luminosity);
+        expect(starTypes[`c${cls}`].luminosity).toBeGreaterThan(starTypes[`g${cls}`].luminosity);
+      });
+      expect(starTypes['cB'].luminosity).toBeGreaterThan(starTypes['B'].luminosity);
+    });
+
+    test('luminosity is consistent with radius and effective temperature', () => {
+      const starTypes = starTypesOf(new StellarGenerator(TEST_SEED));
+      // Invert Stefan-Boltzmann, L = R^2 * (T/T_sun)^4, to recover the implied
+      // effective temperature and check it matches the spectral class.
+      const impliedTemp = (code: string) => {
+        const { luminosity, radius } = starTypes[code];
+        return 5772 * Math.pow(luminosity / (radius * radius), 0.25);
+      };
+
+      // Cool classes must come out cooler than hot ones.
+      expect(impliedTemp('gM')).toBeLessThan(impliedTemp('gF'));
+      expect(impliedTemp('cM')).toBeLessThan(impliedTemp('cB'));
+
+      // Red giants and red supergiants sit around 3000-4200 K.
+      [impliedTemp('gM'), impliedTemp('cM')].forEach(t => {
+        expect(t).toBeGreaterThan(3000);
+        expect(t).toBeLessThan(4200);
+      });
+      // Blue supergiants are hot.
+      expect(impliedTemp('cB')).toBeGreaterThan(15000);
+    });
+  });
+
   describe('generateSector', () => {
     test('should generate correct number of systems', () => {
       const generator = new StellarGenerator(TEST_SEED);
