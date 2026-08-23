@@ -8,7 +8,7 @@ A web application for generating procedural star systems with realistic astronom
 
 - **Procedural Generation**: Generate realistic star systems with 24 spectral classes and 21+ planet types
 - **3D Spatial Coordinates**: Systems are placed in a 3D sector with random coordinates
-- **Habitable Zones**: Each orbit is classified against the star's Goldilocks bounds (`√(L/1.1)` … `√(L/0.53)`); only planets in the habitable band are flagged
+- **Habitable Zones**: Each orbit is classified against the star's optimistic Goldilocks bounds (recent Venus / early Mars, `√(L/1.78)` … `√(L/0.32)`); only planets in the habitable band are flagged
 - **Thermal Zoning**: Planet types are biased by orbital temperature — hot types (Molten, Hell) cluster near the star, frozen types (Ice, Methane) appear in the cold outer orbits
 - **Surface Temperature**: Every planet reports a surface temperature computed from stellar flux, corrected for the planet's albedo and greenhouse effect
 - **Realistic Orbits**: Refined Titius-Bode spacing with the special Mercury term and a damped outer growth ratio (so the outer planets match reality, e.g. Neptune ≈ 30 AU)
@@ -242,7 +242,7 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 - Resulting ladder: `0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6, …` AU
 
 ### Temperature & Habitability
-- Each orbit is classified into a thermal zone using the star's Goldilocks bounds `a_inner = √(L/1.1)` and `a_outer = √(L/0.53)`: Zone A (hot, inside `a_inner`), Zone B (habitable, between), Zone C (cold, beyond `a_outer`)
+- Each orbit is classified into a thermal zone using the star's optimistic Goldilocks bounds (recent Venus / early Mars) `a_inner = √(L/1.78)` and `a_outer = √(L/0.32)` (~0.75–1.77 AU for the Sun): Zone A (hot, inside `a_inner`), Zone B (habitable, between), Zone C (cold, beyond `a_outer`). With the √L-scaled ladder this band covers the Earth- and Mars-equivalent orbits (3 and 4) for every star class
 - The zone drives both planet-type selection and the `habitableZone` flag (`true` only in Zone B)
 - Surface temperature: `T_eq = 278.3 · ((1 − albedo) · L)^0.25 · a^−0.5`, then `T_surface = T_eq + greenhouse`, with albedo and greenhouse taken from the planet type — so a thick-atmosphere world can be hotter than a closer bare rock (as Venus is hotter than Mercury)
 

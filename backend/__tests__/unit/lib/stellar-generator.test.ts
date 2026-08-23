@@ -252,22 +252,23 @@ describe('StellarGenerator', () => {
       expect(orbitalDistance(3, 0.04)).toBeCloseTo(0.20, 5); // 1.0 * sqrt(0.04)
     });
 
-    test('generateSector: only the 3rd orbit is habitable, with star-independent temperature', () => {
+    test('generateSector: optimistic habitable band covers orbits 3-4, with star-independent temperature', () => {
       const generator = new StellarGenerator(TEST_SEED);
       const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+      const orbitalDistance = (generator as any).orbitalDistance.bind(generator);
       const sector = generator.generateSector(80, 1000);
 
-      const orbit3 = sector.planets.filter(p => p.orbitalNumber === 3);
-      expect(orbit3.length).toBeGreaterThan(0);
+      const habitable = sector.planets.filter(p => p.habitableZone);
+      expect(habitable.length).toBeGreaterThan(0);
 
       sector.planets.forEach(p => {
         // With sqrt(L) scaling the flux at each orbit index is star-independent,
-        // so orbit 3 (and only orbit 3) falls in the habitable band for every star.
-        expect(p.habitableZone).toBe(p.orbitalNumber === 3);
-        if (p.orbitalNumber === 3) {
-          // Flux-equivalent: same surface temperature as the Solar orbit-3 for that type.
-          expect(p.temperature).toBeCloseTo(surfaceTemperature(1, 1.0, p.planetType), 5);
-        }
+        // so the optimistic band (recent Venus / early Mars) covers orbits 3-4
+        // for every star class.
+        expect(p.habitableZone).toBe(p.orbitalNumber === 3 || p.orbitalNumber === 4);
+        // Flux-equivalent: same surface temperature as the Solar orbit for that type.
+        expect(p.temperature).toBeCloseTo(
+          surfaceTemperature(1, orbitalDistance(p.orbitalNumber), p.planetType), 5);
       });
     });
 

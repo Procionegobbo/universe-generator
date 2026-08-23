@@ -502,11 +502,14 @@ export class StellarGenerator {
                 const excess = starCount > 1 ? DiceParser.parse('1d6+1', this.prng) : 0;
                 const actualPlanetCount = Math.max(0, totalPlanets - excess);
 
-                // Calcolo la zona abitabile reale (Goldilocks zone)
-                // a_inner = sqrt(L/1.1), a_outer = sqrt(L/0.53)
+                // Zona abitabile (Goldilocks) — versione ottimistica: bordo interno
+                // "recent Venus" (flusso 1.78 S_terra) e bordo esterno "early Mars"
+                // (0.32 S_terra), cioè a_inner = sqrt(L/1.78), a_outer = sqrt(L/0.32).
+                // Per il Sole ≈ 0.75–1.77 AU, così coprono le orbite 3 e 4
+                // (equivalenti a Terra e Marte).
                 const L = starType.luminosity ?? 1;
-                const a_inner = Math.sqrt(L / 1.1);
-                const a_outer = Math.sqrt(L / 0.53);
+                const a_inner = Math.sqrt(L / 1.78);
+                const a_outer = Math.sqrt(L / 0.32);
 
                 if (actualPlanetCount > 0) {
                     for (let p = 1; p <= actualPlanetCount; p++) {

@@ -192,7 +192,7 @@
                         <div class="card bg-green-900/10 border-green-800/50 p-6">
                             <h4 class="text-lg font-bold text-green-300 mb-3">Thermal Zones</h4>
                             <p class="text-gray-400 text-sm mb-4">
-                                The habitable bounds come from the star's luminosity: a_inner = √(L/1.1), a_outer = √(L/0.53). An orbit is classified accordingly and this drives type selection and the habitable flag.
+                                The habitable bounds use the optimistic (recent Venus / early Mars) limits from the star's luminosity: a_inner = √(L/1.78), a_outer = √(L/0.32) — about 0.75–1.77 AU for the Sun. An orbit is classified accordingly and this drives type selection and the habitable flag; combined with the √L-scaled ladder, the band covers the Earth- and Mars-equivalent orbits (3 and 4) for every star.
                             </p>
                             <ul class="text-sm text-gray-400 space-y-2">
                                 <li><span class="font-bold text-red-300">Zone A · Hot</span> — inside a_inner. Favors Molten, Hell, Silicate, Iron.</li>
