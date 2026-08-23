@@ -7,6 +7,7 @@ export interface StarType {
     hasSubclass?: boolean;
     planetCountFormula?: string;
     luminosity?: number; // in solar units (L_sun = 1)
+    radius?: number; // in solar radii (R_sun = 1)
     [key: string]: any;
 }
 

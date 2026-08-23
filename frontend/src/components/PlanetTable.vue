@@ -52,7 +52,7 @@
                         <th>Diameter (km)</th>
                         <th>Moons</th>
                         <th>Temp (K)</th>
-                        <th>Orbital Zone</th>
+                        <th>Thermal Zone</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -196,7 +196,7 @@ const availablePlanetTypes = computed(() => {
 // 1. Aggiungi una computed property derivedPlanets che aggiunge orbitalZone a ciascun planet:
 const derivedPlanets = computed(() => props.planets.map(planet => ({
     ...planet,
-    orbitalZone: planet.habitableZone ? 'Goldilocks' : getOrbitalZone(planet.temperature)
+    orbitalZone: planet.habitableZone ? 'Goldilocks' : getThermalZone(planet.temperature)
 })));
 
 // Filter planets based on search query and type filter
@@ -304,8 +304,11 @@ const getPlanetTypeDescription = (type: string) => {
 
 // Label the thermal zone from the planet's surface temperature so it stays
 // consistent with the backend model (and the adjacent Temp column). The 285 K /
-// 237 K thresholds are the equilibrium temperatures at the habitable-zone edges.
-const getOrbitalZone = (temperature: number) => {
+// 237 K thresholds are the zero-albedo equilibrium temperatures at the
+// *conservative* habitable-zone edges; they deliberately sit inside the wider
+// optimistic band the backend uses, so the Hot/Cold labels bracket the
+// Goldilocks planets rather than overlapping them.
+const getThermalZone = (temperature: number) => {
     if (temperature >= 285) return 'Hot';
     if (temperature >= 237) return 'Temperate';
     return 'Cold';

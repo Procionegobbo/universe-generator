@@ -14,6 +14,16 @@ export const ZONE_A = 1;
 export const ZONE_B = 2;
 export const ZONE_C = 3;
 
+// One solar radius expressed in AU, used to keep orbits outside the star itself.
+export const SOLAR_RADIUS_AU = 0.00465;
+// Innermost orbit allowed, as a multiple of the stellar radius (roughly the
+// tidal/sublimation limit for a surviving planet).
+export const MIN_ORBIT_STELLAR_RADII = 4;
+// Per-orbit random spread applied to the Titius-Bode ladder (±15%), so systems
+// differ from one another instead of every star sharing an identical layout.
+// Small enough that orbits keep their ordering (the tightest ladder ratio is 1.49).
+export const ORBIT_JITTER = 0.15;
+
 // Class for dice notation parsing
 export class DiceParser {
     /**
@@ -58,32 +68,34 @@ export class StellarGenerator {
         this.zone = zone;
     }
 
-    // Star types table (simulated - normally from database)
+    // Star types table (simulated - normally from database).
+    // `radius` is in solar radii and only sets a floor for the innermost orbit
+    // (a planet cannot orbit inside its star's envelope) — see orbitalDistance.
     private starTypes: Record<string, StarType> = {
-        'O': { spectralClass: 'O', hasSubclass: true, planetCountFormula: '2d6', luminosity: 50000 },
-        'B': { spectralClass: 'B', hasSubclass: true, planetCountFormula: '2d6', luminosity: 20000 },
-        'A': { spectralClass: 'A', hasSubclass: true, planetCountFormula: '2d6', luminosity: 80 },
-        'F': { spectralClass: 'F', hasSubclass: true, planetCountFormula: '2d6', luminosity: 6 },
-        'G': { spectralClass: 'G', hasSubclass: true, planetCountFormula: '2d6', luminosity: 1 },
-        'K': { spectralClass: 'K', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.4 },
-        'M': { spectralClass: 'M', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.04 },
-        'DB': { spectralClass: 'DB', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
-        'DA': { spectralClass: 'DA', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
-        'DF': { spectralClass: 'DF', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
-        'DG': { spectralClass: 'DG', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
-        'DK': { spectralClass: 'DK', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001 },
-        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6', luminosity: 60 },
-        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6', luminosity: 10 },
-        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6', luminosity: 2 },
-        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6', luminosity: 0.2 },
-        'NS': { spectralClass: 'NS', hasSubclass: false, planetCountFormula: '0', luminosity: 0 },
-        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3', luminosity: 20000 },
-        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3', luminosity: 80 },
-        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3', luminosity: 6 },
-        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3', luminosity: 1 },
-        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.4 },
-        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.04 },
-        'BH': { spectralClass: 'BH', hasSubclass: false, planetCountFormula: '0', luminosity: 0 }
+        'O': { spectralClass: 'O', hasSubclass: true, planetCountFormula: '2d6', luminosity: 50000, radius: 10 },
+        'B': { spectralClass: 'B', hasSubclass: true, planetCountFormula: '2d6', luminosity: 20000, radius: 5 },
+        'A': { spectralClass: 'A', hasSubclass: true, planetCountFormula: '2d6', luminosity: 80, radius: 1.8 },
+        'F': { spectralClass: 'F', hasSubclass: true, planetCountFormula: '2d6', luminosity: 6, radius: 1.3 },
+        'G': { spectralClass: 'G', hasSubclass: true, planetCountFormula: '2d6', luminosity: 1, radius: 1 },
+        'K': { spectralClass: 'K', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.4, radius: 0.8 },
+        'M': { spectralClass: 'M', hasSubclass: true, planetCountFormula: '2d6', luminosity: 0.04, radius: 0.3 },
+        'DB': { spectralClass: 'DB', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
+        'DA': { spectralClass: 'DA', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
+        'DF': { spectralClass: 'DF', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
+        'DG': { spectralClass: 'DG', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
+        'DK': { spectralClass: 'DK', hasSubclass: false, planetCountFormula: '1d6', luminosity: 0.001, radius: 0.013 },
+        'gF': { spectralClass: 'gF', hasSubclass: true, planetCountFormula: '3d6', luminosity: 60, radius: 5 },
+        'gG': { spectralClass: 'gG', hasSubclass: true, planetCountFormula: '3d6', luminosity: 10, radius: 10 },
+        'gK': { spectralClass: 'gK', hasSubclass: true, planetCountFormula: '3d6', luminosity: 2, radius: 20 },
+        'gM': { spectralClass: 'gM', hasSubclass: true, planetCountFormula: '3d6', luminosity: 0.2, radius: 50 },
+        'NS': { spectralClass: 'NS', hasSubclass: false, planetCountFormula: '0', luminosity: 0, radius: 0.00002 },
+        'cB': { spectralClass: 'cB', hasSubclass: true, planetCountFormula: '1d3', luminosity: 20000, radius: 25 },
+        'cA': { spectralClass: 'cA', hasSubclass: true, planetCountFormula: '1d3', luminosity: 80, radius: 50 },
+        'cF': { spectralClass: 'cF', hasSubclass: true, planetCountFormula: '1d3', luminosity: 6, radius: 80 },
+        'cG': { spectralClass: 'cG', hasSubclass: true, planetCountFormula: '1d3', luminosity: 1, radius: 100 },
+        'cK': { spectralClass: 'cK', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.4, radius: 150 },
+        'cM': { spectralClass: 'cM', hasSubclass: true, planetCountFormula: '1d3', luminosity: 0.04, radius: 500 },
+        'BH': { spectralClass: 'BH', hasSubclass: false, planetCountFormula: '0', luminosity: 0, radius: 0 }
     };
 
     // Planet types table (simulated)
@@ -182,8 +194,6 @@ export class StellarGenerator {
         });
 
         const totalWeight = weighted.reduce((sum, t) => sum + t.weight, 0);
-        if (totalWeight <= 0) return '#'; // fallback (no eligible type)
-
         let r = this.prng() * totalWeight;
         for (const t of weighted) {
             if (r < t.weight) return t.code;
@@ -242,8 +252,8 @@ export class StellarGenerator {
      * to the star's habitable (Goldilocks) bounds. This single classification
      * drives both planet-type selection and the habitableZone flag.
      * @param semiMajorAxis Orbital distance in AU
-     * @param aInner Inner edge of the habitable zone in AU (sqrt(L/1.1))
-     * @param aOuter Outer edge of the habitable zone in AU (sqrt(L/0.53))
+     * @param aInner Inner edge of the habitable zone in AU (the caller owns the bounds)
+     * @param aOuter Outer edge of the habitable zone in AU
      * @returns Zone number: ZONE_A (inner/hot), ZONE_B (habitable), ZONE_C (outer/cold)
      */
     determineHabitableZone(semiMajorAxis: number, aInner: number, aOuter: number): number {
@@ -267,12 +277,19 @@ export class StellarGenerator {
      * orbit index for every star class. Without this a red dwarf's planets would
      * all sit far outside its habitable zone. For the Sun (L=1) the ladder is
      * unchanged.
+     *
+     * Finally the ladder is pushed out if the star is physically large, so that
+     * no orbit falls inside the stellar envelope (bloated giants would otherwise
+     * swallow their innermost planets).
      * @param orbit Orbit number (1-based)
      * @param luminosity Stellar luminosity in solar units (default 1)
+     * @param stellarRadius Stellar radius in solar radii (default 1)
      * @returns Semi-major axis in AU
      */
-    orbitalDistance(orbit: number, luminosity = 1): number {
-        const scale = Math.sqrt(luminosity);
+    orbitalDistance(orbit: number, luminosity = 1, stellarRadius = 1): number {
+        // Flux-equivalent scale, floored so orbit 1 clears the stellar surface.
+        const minInnerOrbit = MIN_ORBIT_STELLAR_RADII * stellarRadius * SOLAR_RADIUS_AU;
+        const scale = Math.max(Math.sqrt(luminosity), minInnerOrbit / 0.4);
         if (orbit === 1) return 0.4 * scale; // Mercury term
         let excess = 0.3; // orbit 2 -> 0.7 AU (solar reference)
         for (let p = 3; p <= orbit; p++) {
@@ -510,13 +527,19 @@ export class StellarGenerator {
                 const L = starType.luminosity ?? 1;
                 const a_inner = Math.sqrt(L / 1.78);
                 const a_outer = Math.sqrt(L / 0.32);
+                const stellarRadius = starType.radius ?? 1;
 
-                if (actualPlanetCount > 0) {
+                // Stellar remnants (L = 0: neutron stars, black holes) radiate
+                // nothing, so the flux-based orbital and thermal model does not
+                // apply — they simply get no planets.
+                if (L > 0 && actualPlanetCount > 0) {
                     for (let p = 1; p <= actualPlanetCount; p++) {
                         // Distanza orbitale (Titius-Bode con termine di Mercurio,
-                        // crescita smorzata oltre Urano e scala sqrt(L); vedi
-                        // orbitalDistance).
-                        const semiMajorAxis = this.orbitalDistance(p, L); // AU
+                        // crescita smorzata oltre Urano, scala sqrt(L) e floor sul
+                        // raggio stellare; vedi orbitalDistance), più uno scarto
+                        // casuale per orbita così i sistemi non sono tutti identici.
+                        const jitter = 1 + (this.prng() * 2 - 1) * ORBIT_JITTER;
+                        const semiMajorAxis = this.orbitalDistance(p, L, stellarRadius) * jitter; // AU
                         // Zona termica dai limiti Goldilocks: guida sia il tipo sia l'abitabilità
                         const zone = this.determineHabitableZone(semiMajorAxis, a_inner, a_outer);
                         const planet = this.createPlanet(zone, p, star.starId);

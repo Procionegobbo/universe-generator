@@ -68,13 +68,13 @@
                                     </h4>
                                     <div v-if="getPlanetsForStar(star.starId).length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                         <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)"
-                                             :class="['bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer', getZoneColor(getOrbitalZone(planet)), getOrbitalZone(planet) === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
+                                             :class="['bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer', getZoneColor(getThermalZone(planet)), getThermalZone(planet) === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
                                              @click="openPlanetDetail(planet)">
                                             <div class="flex items-start gap-3">
                                                 <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                                 <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
-                                                    <svg v-if="getOrbitalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                                                    <svg v-if="getThermalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                                 </div>
                                                 <div class="min-w-0">
                                                     <div class="font-medium text-gray-200 text-sm truncate" :title="getPlanetDescription(planet.planetType)">
@@ -185,12 +185,11 @@ function closePlanetDetail() {
   selectedPlanet.value = null;
 }
 
-// Correggi la dichiarazione delle funzioni e la loro visibilità nel template
-// Sposta getOrbitalZone e getZoneColor sopra e assicurati che restituiscano sempre una stringa
-// Tipizza i parametri delle funzioni per eliminare i warning TS7006
 // Thermal zone derived from the planet's surface temperature (consistent with
-// the backend model). 285 K / 237 K are the equilibrium temps at the HZ edges.
-function getOrbitalZone(planet: any): string {
+// the backend model). 285 K / 237 K are the zero-albedo equilibrium temps at the
+// *conservative* HZ edges; they sit inside the wider optimistic band the backend
+// uses, so the Hot/Cold labels bracket the Goldilocks planets.
+function getThermalZone(planet: any): string {
   if (planet.habitableZone) return 'Goldilocks';
   if (planet.temperature >= 285) return 'Hot';
   if (planet.temperature >= 237) return 'Temperate';

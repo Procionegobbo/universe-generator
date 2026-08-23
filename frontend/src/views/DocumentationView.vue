@@ -140,7 +140,10 @@
                         <p class="text-xs text-gray-500 mt-4 italic mb-4">
                             Where 'a' is the semi-major axis in Astronomical Units (AU).
                         </p>
-                        <p class="text-gray-400 text-sm mb-3">Resulting ladder, matched against the Solar System:</p>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Two corrections finish the model. The whole ladder is scaled by √L (stellar flux goes as L/a², so this keeps each orbit index at the same insolation for every star class — without it a red dwarf's planets would all sit far outside its habitable zone), and it is pushed outward if the star is physically large, so no orbit falls inside a bloated giant's envelope. Finally each orbit gets a ±15% random spread, so systems differ from one another instead of every star sharing an identical layout.
+                        </p>
+                        <p class="text-gray-400 text-sm mb-3">Reference ladder (Sun, before jitter), matched against the Solar System:</p>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="text-gray-300 border-b border-gray-700">
@@ -192,7 +195,7 @@
                         <div class="card bg-green-900/10 border-green-800/50 p-6">
                             <h4 class="text-lg font-bold text-green-300 mb-3">Thermal Zones</h4>
                             <p class="text-gray-400 text-sm mb-4">
-                                The habitable bounds use the optimistic (recent Venus / early Mars) limits from the star's luminosity: a_inner = √(L/1.78), a_outer = √(L/0.32) — about 0.75–1.77 AU for the Sun. An orbit is classified accordingly and this drives type selection and the habitable flag; combined with the √L-scaled ladder, the band covers the Earth- and Mars-equivalent orbits (3 and 4) for every star.
+                                The habitable bounds use the optimistic (recent Venus / early Mars) limits from the star's luminosity: a_inner = √(L/1.78), a_outer = √(L/0.32) — about 0.75–1.77 AU for the Sun. An orbit is classified accordingly and this drives type selection and the habitable flag; combined with the √L-scaled ladder, the band lands on the Earth- and Mars-equivalent orbits (3 and 4) for every star class, with the orbital jitter shifting which of them actually qualifies from system to system.
                             </p>
                             <ul class="text-sm text-gray-400 space-y-2">
                                 <li><span class="font-bold text-red-300">Zone A · Hot</span> — inside a_inner. Favors Molten, Hell, Silicate, Iron.</li>

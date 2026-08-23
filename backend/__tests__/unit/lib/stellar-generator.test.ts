@@ -29,14 +29,15 @@ describe('StellarGenerator', () => {
   });
 
   describe('determineHabitableZone', () => {
-    // The zone is now derived from the orbital distance relative to the star's
-    // Goldilocks bounds: (semiMajorAxis, aInner, aOuter).
-    const A_INNER = 0.95; // e.g. sqrt(1/1.1)
-    const A_OUTER = 1.37; // e.g. sqrt(1/0.53)
+    // The zone is derived from the orbital distance relative to the star's
+    // Goldilocks bounds: (semiMajorAxis, aInner, aOuter). The bounds are supplied
+    // by the caller, so these are just representative values.
+    const A_INNER = 0.95;
+    const A_OUTER = 1.37;
 
     test('should return ZONE_A when inside the inner (hot) edge', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
+      const determineHabitableZone = generator.determineHabitableZone.bind(generator);
 
       expect(determineHabitableZone(0.4, A_INNER, A_OUTER)).toBe(ZONE_A);
       expect(determineHabitableZone(A_INNER - 0.01, A_INNER, A_OUTER)).toBe(ZONE_A);
@@ -44,7 +45,7 @@ describe('StellarGenerator', () => {
 
     test('should return ZONE_B when within the habitable (Goldilocks) bounds', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
+      const determineHabitableZone = generator.determineHabitableZone.bind(generator);
 
       expect(determineHabitableZone(A_INNER, A_INNER, A_OUTER)).toBe(ZONE_B); // inclusive
       expect(determineHabitableZone(1.0, A_INNER, A_OUTER)).toBe(ZONE_B);
@@ -53,7 +54,7 @@ describe('StellarGenerator', () => {
 
     test('should return ZONE_C when beyond the outer (cold) edge', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const determineHabitableZone = (generator as any).determineHabitableZone.bind(generator);
+      const determineHabitableZone = generator.determineHabitableZone.bind(generator);
 
       expect(determineHabitableZone(A_OUTER + 0.01, A_INNER, A_OUTER)).toBe(ZONE_C);
       expect(determineHabitableZone(10, A_INNER, A_OUTER)).toBe(ZONE_C);
@@ -237,44 +238,121 @@ describe('StellarGenerator', () => {
 
     test('orbitalDistance: Mercury term and damped outer spacing (Neptune fix)', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const orbitalDistance = (generator as any).orbitalDistance.bind(generator);
 
       // Solar reference (L=1): 0.4 AU Mercury term, classic doubling out to Uranus
       // (19.6), then the ratio drops to 1.5 so the 9th orbit lands near Neptune
       // (~29) not ~38.8.
       const ladder = [0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6];
       ladder.forEach((au, i) => {
-        expect(orbitalDistance(i + 1)).toBeCloseTo(au, 5);
+        expect(generator.orbitalDistance(i + 1)).toBeCloseTo(au, 5);
       });
 
       // Flux-equivalent sqrt(L) scaling pulls a red dwarf's ladder inward.
-      expect(orbitalDistance(1, 0.04)).toBeCloseTo(0.08, 5); // 0.4 * sqrt(0.04)
-      expect(orbitalDistance(3, 0.04)).toBeCloseTo(0.20, 5); // 1.0 * sqrt(0.04)
+      expect(generator.orbitalDistance(1, 0.04)).toBeCloseTo(0.08, 5); // 0.4 * sqrt(0.04)
+      expect(generator.orbitalDistance(3, 0.04)).toBeCloseTo(0.20, 5); // 1.0 * sqrt(0.04)
     });
 
-    test('generateSector: optimistic habitable band covers orbits 3-4, with star-independent temperature', () => {
+    test('orbitalDistance: bloated stars push the ladder outside their envelope', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
-      const orbitalDistance = (generator as any).orbitalDistance.bind(generator);
-      const sector = generator.generateSector(80, 1000);
+
+      // A 50 R_sun red giant: sqrt(L) alone would put orbit 1 at 0.18 AU, inside
+      // the star. The radius floor (4 stellar radii) moves it out to ~0.93 AU.
+      const giantInner = generator.orbitalDistance(1, 0.2, 50);
+      expect(giantInner).toBeCloseTo(4 * 50 * 0.00465, 5);
+      expect(giantInner).toBeGreaterThan(50 * 0.00465); // clear of the surface
+
+      // Compact stars are unaffected by the floor.
+      expect(generator.orbitalDistance(1, 1, 1)).toBeCloseTo(0.4, 5);
+    });
+
+    test('generateSector: habitable flag and temperature match the star it orbits', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const starTypes = (generator as any).starTypes;
+      const sector = generator.generateSector(120, 1000);
+
+      const luminosityOf = new Map(
+        sector.stars.map(s => [s.starId, starTypes[s.spectralClass]?.luminosity ?? 1] as const)
+      );
 
       const habitable = sector.planets.filter(p => p.habitableZone);
       expect(habitable.length).toBeGreaterThan(0);
 
       sector.planets.forEach(p => {
-        // With sqrt(L) scaling the flux at each orbit index is star-independent,
-        // so the optimistic band (recent Venus / early Mars) covers orbits 3-4
-        // for every star class.
-        expect(p.habitableZone).toBe(p.orbitalNumber === 3 || p.orbitalNumber === 4);
-        // Flux-equivalent: same surface temperature as the Solar orbit for that type.
+        const L = luminosityOf.get(p.starId)!;
+        // The flag must follow the star's own optimistic Goldilocks bounds,
+        // not the orbit index (catches a wrong L or swapped bounds).
+        const aInner = Math.sqrt(L / 1.78);
+        const aOuter = Math.sqrt(L / 0.32);
+        expect(p.habitableZone).toBe(p.semiMajorAxis >= aInner && p.semiMajorAxis <= aOuter);
+        // Temperature must be computed from that same star and distance.
         expect(p.temperature).toBeCloseTo(
-          surfaceTemperature(1, orbitalDistance(p.orbitalNumber), p.planetType), 5);
+          generator.surfaceTemperature(L, p.semiMajorAxis, p.planetType), 5);
+      });
+
+      // The optimistic band plus the +/-15% jitter can only ever reach orbits 2-4.
+      habitable.forEach(p => {
+        expect(p.orbitalNumber).toBeGreaterThanOrEqual(2);
+        expect(p.orbitalNumber).toBeLessThanOrEqual(4);
+      });
+
+      // Regression guard for the sqrt(L) scaling: red dwarfs (the most common
+      // stars) must get habitable planets, not just Sun-like stars.
+      const mDwarfIds = new Set(sector.stars.filter(s => s.spectralClass === 'M').map(s => s.starId));
+      expect(habitable.some(p => mDwarfIds.has(p.starId))).toBe(true);
+    });
+
+    test('generateSector: orbital jitter varies layouts and keeps orbits ordered', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(120, 1000);
+
+      // Same orbit index around the same star class must not always be identical.
+      const gStarIds = new Set(sector.stars.filter(s => s.spectralClass === 'G').map(s => s.starId));
+      const gOrbit3 = sector.planets
+        .filter(p => gStarIds.has(p.starId) && p.orbitalNumber === 3)
+        .map(p => p.semiMajorAxis);
+      expect(gOrbit3.length).toBeGreaterThan(1);
+      expect(new Set(gOrbit3).size).toBeGreaterThan(1);
+      // ...but stays within the +/-15% spread of the solar orbit-3 rung.
+      gOrbit3.forEach(a => {
+        expect(a).toBeGreaterThanOrEqual(1.0 * 0.85);
+        expect(a).toBeLessThanOrEqual(1.0 * 1.15);
+      });
+
+      // Jitter must never reorder orbits within a star.
+      const byStar = new Map<number, typeof sector.planets>();
+      sector.planets.forEach(p => {
+        const list = byStar.get(p.starId) ?? [];
+        list.push(p);
+        byStar.set(p.starId, list);
+      });
+      byStar.forEach(list => {
+        const sorted = [...list].sort((a, b) => a.orbitalNumber - b.orbitalNumber);
+        for (let i = 1; i < sorted.length; i++) {
+          expect(sorted[i].semiMajorAxis).toBeGreaterThan(sorted[i - 1].semiMajorAxis);
+        }
+      });
+    });
+
+    test('generateSector: zero-luminosity remnants get no planets', () => {
+      const generator = new StellarGenerator(TEST_SEED, 'core'); // core has neutron stars & black holes
+      const sector = generator.generateSector(200, 1000);
+
+      const remnantIds = new Set(
+        sector.stars.filter(s => s.spectralClass === 'NS' || s.spectralClass === 'BH').map(s => s.starId)
+      );
+      expect(remnantIds.size).toBeGreaterThan(0);
+      expect(sector.planets.some(p => remnantIds.has(p.starId))).toBe(false);
+
+      // And nothing anywhere ends up with a non-finite orbit or temperature.
+      sector.planets.forEach(p => {
+        expect(Number.isFinite(p.semiMajorAxis)).toBe(true);
+        expect(Number.isFinite(p.temperature)).toBe(true);
       });
     });
 
     test('surfaceTemperature: same type gets colder with distance', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+      const surfaceTemperature = generator.surfaceTemperature.bind(generator);
 
       // Fixed type & star: farther orbit must be colder (albedo/greenhouse constant).
       expect(surfaceTemperature(1, 2.0, 'R')).toBeLessThan(surfaceTemperature(1, 1.0, 'R'));
@@ -283,7 +361,7 @@ describe('StellarGenerator', () => {
 
     test('surfaceTemperature: albedo cools and greenhouse warms', () => {
       const generator = new StellarGenerator(TEST_SEED);
-      const surfaceTemperature = (generator as any).surfaceTemperature.bind(generator);
+      const surfaceTemperature = generator.surfaceTemperature.bind(generator);
 
       // Same orbit/star: reflective Ice (albedo 0.6) is colder than bare Silicate.
       expect(surfaceTemperature(1, 1.0, 'I')).toBeLessThan(surfaceTemperature(1, 1.0, 'L'));

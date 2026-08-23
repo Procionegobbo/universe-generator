@@ -239,10 +239,13 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 - Distances follow a refined Titius-Bode law computed by `orbitalDistance(orbit)`:
   - orbit 1 uses the special Mercury term (`0.4 AU`)
   - later orbits add a growing "excess" that doubles each step, then grows by only ×1.5 once it passes ~19 AU — this damps the classic law's overshoot beyond Uranus so the outer planets match reality (e.g. orbit 9 ≈ 29 AU, near Neptune's 30 AU)
-- Resulting ladder: `0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6, …` AU
+- The whole ladder is scaled by `√L` (stellar flux goes as `L/a²`, so each orbit index keeps the same insolation for every star class — without it a red dwarf's planets would all sit far outside its habitable zone), and pushed outward if the star is physically large so no orbit falls inside a bloated giant's envelope
+- Each orbit then gets a ±15% random spread, so systems differ instead of every star sharing an identical layout (small enough that orbits keep their ordering)
+- Reference ladder for the Sun, before jitter: `0.4, 0.7, 1.0, 1.6, 2.8, 5.2, 10.0, 19.6, 29.2, 43.6, …` AU
 
 ### Temperature & Habitability
-- Each orbit is classified into a thermal zone using the star's optimistic Goldilocks bounds (recent Venus / early Mars) `a_inner = √(L/1.78)` and `a_outer = √(L/0.32)` (~0.75–1.77 AU for the Sun): Zone A (hot, inside `a_inner`), Zone B (habitable, between), Zone C (cold, beyond `a_outer`). With the √L-scaled ladder this band covers the Earth- and Mars-equivalent orbits (3 and 4) for every star class
+- Each orbit is classified into a thermal zone using the star's optimistic Goldilocks bounds (recent Venus / early Mars) `a_inner = √(L/1.78)` and `a_outer = √(L/0.32)` (~0.75–1.77 AU for the Sun): Zone A (hot, inside `a_inner`), Zone B (habitable, between), Zone C (cold, beyond `a_outer`). With the √L-scaled ladder this band lands on the Earth- and Mars-equivalent orbits (3 and 4) for every star class, with the jitter shifting which of them qualifies from system to system
+- Stellar remnants with no luminosity (neutron stars, black holes) get no planets: the flux-based model does not apply to them
 - The zone drives both planet-type selection and the `habitableZone` flag (`true` only in Zone B)
 - Surface temperature: `T_eq = 278.3 · ((1 − albedo) · L)^0.25 · a^−0.5`, then `T_surface = T_eq + greenhouse`, with albedo and greenhouse taken from the planet type — so a thick-atmosphere world can be hotter than a closer bare rock (as Venus is hotter than Mercury)
 
