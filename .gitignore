@@ -54,4 +54,5 @@ __tests__/**/*.d.ts
 __tests__/**/*.d.ts.map
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/agents/
