@@ -137,6 +137,10 @@ When modifying data structures, update both type definitions.
 - **Test Files**: `frontend/src/stores/*.test.ts` (covers Pinia store and state persistence)
 - **Test Script**: `npm test` (runs `vitest run`); also run by CI
 
+### Continuous Integration
+- **Workflow**: `.github/workflows/test.yml` – runs on push and pull requests targeting `master`
+- **Jobs**: `test-backend` (`npm test` in `/backend`) and `test-frontend` (`npm test` in `/frontend`), both on Node 20 with `npm ci`
+
 ## Deployment & Hosting
 
 This project is configured for **Vercel** hosting:
@@ -147,7 +151,6 @@ This project is configured for **Vercel** hosting:
 
 ## Notable Absences
 - No linting (eslint, prettier) configured
-- No CI/CD configuration files (GitHub Actions, etc.)
 
 ## Useful References
 - `stellar_prompts.md` contains AI image generation prompts for all 24 star classes.
