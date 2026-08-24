@@ -135,7 +135,7 @@ When modifying data structures, update both type definitions.
 ### Frontend
 - **Framework**: Vitest for unit tests
 - **Test Files**: `frontend/src/stores/*.test.ts` (covers Pinia store and state persistence)
-- **Note**: No dedicated test script in frontend package.json; tests can be run manually or integrated into CI/CD
+- **Test Script**: `npm test` (runs `vitest run`); also run by CI
 
 ## Deployment & Hosting
 
