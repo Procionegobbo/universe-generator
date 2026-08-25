@@ -6,3 +6,4 @@
 - [life-on-planets-002-life-model-library.md](COMPLETED/life-on-planets-002-life-model-library.md)
 - [life-on-planets-003-generator-wiring-types-and-api-contract.md](COMPLETED/life-on-planets-003-generator-wiring-types-and-api-contract.md)
 - [life-on-planets-004-frontend-planet-life-display.md](COMPLETED/life-on-planets-004-frontend-planet-life-display.md)
+- [life-on-planets-005-frontend-systems-filter-and-docs.md](COMPLETED/life-on-planets-005-frontend-systems-filter-and-docs.md)
