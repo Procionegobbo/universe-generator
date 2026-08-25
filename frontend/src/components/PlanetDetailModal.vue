@@ -29,8 +29,7 @@
                 </span>
                 <span v-else class="text-gray-400">No life</span>
               </li>
-              <li><b>Life probability:</b> {{ (planet.lifeProbability * 100).toFixed(2) }}%</li>
-              <li><b>Life complexity:</b> {{ planet.lifeComplexity.toFixed(1) }}</li>
+              <li v-if="planet.hasLife"><b>Complexity:</b> {{ planet.lifeComplexity.toFixed(1) }} of 6</li>
             </ul>
           </div>
           <div class="bg-gray-800/80 rounded-lg p-4 shadow modal-section modal-section-vertical">
