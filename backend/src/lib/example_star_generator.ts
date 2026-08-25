@@ -2,6 +2,8 @@ import seedrandom from 'seedrandom';
 import { SectorZone, StarType, PlanetType, Star, Planet, System } from '../types';
 import { SectorNamer } from './naming';
 import { loadStarProperNames } from './star-name-pool';
+import { LifeAssigner } from './life';
+import { loadPlanetProperNames } from './planet-name-pool';
 
 // Shared domain interfaces live in ../types (single source of truth); re-export
 // them here so existing importers of this module keep working.
@@ -67,6 +69,10 @@ export class StellarGenerator {
     // and planets of every pre-existing seed bit-identical.
     private namePrng: seedrandom.PRNG;
     private namer: SectorNamer;
+    // Life draws from its own stream too, so adding life leaves the geometry,
+    // spectral classes, planets AND names of every pre-existing seed bit-identical.
+    private lifePrng: seedrandom.PRNG;
+    private lifeAssigner: LifeAssigner;
     private zone: SectorZone;
 
     constructor(seed?: string | number, zone: SectorZone = 'medium') {
@@ -74,6 +80,8 @@ export class StellarGenerator {
         this.prng = seedrandom(seedStr);
         this.namePrng = seedrandom(`${seedStr}::names`);
         this.namer = new SectorNamer(this.namePrng, loadStarProperNames());
+        this.lifePrng = seedrandom(`${seedStr}::life`);
+        this.lifeAssigner = new LifeAssigner(this.lifePrng, loadPlanetProperNames());
         this.zone = zone;
     }
 
@@ -353,7 +361,10 @@ export class StellarGenerator {
             gravity,
             semiMajorAxis: 0, // Default value, will be updated in the system generation
             temperature: 0, // Default value, will be updated in the system generation
-            habitableZone: false // Default value, will be updated in the system generation
+            habitableZone: false, // Default value, will be updated in the system generation
+            lifeProbability: 0, // Default value, will be updated in the system generation
+            lifeComplexity: 0, // Default value, will be updated in the system generation
+            hasLife: false // Default value, will be updated in the system generation
         };
     }
 
@@ -506,10 +517,14 @@ export class StellarGenerator {
             // Naming draws from namePrng only, leaving the main stream untouched.
             const naming = this.namer.nameSystem(systemId, starCount);
 
+            // Age draws from lifePrng only, one draw per system, before the star loop.
+            const systemAge = this.lifeAssigner.drawSystemAge(this.zone);
+
             const system: System = {
                 systemId,
                 name: naming.systemName,
                 hasProperName: naming.hasProperName,
+                age: systemAge,
                 xPos,
                 yPos,
                 zPos
@@ -576,6 +591,26 @@ export class StellarGenerator {
                         planet.semiMajorAxis = semiMajorAxis;
                         planet.temperature = temperature;
                         planet.habitableZone = zone === ZONE_B;
+
+                        // Life draws from lifePrng only, leaving the main and
+                        // name streams untouched.
+                        const life = this.lifeAssigner.assignLife({
+                            spectralClass,
+                            systemAgeGyr: systemAge,
+                            planetType: planet.planetType,
+                            diameterKm: planet.diameter,
+                            temperatureK: planet.temperature,
+                            habitableZone: planet.habitableZone,
+                            starName: star.name,
+                            orbitalNumber: planet.orbitalNumber
+                        });
+                        planet.lifeProbability = life.lifeProbability;
+                        planet.lifeComplexity = life.lifeComplexity;
+                        planet.hasLife = life.hasLife;
+                        if (life.name !== undefined) {
+                            planet.name = life.name;
+                        }
+
                         planets.push(planet);
                     }
                 }

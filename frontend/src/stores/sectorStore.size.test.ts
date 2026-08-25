@@ -6,6 +6,7 @@ function generateSectorData(systemCount: number, planetsPerSystem = 5, starsPerS
     systemId: i + 1,
     name: `UG-${String(i + 1).padStart(4, '0')}`,
     hasProperName: false,
+    age: 4.5,
     xPos: i,
     yPos: i + 1,
     zPos: i + 2
@@ -27,7 +28,10 @@ function generateSectorData(systemCount: number, planetsPerSystem = 5, starsPerS
     gravity: 1.0,
     semiMajorAxis: 1.0,
     temperature: 288,
-    habitableZone: true
+    habitableZone: true,
+    lifeProbability: 0.25,
+    lifeComplexity: 1.2,
+    hasLife: false
   }));
   return { systems, stars, planets };
 }

@@ -18,7 +18,7 @@ describe('StellarService', () => {
   describe('generateSector', () => {
     test('should delegate to StellarGenerator with correct parameters', () => {
       const mockSector: Sector = {
-        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 }],
+        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, age: 4.5, xPos: 0, yPos: 0, zPos: 0 }],
         stars: [{ starId: 1, systemId: 1, name: 'UG-0001', spectralClass: 'M' }],
         planets: []
       };
@@ -88,8 +88,8 @@ describe('StellarService', () => {
     test('should calculate correct statistics for sector with data', () => {
       const sector: Sector = {
         systems: [
-          { systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 },
-          { systemId: 2, name: 'Necklace', hasProperName: true, xPos: 10, yPos: 10, zPos: 10 }
+          { systemId: 1, name: 'UG-0001', hasProperName: false, age: 4.5, xPos: 0, yPos: 0, zPos: 0 },
+          { systemId: 2, name: 'Necklace', hasProperName: true, age: 4.5, xPos: 10, yPos: 10, zPos: 10 }
         ],
         stars: [
           { starId: 1, systemId: 1, name: 'UG-0001-A', spectralClass: 'M' },
@@ -97,9 +97,9 @@ describe('StellarService', () => {
           { starId: 3, systemId: 2, name: 'Necklace', spectralClass: 'M' }
         ],
         planets: [
-          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 2, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
-          { starId: 1, orbitalNumber: 2, planetType: 'G', diameter: 8000, moonCount: 1, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
-          { starId: 2, orbitalNumber: 1, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false }
+          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 2, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false },
+          { starId: 1, orbitalNumber: 2, planetType: 'G', diameter: 8000, moonCount: 1, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false },
+          { starId: 2, orbitalNumber: 1, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false }
         ]
       };
 
@@ -116,15 +116,15 @@ describe('StellarService', () => {
 
     test('should round averages to two decimal places', () => {
       const sector: Sector = {
-        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 }],
+        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, age: 4.5, xPos: 0, yPos: 0, zPos: 0 }],
         stars: [
           { starId: 1, systemId: 1, name: 'UG-0001-A', spectralClass: 'M' },
           { starId: 2, systemId: 1, name: 'UG-0001-B', spectralClass: 'G' }
         ],
         planets: [
-          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
-          { starId: 2, orbitalNumber: 1, planetType: 'G', diameter: 8000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false },
-          { starId: 2, orbitalNumber: 2, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false }
+          { starId: 1, orbitalNumber: 1, planetType: 'R', diameter: 5000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false },
+          { starId: 2, orbitalNumber: 1, planetType: 'G', diameter: 8000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false },
+          { starId: 2, orbitalNumber: 2, planetType: 'R', diameter: 6000, moonCount: 0, temperature: 288, mass: 0, gravity: 0, semiMajorAxis: 1, habitableZone: false, lifeProbability: 0, lifeComplexity: 0, hasLife: false }
         ]
       };
 
@@ -136,7 +136,7 @@ describe('StellarService', () => {
 
     test('should handle sector with stars but no planets', () => {
       const sector: Sector = {
-        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 }],
+        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, age: 4.5, xPos: 0, yPos: 0, zPos: 0 }],
         stars: [{ starId: 1, systemId: 1, name: 'UG-0001', spectralClass: 'M' }],
         planets: []
       };
@@ -148,7 +148,7 @@ describe('StellarService', () => {
 
     test('should handle sector with systems but no stars (edge case)', () => {
       const sector: Sector = {
-        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 }],
+        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, age: 4.5, xPos: 0, yPos: 0, zPos: 0 }],
         stars: [],
         planets: []
       };
