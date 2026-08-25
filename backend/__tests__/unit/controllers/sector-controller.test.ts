@@ -130,8 +130,8 @@ describe('SectorController', () => {
 
     test('should call service and return success for valid input', () => {
       const mockSector: Sector = {
-        systems: [{ systemId: 1, xPos: 0, yPos: 0, zPos: 0 }],
-        stars: [{ starId: 1, systemId: 1, name: '1-1', spectralClass: 'M' }],
+        systems: [{ systemId: 1, name: 'UG-0001', hasProperName: false, xPos: 0, yPos: 0, zPos: 0 }],
+        stars: [{ starId: 1, systemId: 1, name: 'UG-0001', spectralClass: 'M' }],
         planets: []
       };
       const { controller, mockServiceInstance } = createControllerWithMock(mockSector);

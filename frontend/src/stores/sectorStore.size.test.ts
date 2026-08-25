@@ -4,6 +4,8 @@ import type { Sector } from '../types';
 function generateSectorData(systemCount: number, planetsPerSystem = 5, starsPerSystem = 1): Sector {
   const systems = Array.from({ length: systemCount }, (_, i) => ({
     systemId: i + 1,
+    name: `UG-${String(i + 1).padStart(4, '0')}`,
+    hasProperName: false,
     xPos: i,
     yPos: i + 1,
     zPos: i + 2

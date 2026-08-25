@@ -25,6 +25,8 @@ export interface Planet {
 
 export interface System {
     systemId: number;
+    name: string; // proper name ("Necklace") or catalogue designation ("UG-0006")
+    hasProperName: boolean; // true when `name` came from the IAU proper-name pool
     xPos: number;
     yPos: number;
     zPos: number;

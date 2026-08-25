@@ -1,0 +1,4 @@
+- [system-names-002-naming-algorithm.md](COMPLETED/system-names-002-naming-algorithm.md)
+- [system-names-001-star-name-asset-and-loader.md](COMPLETED/system-names-001-star-name-asset-and-loader.md)
+- [system-names-003-generator-wiring-types-and-api-contract.md](COMPLETED/system-names-003-generator-wiring-types-and-api-contract.md)
+- [system-names-004-frontend-surfacing.md](COMPLETED/system-names-004-frontend-surfacing.md)

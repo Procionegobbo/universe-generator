@@ -5,6 +5,11 @@
   "devCommand": "npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "backend/src/assets/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

@@ -70,15 +70,23 @@ describe('Sector API Integration', () => {
         expect(typeof system.xPos).toBe('number');
         expect(typeof system.yPos).toBe('number');
         expect(typeof system.zPos).toBe('number');
+        expect(typeof system.name).toBe('string');
+        expect(system.name.length).toBeGreaterThan(0);
+        expect(typeof system.hasProperName).toBe('boolean');
       });
 
       // Verify each star
       data.stars.forEach((star: any) => {
         expect(star.starId).toBeGreaterThan(0);
         expect(star.systemId).toBeGreaterThan(0);
-        expect(star.name).toMatch(/^\d+-\d+$/);
+        expect(typeof star.name).toBe('string');
+        expect(star.name.length).toBeGreaterThan(0);
         expect(star.spectralClass).toBeDefined();
       });
+
+      // Star names are unique sector-wide
+      const starNames = data.stars.map((star: any) => star.name);
+      expect(new Set(starNames).size).toBe(starNames.length);
 
       // Verify each planet (if any)
       data.planets.forEach((planet: any) => {
@@ -112,6 +120,53 @@ describe('Sector API Integration', () => {
 
       // Data should be identical
       expect(response1.body.data).toEqual(response2.body.data);
+
+      // Names in particular must be reproducible across HTTP calls
+      const systemNames = (body: any) => body.data.systems.map((s: any) => s.name);
+      const starNames = (body: any) => body.data.stars.map((s: any) => s.name);
+      expect(systemNames(response1.body)).toEqual(systemNames(response2.body));
+      expect(starNames(response1.body)).toEqual(starNames(response2.body));
+    });
+
+    test('should produce different names for a different seed', async () => {
+      const base = { systemCount: 50, sectorVolume: 1000, zone: 'medium' };
+
+      const response1 = await request(app)
+        .post('/api/sector/generate')
+        .send({ ...base, seed: 'http-name-seed-a' })
+        .expect(200);
+
+      const response2 = await request(app)
+        .post('/api/sector/generate')
+        .send({ ...base, seed: 'http-name-seed-b' })
+        .expect(200);
+
+      const names1 = response1.body.data.systems.map((s: any) => s.name);
+      const names2 = response2.body.data.systems.map((s: any) => s.name);
+
+      expect(names1.some((name: string, i: number) => name !== names2[i])).toBe(true);
+    });
+
+    test('should name every system even when the proper-name pool is exhausted', async () => {
+      // 1000 systems far exceeds the ~450-name pool, so this exercises the
+      // designation fallback all the way through the HTTP layer.
+      const response = await request(app)
+        .post('/api/sector/generate')
+        .send({ systemCount: 1000, sectorVolume: 1000000, seed: 'exhaustion', zone: 'medium' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      const systems = response.body.data.systems;
+      expect(systems).toHaveLength(1000);
+      systems.forEach((system: any) => {
+        expect(typeof system.name).toBe('string');
+        expect(system.name.length).toBeGreaterThan(0);
+      });
+
+      // Names stay unique even past exhaustion
+      const names = systems.map((s: any) => s.name);
+      expect(new Set(names).size).toBe(names.length);
     });
 
     test('should return 400 for invalid systemCount', async () => {

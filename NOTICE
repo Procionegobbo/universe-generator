@@ -1,0 +1,8 @@
+This product includes data from the IAU Catalog of Star Names (IAU-CSN),
+produced by the IAU Division C Working Group on Star Names (WGSN).
+https://www.iau.org/science/scientific_bodies/working_groups/280/
+Catalogue file: https://www.pas.rochester.edu/~emamajek/WGSN/IAU-CSN.txt
+Licensed under Creative Commons Attribution (CC BY).
+The data has been modified: reduced to four columns and reformatted as CSV.
+No names, designations or approval dates were altered.
+See backend/src/assets/star-proper-names.csv.
