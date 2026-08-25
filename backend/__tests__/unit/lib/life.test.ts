@@ -496,7 +496,7 @@ describe('life', () => {
     });
 
     test('consumes exactly two draws when a pool name is taken', () => {
-      const counter = countingPrng(scriptedPrng([0.1, FIRST_AVAILABLE]));
+      const counter = countingPrng(scriptedPrng([0.01, FIRST_AVAILABLE]));
 
       const outcome = new LifeAssigner(counter.prng, TWO_NAMES).assignLife(WORKED_EXAMPLE);
 
@@ -506,12 +506,21 @@ describe('life', () => {
     });
 
     // --- test 31 ---
-    test('realises life when the roll lands below P', () => {
-      const outcome = new LifeAssigner(scriptedPrng([0.1, FIRST_AVAILABLE]), TWO_NAMES)
+    test('realises life when the roll lands below P x ABIOGENESIS_FACTOR', () => {
+      const outcome = new LifeAssigner(scriptedPrng([0.01, FIRST_AVAILABLE]), TWO_NAMES)
         .assignLife(WORKED_EXAMPLE);
 
       expect(outcome.hasLife).toBe(true);
       expect(outcome.name).toBeDefined();
+    });
+
+    test('leaves the planet barren when the roll lands between P x ABIOGENESIS_FACTOR and P', () => {
+      // P is 0.5252 for the worked example, so the realisation threshold is
+      // 0.05252. A roll in between would have carried life before the factor.
+      const outcome = new LifeAssigner(scriptedPrng([0.3]), TWO_NAMES).assignLife(WORKED_EXAMPLE);
+
+      expect(outcome.hasLife).toBe(false);
+      expect(outcome.lifeProbability).toBeCloseTo(0.5252, 4);
     });
 
     test('leaves the planet barren when the roll lands above P', () => {
@@ -576,13 +585,14 @@ describe('life', () => {
       const poolNames = new Set<string>(POOL_20);
       const drawn: string[] = [];
 
-      for (let orbitalNumber = 1; orbitalNumber <= 200; orbitalNumber++) {
+      // An Earth analogue scores P = 1, so ABIOGENESIS_FACTOR makes roughly one
+      // iteration in ten carry life; enough passes to drain the 20-name pool.
+      for (let orbitalNumber = 1; orbitalNumber <= 2000; orbitalNumber++) {
         const outcome = assigner.assignLife({
           ...EARTH_ANALOGUE,
           starName: `UG-${String(orbitalNumber).padStart(4, '0')}`,
           orbitalNumber: (orbitalNumber % 6) + 1
         });
-        expect(outcome.hasLife).toBe(true);
         if (outcome.name && poolNames.has(outcome.name)) {
           drawn.push(outcome.name);
         }

@@ -272,7 +272,7 @@
                             <li><span class="font-mono text-emerald-300 mr-2">6</span>Intelligent life</li>
                         </ul>
                         <p class="text-xs text-gray-500 mt-4 italic">
-                            In practice a default 100-system medium sector yields roughly 20–30 inhabited planets (about 25 on average, spread over a little under a quarter of its systems). Each one is given a proper name drawn without replacement from a pool of 288 catalogued exoplanet names; once the pool is exhausted — which happens well before the largest sectors are filled — the remaining worlds fall back to a <span class="font-mono">&lt;star name&gt; &lt;roman orbit&gt;</span> designation, so every inhabited planet still carries a unique name.
+                            The score above says whether a world <em>could</em> host life, not whether it does. It is multiplied by an abiogenesis probability of <span class="font-mono">0.1</span> — the odds that life ever got started at all — before the draw, which is what keeps inhabited worlds scarce without making the ones that exist any simpler. In practice a default 100-system medium sector yields around 2–3 inhabited planets, and some sectors have none. Each one is given a proper name drawn without replacement from a pool of 288 catalogued exoplanet names; only in very large sectors does that pool run dry, after which the remaining worlds fall back to a <span class="font-mono">&lt;star name&gt; &lt;roman orbit&gt;</span> designation, so every inhabited planet still carries a unique name.
                         </p>
                     </div>
                 </section>

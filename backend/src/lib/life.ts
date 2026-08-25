@@ -16,6 +16,14 @@ export const TEMPERATURE_SIGMA_K = 30;
 export const EARTH_DIAMETER_KM = 12742;
 /** `t_0` — minimum time for prebiotic chemistry to start. */
 export const LIFE_START_DELAY_GYR = 0.5;
+/**
+ * Probability that life ever gets started on a world the model rates as
+ * habitable. The model scores whether a planet *could* host life; this is the
+ * odds that it actually did. Only the realisation draw is scaled by it, so
+ * `lifeProbability` and `lifeComplexity` keep their model meaning and life is
+ * made rarer without being made simpler.
+ */
+export const ABIOGENESIS_FACTOR = 0.1;
 /** `k` in the age sigmoid. */
 export const AGE_SIGMOID_K = 2;
 /** Coefficient in `L = 10 x M^-2.5`. */
@@ -290,7 +298,7 @@ export class LifeAssigner {
         // Always draw, then decide: keeps the stream independent of eligibility
         // and of pool state.
         const roll = this.prng();
-        const hasLife = lifeProbability > 0 && roll < lifeProbability;
+        const hasLife = lifeProbability > 0 && roll < lifeProbability * ABIOGENESIS_FACTOR;
         if (!hasLife) {
             return { lifeProbability, lifeComplexity, hasLife: false };
         }
