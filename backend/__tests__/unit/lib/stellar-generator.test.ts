@@ -1,4 +1,6 @@
 import { StellarGenerator, ZONE_A, ZONE_B, ZONE_C } from '../../../src/lib/example_star_generator';
+import { formatDesignation } from '../../../src/lib/naming';
+import { loadStarProperNames } from '../../../src/lib/star-name-pool';
 
 describe('StellarGenerator', () => {
   const TEST_SEED = 'test-seed-123';
@@ -215,6 +217,12 @@ describe('StellarGenerator', () => {
         expect(sys.yPos).toBe(sector2.systems[i].yPos);
         expect(sys.zPos).toBe(sector2.systems[i].zPos);
       });
+
+      // Names come from a separate PRNG stream, but are seeded from the same
+      // seed and so must be reproducible too (spec test 37).
+      expect(sector1.systems.map(s => s.name)).toEqual(sector2.systems.map(s => s.name));
+      expect(sector1.systems.map(s => s.hasProperName)).toEqual(sector2.systems.map(s => s.hasProperName));
+      expect(sector1.stars.map(s => s.name)).toEqual(sector2.stars.map(s => s.name));
     });
 
     test('should generate stars and planets', () => {
@@ -228,7 +236,8 @@ describe('StellarGenerator', () => {
       sector.stars.forEach(star => {
         expect(star.starId).toBeGreaterThan(0);
         expect(star.systemId).toBeGreaterThan(0);
-        expect(star.name).toMatch(/^\d+-\d+$/);
+        expect(typeof star.name).toBe('string');
+        expect(star.name.length).toBeGreaterThan(0);
         expect(star.spectralClass).toBeDefined();
       });
 
@@ -258,6 +267,99 @@ describe('StellarGenerator', () => {
 
       const systemIds = sector.systems.map(s => s.systemId);
       expect(systemIds).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    });
+  });
+
+  describe('naming', () => {
+    test('every star has a non-empty, sector-unique name', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(50, 1000);
+
+      expect(sector.stars.length).toBeGreaterThan(0);
+      sector.stars.forEach(star => {
+        expect(typeof star.name).toBe('string');
+        expect(star.name.length).toBeGreaterThan(0);
+      });
+
+      const names = sector.stars.map(s => s.name);
+      expect(new Set(names).size).toBe(names.length);
+    });
+
+    test('every system has a name and a hasProperName flag', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(50, 1000);
+
+      sector.systems.forEach(system => {
+        expect(typeof system.name).toBe('string');
+        expect(system.name.length).toBeGreaterThan(0);
+        expect(typeof system.hasProperName).toBe('boolean');
+      });
+    });
+
+    test('systems without a proper name use the designation format', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(50, 1000);
+
+      const designated = sector.systems.filter(s => !s.hasProperName);
+      expect(designated.length).toBeGreaterThan(0);
+      designated.forEach(system => {
+        expect(system.name).toBe(formatDesignation(system.systemId));
+      });
+    });
+
+    test('systems with a proper name draw it from the real pool', () => {
+      const pool = new Set(loadStarProperNames());
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(50, 1000);
+
+      const named = sector.systems.filter(s => s.hasProperName);
+      expect(named.length).toBeGreaterThan(0);
+      named.forEach(system => {
+        expect(pool.has(system.name)).toBe(true);
+      });
+    });
+
+    test('every star name is consistent with its system', () => {
+      const pool = new Set(loadStarProperNames());
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(50, 1000);
+
+      const systemsById = new Map(sector.systems.map(s => [s.systemId, s]));
+
+      sector.stars.forEach(star => {
+        const system = systemsById.get(star.systemId);
+        expect(system).toBeDefined();
+
+        const isLoneStar = star.name === system!.name;
+        const isTiedComponent = star.name.startsWith(`${system!.name}-`);
+        const isIndependentName = pool.has(star.name);
+
+        expect(isLoneStar || isTiedComponent || isIndependentName).toBe(true);
+      });
+    });
+
+    test('both naming branches occur over a large sector', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(300, 1000);
+
+      expect(sector.systems.some(s => s.hasProperName === true)).toBe(true);
+      expect(sector.systems.some(s => s.hasProperName === false)).toBe(true);
+    });
+
+    test('different seeds produce different names', () => {
+      const sector1 = new StellarGenerator('name-seed-a').generateSector(50, 1000);
+      const sector2 = new StellarGenerator('name-seed-b').generateSector(50, 1000);
+
+      const differs = sector1.systems.some((sys, i) => sys.name !== sector2.systems[i].name);
+      expect(differs).toBe(true);
+    });
+
+    test('system names are unique within a sector', () => {
+      const generator = new StellarGenerator(TEST_SEED);
+      const sector = generator.generateSector(200, 1000);
+
+      const names = sector.systems.map(s => s.name);
+      expect(new Set(names).size).toBe(names.length);
     });
   });
 

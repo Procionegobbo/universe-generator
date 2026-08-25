@@ -17,7 +17,8 @@
             <div class="card">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <h3 class="text-xl font-bold text-white mb-2">System #{{ system.systemId }}</h3>
+                        <h3 class="text-xl font-bold text-white">{{ system.name }}</h3>
+                        <div class="text-xs text-gray-500 mb-2">System #{{ system.systemId }}</div>
                         <div class="flex items-center gap-4 text-gray-400">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>

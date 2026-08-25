@@ -1,5 +1,7 @@
 import seedrandom from 'seedrandom';
 import { SectorZone, StarType, PlanetType, Star, Planet, System } from '../types';
+import { SectorNamer } from './naming';
+import { loadStarProperNames } from './star-name-pool';
 
 // Shared domain interfaces live in ../types (single source of truth); re-export
 // them here so existing importers of this module keep working.
@@ -60,11 +62,18 @@ export class StellarGenerator {
     private lastStarId = 0;
     private lastSystemId = 0;
     private prng: seedrandom.PRNG;
+    // Naming draws from its own stream, derived from the same seed but never
+    // advancing `prng` — so adding names leaves the geometry, spectral classes
+    // and planets of every pre-existing seed bit-identical.
+    private namePrng: seedrandom.PRNG;
+    private namer: SectorNamer;
     private zone: SectorZone;
 
     constructor(seed?: string | number, zone: SectorZone = 'medium') {
         const seedStr = seed !== undefined ? seed.toString() : Math.random().toString();
         this.prng = seedrandom(seedStr);
+        this.namePrng = seedrandom(`${seedStr}::names`);
+        this.namer = new SectorNamer(this.namePrng, loadStarProperNames());
         this.zone = zone;
     }
 
@@ -482,17 +491,30 @@ export class StellarGenerator {
         const sectorSide = Math.cbrt(sectorVolume);
 
         for (let i = 1; i <= systemCount; i++) {
-            // Create system
-            const system: System = {
-                systemId: ++this.lastSystemId,
-                xPos: this.prng() * sectorSide,
-                yPos: this.prng() * sectorSide,
-                zPos: this.prng() * sectorSide
-            };
-            systems.push(system);
+            // Create system. The three position draws followed by
+            // determineStarCount() must stay the first main-stream draws for the
+            // system: the naming below needs starCount, so the values are drawn
+            // before the literal is built rather than reordering the stream.
+            const systemId = ++this.lastSystemId;
+            const xPos = this.prng() * sectorSide;
+            const yPos = this.prng() * sectorSide;
+            const zPos = this.prng() * sectorSide;
 
             // Determine number of stars in the system
             const starCount = this.determineStarCount();
+
+            // Naming draws from namePrng only, leaving the main stream untouched.
+            const naming = this.namer.nameSystem(systemId, starCount);
+
+            const system: System = {
+                systemId,
+                name: naming.systemName,
+                hasProperName: naming.hasProperName,
+                xPos,
+                yPos,
+                zPos
+            };
+            systems.push(system);
 
             for (let s = 1; s <= starCount; s++) {
                 // Create star
@@ -502,7 +524,7 @@ export class StellarGenerator {
                 const star: Star = {
                     starId: ++this.lastStarId,
                     systemId: system.systemId,
-                    name: `${system.systemId}-${s}`,
+                    name: naming.starNames[s - 1],
                     spectralClass,
                     subclass: undefined
                 };

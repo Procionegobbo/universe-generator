@@ -99,6 +99,8 @@
                         <h4 class="font-bold text-blue-400 mb-2">System</h4>
                         <ul class="text-xs text-gray-500 space-y-1 font-mono">
                             <li>systemId: number</li>
+                            <li>name: string</li>
+                            <li>hasProperName: boolean</li>
                             <li>xPos: number</li>
                             <li>yPos: number</li>
                             <li>zPos: number</li>

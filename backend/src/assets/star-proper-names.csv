@@ -1,0 +1,462 @@
+# Star names from the IAU Catalog of Star Names (IAU-CSN).
+# Source:   https://www.pas.rochester.edu/~emamajek/WGSN/IAU-CSN.txt
+# Authority: IAU Division C Working Group on Star Names (WGSN)
+#           https://www.iau.org/science/scientific_bodies/working_groups/280/
+# License:  Creative Commons Attribution (CC BY) — IAU-produced products are
+#           free to use in perpetuity, world-wide, provided the source is cited.
+# Modified: reduced to four columns (Name/ASCII, Designation, Con, Date) and
+#           reformatted as CSV. No names, designations or dates were altered.
+# Catalogue edition: 2022-04-04
+# Extracted: 2026-08-24
+name,designation,constellation,iau_approval_date
+Absolutno,XO-5,Lyn,2019-12-17
+Acamar,HR 897,Eri,2016-07-20
+Achernar,HR 472,Eri,2016-06-30
+Achird,HR 219,Cas,2017-09-05
+Acrab,HR 5984,Sco,2016-08-21
+Acrux,HR 4730,Cru,2016-07-20
+Acubens,HR 3572,Cnc,2016-07-20
+Adhafera,HR 4031,Leo,2016-07-20
+Adhara,HR 2618,CMa,2016-08-21
+Adhil,HR 390,And,2016-08-21
+Ain,HR 1409,Tau,2015-12-15
+Ainalrami,HR 7116,Sgr,2017-09-05
+Aladfar,HR 7298,Lyr,2017-09-05
+Alasia,HD 168746,Ser,2019-12-17
+Albaldah,HR 7264,Sgr,2017-09-05
+Albali,HR 7950,Aqr,2016-09-12
+Albireo,HR 7417,Cyg,2016-07-20
+Alchiba,HR 4623,Crv,2016-09-12
+Alcor,HR 5062,UMa,2016-06-30
+Alcyone,HR 1165,Tau,2016-06-30
+Aldebaran,HR 1457,Tau,2016-06-30
+Alderamin,HR 8162,Cep,2016-07-20
+Aldhanab,HR 8353,Gru,2017-09-05
+Aldhibah,HR 6396,Dra,2017-09-05
+Aldulfin,HR 7852,Del,2017-09-05
+Alfirk,HR 8238,Cep,2016-08-21
+Algedi,HR 7754,Cap,2016-08-21
+Algenib,HR 39,Peg,2016-06-30
+Algieba,HR 4057,Leo,2016-07-20
+Algol,HR 936,Per,2016-06-30
+Algorab,HR 4757,Crv,2016-07-20
+Alhena,HR 2421,Gem,2016-07-20
+Alioth,HR 4905,UMa,2016-06-30
+Aljanah,HR 7949,Cyg,2017-06-30
+Alkaid,HR 5191,UMa,2016-06-30
+Alkalurops,HR 5733,Boo,2016-08-21
+Alkaphrah,HR 3594,UMa,2017-09-05
+Alkarab,HR 8905,Peg,2017-09-05
+Alkes,HR 4287,Crt,2016-09-12
+Almaaz,HR 1605,Aur,2017-02-01
+Almach,HR 603,And,2016-07-20
+Alnair,HR 8425,Gru,2016-07-20
+Alnasl,HR 6746,Sgr,2016-08-21
+Alnilam,HR 1903,Ori,2016-07-20
+Alnitak,HR 1948,Ori,2016-07-20
+Alniyat,HR 6084,Sco,2017-02-01
+Alphard,HR 3748,Hya,2016-07-20
+Alphecca,HR 5793,CrB,2016-07-20
+Alpheratz,HR 15,And,2016-06-30
+Alpherg,HR 437,Psc,2018-06-01
+Alrakis,HR 6370,Dra,2017-02-01
+Alrescha,HR 596,Psc,2016-08-21
+Alruba,HR 6618,Dra,2018-06-01
+Alsafi,HR 7462,Dra,2017-06-30
+Alsciaukat,HR 3275,Lyn,2017-06-30
+Alsephina,HR 3485,Vel,2017-09-05
+Alshain,HR 7602,Aql,2016-08-21
+Alshat,HR 7773,Cap,2017-06-30
+Altair,HR 7557,Aql,2016-06-30
+Altais,HR 7310,Dra,2016-08-21
+Alterf,HR 3773,Leo,2017-02-01
+Aludra,HR 2827,CMa,2016-07-20
+Alula Australis,HR 4375,UMa,2016-07-20
+Alula Borealis,HR 4377,UMa,2016-07-20
+Alya,HR 7141,Ser,2016-08-21
+Alzirr,HR 2484,Gem,2017-06-30
+Amadioha,HD 43197,CMa,2019-12-17
+Amansinaya,WASP-34,Crt,2019-12-17
+Anadolu,WASP-52,Peg,2019-12-17
+Ancha,HR 8499,Aqr,2016-09-12
+Angetenar,HR 850,Eri,2017-06-30
+Aniara,HD 102956,UMa,2019-12-17
+Ankaa,HR 99,Phe,2016-07-20
+Anser,HR 7405,Vul,2017-06-30
+Antares,HR 6134,Sco,2016-06-30
+Arcalis,HD 131496,Boo,2019-12-17
+Arcturus,HR 5340,Boo,2016-06-30
+Arkab Posterior,HR 7343,Sgr,2016-10-05
+Arkab Prior,HR 7337,Sgr,2016-10-05
+Arneb,HR 1865,Lep,2016-07-20
+Ascella,HR 7194,Sgr,2016-09-12
+Asellus Australis,HR 3461,Cnc,2016-11-06
+Asellus Borealis,HR 3449,Cnc,2016-11-06
+Ashlesha,HR 3482,Hya,2018-06-01
+Aspidiske,HR 3699,Car,2016-07-20
+Asterope,HR 1151,Tau,2016-08-21
+Atakoraka,WASP-64,CMa,2019-12-17
+Athebyne,HR 6132,Dra,2017-09-05
+Atik,HR 1131,Per,2016-09-12
+Atlas,HR 1178,Tau,2016-08-21
+Atria,HR 6217,TrA,2016-07-20
+Avior,HR 3307,Car,2016-07-20
+Axolotl,HD 224693,Cet,2019-12-17
+Ayeyarwady,HD 18742,Eri,2019-12-17
+Azelfafage,HR 8301,Cyg,2016-09-12
+Azha,HR 874,Eri,2016-09-12
+Azmidi,HR 3045,Pup,2018-06-01
+Baekdu,HD 133086,UMi,2019-12-17
+Barnard's Star,GJ 699,Oph,2017-02-01
+Baten Kaitos,HR 539,Cet,2016-09-12
+Beemim,HR 1393,Eri,2017-06-30
+Beid,HR 1298,Eri,2016-09-12
+Belel,HD 181342,Sgr,2019-12-17
+Belenos,HD 8574,Psc,2019-12-17
+Bellatrix,HR 1790,Ori,2016-06-30
+Berehynia,HAT-P-15,Per,2019-12-17
+Betelgeuse,HR 2061,Ori,2016-06-30
+Bharani,HR 838,Ari,2017-06-30
+Bibha,HD 86081,Sex,2019-12-17
+Biham,HR 8450,Peg,2016-08-21
+Bosona,HD 206610,Aqr,2019-12-17
+Botein,HR 951,Ari,2016-09-12
+Brachium,HR 5603,Lib,2017-09-05
+Bubup,HD 38283,Men,2019-12-17
+Buna,HD 16175,And,2019-12-17
+Bunda,HR 8264,Aqr,2018-06-01
+Canopus,HR 2326,Car,2016-06-30
+Capella,HR 1708,Aur,2016-06-30
+Caph,HR 21,Cas,2016-06-30
+Castor,HR 2891,Gem,2016-06-30
+Castula,HR 265,Cas,2017-09-05
+Cebalrai,HR 6603,Oph,2016-08-21
+Ceibo,HD 63454,Cha,2019-12-17
+Celaeno,HR 1140,Tau,2016-08-21
+Cervantes,HR 6585,Ara,2015-12-15
+Chalawan,HR 4277,UMa,2015-12-15
+Chamukuy,HR 1412,Tau,2017-09-05
+Chaophraya,WASP-50,Eri,2019-12-17
+Chara,HR 4785,CVn,2016-07-20
+Chason,HAT-P-5,Lyr,2019-12-17
+Chechia,HD 192699,Aql,2019-12-17
+Chertan,HR 4359,Leo,2016-07-20
+Citadelle,HD 1502,Psc,2019-12-17
+Citala,HD 52265,Mon,2019-12-17
+Cocibolca,HD 4208,Scl,2019-12-17
+Copernicus,HR 3522,Cnc,2015-12-15
+Cor Caroli,HR 4915,CVn,2016-07-20
+Cujam,HR 6117,Her,2017-02-01
+Cursa,HR 1666,Eri,2016-07-20
+Dabih,HR 7776,Cap,2016-08-21
+Dalim,HR 963,For,2017-09-05
+Deneb,HR 7924,Cyg,2016-06-30
+Deneb Algedi,HR 8322,Cap,2017-02-01
+Denebola,HR 4534,Leo,2016-06-30
+Diadem,HR 4968,Com,2017-02-01
+Dingolay,HD 96063,Leo,2019-12-17
+Diphda,HR 188,Cet,2016-08-21
+Diwo,WASP-17,Sco,2019-12-17
+Diya,WASP-72,For,2019-12-17
+Dofida,HD 117618,Cen,2019-12-17
+Dombay,HAT-P-3,UMa,2019-12-17
+Dschubba,HR 5953,Sco,2016-08-21
+Dubhe,HR 4301,UMa,2016-06-30
+Dziban,HR 6636,Dra,2017-09-05
+Ebla,HD 218566,Psc,2019-12-17
+Edasich,HR 5744,Dra,2015-12-15
+Electra,HR 1142,Tau,2016-08-21
+Elgafar,HR 5409,Vir,2018-06-01
+Elkurud,HR 2177,Col,2018-06-01
+Elnath,HR 1791,Tau,2016-07-20
+Eltanin,HR 6705,Dra,2016-08-21
+Emiw,HD 7199,Tuc,2019-12-17
+Enif,HR 8308,Peg,2016-07-20
+Errai,HR 8974,Cep,2015-12-15
+Fafnir,HR 6945,Dra,2015-12-15
+Fang,HR 5944,Sco,2017-06-30
+Fawaris,HR 7528,Cyg,2018-06-01
+Felis,HR 3923,Hya,2018-06-01
+Felixvarela,BD-17 63,Cet,2019-12-17
+Flegetonte,HD 102195,Vir,2019-12-17
+Fomalhaut,HR 8728,PsA,2015-12-15
+Formosa,HD 100655,Leo,2019-12-17
+Franz,HAT-P-14,Her,2019-12-17
+Fulu,HR 153,Cas,2017-06-30
+Fumalsamakah,HR 8773,Psc,2018-06-01
+Funi,HD 109246,Dra,2019-12-17
+Furud,HR 2282,CMa,2016-07-20
+Fuyue,HR 6630,Sco,2017-06-30
+Gacrux,HR 4763,Cru,2016-07-20
+Gakyid,HD 73534,Cnc,2019-12-17
+Geminga,PSR B0633+17,Gem,2022-04-04
+Giausar,HR 4434,Dra,2017-02-01
+Gienah,HR 4662,Crv,2016-11-06
+Ginan,HR 4700,Cru,2017-11-17
+Gloas,WASP-13,Lyn,2019-12-17
+Gomeisa,HR 2845,CMi,2016-07-20
+Grumium,HR 6688,Dra,2016-09-12
+Gudja,HR 5879,Ser,2018-08-10
+Gumala,HD 179949,Sgr,2019-12-17
+Guniibuu,HR 6402,Oph,2018-08-10
+Hadar,HR 5267,Cen,2016-08-21
+Haedus,HR 1641,Aur,2017-06-30
+Hamal,HR 617,Ari,2016-07-20
+Hassaleh,HR 1577,Aur,2017-06-30
+Hatysa,HR 1899,Ori,2017-09-05
+Helvetios,HR 8729,Peg,2015-12-15
+Heze,HR 5107,Vir,2018-06-01
+Hoggar,HD 28678,Tau,2019-12-17
+Homam,HR 8634,Peg,2016-08-21
+Horna,HAT-P-38,Tri,2019-12-17
+Hunahpu,HD 98219,Crt,2019-12-17
+Hunor,HAT-P-2,Her,2019-12-17
+Iklil,HR 5928,Sco,2017-09-05
+Illyrian,HD 82886,LMi,2019-12-17
+Imai,HR 4656,Cru,2018-08-10
+Inquill,HD 156411,Ara,2019-12-17
+Intan,HD 20868,For,2019-12-17
+Intercrus,HR 3743,UMa,2015-12-15
+Irena,WASP-38,Her,2019-12-17
+Itonda,HD 208487,Gru,2019-12-17
+Izar,HR 5506,Boo,2016-08-21
+Jabbah,HR 6027,Sco,2017-06-30
+Jishui,HR 2930,Gem,2017-06-30
+Kaffaljidhma,HR 804,Cet,2017-02-01
+Kalausi,HD 83443,Vel,2019-12-17
+Kamuy,HD 145457,CrB,2019-12-17
+Kang,HR 5315,Vir,2017-06-30
+Karaka,HD 137388,Aps,2019-12-17
+Kaus Australis,HR 6879,Sgr,2016-07-20
+Kaus Borealis,HR 6913,Sgr,2016-07-20
+Kaus Media,HR 6859,Sgr,2016-07-20
+Kaveh,HD 175541,Ser,2019-12-17
+Keid,HR 1325,Eri,2016-09-12
+Khambalia,HR 5359,Vir,2017-09-05
+Kitalpha,HR 8131,Equ,2016-08-21
+Kochab,HR 5563,UMi,2016-07-20
+Koeia,HIP 12961,Eri,2019-12-17
+Koit,XO-4,Lyn,2019-12-17
+Kornephoros,HR 6148,Her,2016-08-21
+Kraz,HR 4786,Crv,2018-06-01
+Kurhah,HR 8417,Cep,2016-09-12
+La Superba,HR 4846,CVn,2018-08-10
+Larawag,HR 6241,Sco,2017-11-17
+Lerna,HAT-P-42,Hya,2019-12-17
+Lesath,HR 6508,Sco,2016-08-21
+Libertas,HR 7595,Aql,2015-12-15
+Lich,PSR B1257+12,Vir,2015-12-15
+Liesma,HD 118203,UMa,2019-12-17
+Lilii Borea,HR 824,Ari,2017-09-05
+Lionrock,HD 212771,Aqr,2019-12-17
+Lucilinburhuc,HD 45350,Aur,2019-12-17
+Lusitania,HD 45652,Mon,2019-12-17
+Maasym,HR 6526,Her,2016-09-12
+Macondo,HD 93083,Ant,2019-12-17
+Mago,HD 32518,Cam,2019-12-17
+Mahasim,HR 2095,Aur,2017-06-30
+Mahsati,HD 152581,Oph,2019-12-17
+Maia,HR 1149,Tau,2016-07-20
+Malmok,WASP-39,Vir,2019-12-17
+Marfik,HR 6149,Oph,2016-09-12
+Markab,HR 8781,Peg,2016-06-30
+Markeb,HR 3734,Vel,2017-09-05
+Marohu,WASP-6,Aqr,2019-12-17
+Marsic,HR 6008,Her,2017-02-01
+Matar,HR 8650,Peg,2016-08-21
+Mazaalai,HAT-P-21,UMa,2020-03-01
+Mebsuta,HR 2473,Gem,2016-07-20
+Megrez,HR 4660,UMa,2016-06-30
+Meissa,HR 1879,Ori,2016-07-20
+Mekbuda,HR 2650,Gem,2016-09-12
+Meleph,HR 3429,Cnc,2017-09-05
+Menkalinan,HR 2088,Aur,2016-07-20
+Menkar,HR 911,Cet,2016-06-30
+Menkent,HR 5288,Cen,2016-08-21
+Menkib,HR 1228,Per,2016-09-12
+Merak,HR 4295,UMa,2016-06-30
+Merga,HR 5533,Boo,2016-09-12
+Meridiana,HR 7254,CrA,2017-09-05
+Merope,HR 1156,Tau,2016-07-20
+Mesarthim,HR 546,Ari,2016-08-21
+Miaplacidus,HR 3685,Car,2016-07-20
+Mimosa,HR 4853,Cru,2016-07-20
+Minchir,HR 3418,Hya,2017-09-05
+Minelauva,HR 4910,Vir,2017-06-30
+Mintaka,HR 1852,Ori,2016-07-20
+Mira,HR 681,Cet,2016-06-30
+Mirach,HR 337,And,2016-06-30
+Miram,HR 834,Per,2017-09-05
+Mirfak,HR 1017,Per,2016-07-20
+Mirzam,HR 2294,CMa,2016-07-20
+Misam,HR 941,Per,2017-09-05
+Mizar,HR 5054,UMa,2016-06-30
+Moldoveanu,XO-1,CrB,2019-12-17
+Monch,HD 130322,Vir,2019-12-17
+Montuno,WASP-79,Eri,2019-12-17
+Morava,WASP-60,Peg,2019-12-17
+Moriah,HAT-P-23,Del,2019-12-17
+Mothallah,HR 544,Tri,2016-08-21
+Mouhoun,HD 30856,Eri,2019-12-17
+Mpingo,WASP-71,Cet,2019-12-17
+Muliphein,HR 2657,CMa,2016-08-21
+Muphrid,HR 5235,Boo,2016-09-12
+Muscida,HR 3323,UMa,2016-07-20
+Musica,HR 8030,Del,2015-12-15
+Muspelheim,HAT-P-29,Per,2019-12-17
+Nahn,HR 3627,Cnc,2018-06-01
+Naledi,WASP-62,Dor,2019-12-17
+Naos,HR 3165,Pup,2016-08-21
+Nashira,HR 8278,Cap,2016-08-21
+Nasti,HD 68988,UMa,2019-12-17
+Natasha,HD 85390,Vel,2019-12-17
+Nekkar,HR 5602,Boo,2016-08-21
+Nembus,HR 464,And,2017-09-05
+Nenque,HD 6434,Phe,2019-12-17
+Nervia,HD 49674,Aur,2019-12-17
+Nganurganity,HR 2646,CMa,2017-09-05
+Nihal,HR 1829,Lep,2016-07-20
+Nikawiy,HD 136418,Boo,2019-12-17
+Nosaxa,HD 48265,Pup,2019-12-17
+Nunki,HR 7121,Sgr,2016-08-21
+Nusakan,HR 5747,CrB,2016-09-12
+Nushagak,HD 17156,Cas,2019-12-17
+Nyamien,WASP-15,Cen,2019-12-17
+Ogma,HD 149026,Her,2015-12-15
+Okab,HR 7235,Aql,2018-06-01
+Paikauhale,HR 6165,Sco,2018-08-10
+Parumleo,WASP-32,Psc,2019-12-17
+Peacock,HR 7790,Pav,2016-07-20
+Petra,WASP-80,Aql,2019-12-17
+Phact,HR 1956,Col,2016-07-20
+Phecda,HR 4554,UMa,2016-07-20
+Pherkad,HR 5735,UMi,2016-08-21
+Phoenicia,HD 192263,Aql,2019-12-17
+Piautos,HR 3268,Cnc,2018-06-01
+Pincoya,HD 164604,Sgr,2019-12-17
+Pipirima,HR 6252,Sco,2017-09-05
+Pipoltr,TrES-3,Her,2019-12-17
+Pleione,HR 1180,Tau,2016-06-30
+Poerava,HD 221287,Tuc,2019-12-17
+Polaris,HR 424,UMi,2016-06-30
+Polaris Australis,HR 7228,Oct,2017-09-05
+Polis,HR 6812,Sgr,2017-09-05
+Pollux,HR 2990,Gem,2015-12-15
+Porrima,HR 4825,Vir,2016-07-20
+Praecipua,HR 4247,LMi,2017-06-30
+Prima Hyadum,HR 1346,Tau,2017-09-05
+Procyon,HR 2943,CMi,2016-06-30
+Propus,HR 2216,Gem,2016-07-20
+Proxima Centauri,GJ 551,Cen,2016-08-21
+Ran,HR 1084,Eri,2015-12-15
+Rana,HR 1136,Eri,2022-04-04
+Rapeto,HD 153950,Sco,2019-12-17
+Rasalas,HR 3905,Leo,2016-09-12
+Rasalgethi,HR 6406,Her,2016-06-30
+Rasalhague,HR 6556,Oph,2016-07-20
+Rastaban,HR 6536,Dra,2016-08-21
+Regulus,HR 3982,Leo,2016-06-30
+Revati,HR 361,Psc,2017-06-30
+Rigel,HR 1713,Ori,2016-06-30
+Rigil Kentaurus,HR 5459,Cen,2016-11-06
+Rosaliadecastro,HD 149143,Oph,2019-12-17
+Rotanev,HR 7882,Del,2016-09-12
+Ruchbah,HR 403,Cas,2016-08-21
+Rukbat,HR 7348,Sgr,2016-07-20
+Sabik,HR 6378,Oph,2016-08-21
+Saclateni,HR 1612,Aur,2017-06-30
+Sadachbia,HR 8518,Aqr,2016-08-21
+Sadalbari,HR 8684,Peg,2016-08-21
+Sadalmelik,HR 8414,Aqr,2016-08-21
+Sadalsuud,HR 8232,Aqr,2016-08-21
+Sadr,HR 7796,Cyg,2016-08-21
+Sagarmatha,HD 100777,Leo,2019-12-17
+Saiph,HR 2004,Ori,2016-07-20
+Salm,HR 8880,Peg,2017-09-05
+Samaya,HD 205739,PsA,2019-12-17
+Sansuna,HAT-P-34,Sge,2019-12-17
+Sargas,HR 6553,Sco,2016-08-21
+Sarin,HR 6410,Her,2016-09-12
+Sceptrum,HR 1481,Eri,2017-06-30
+Scheat,HR 8775,Peg,2016-06-30
+Schedar,HR 168,Cas,2016-08-21
+Secunda Hyadum,HR 1373,Tau,2017-09-05
+Segin,HR 0542,Cas,2017-09-05
+Seginus,HR 5435,Boo,2016-08-21
+Sham,HR 7479,Sge,2016-09-12
+Shama,HD 99109,Leo,2019-12-17
+Sharjah,HIP 79431,Sco,2019-12-17
+Shaula,HR 6527,Sco,2016-07-20
+Sheliak,HR 7106,Lyr,2016-08-21
+Sheratan,HR 553,Ari,2016-07-20
+Sika,HD 181720,Sgr,2019-12-17
+Sirius,HR 2491,CMa,2016-06-30
+Situla,HR 8610,Aqr,2016-09-12
+Skat,HR 8709,Aqr,2016-08-21
+Solaris,BD+14 4559,Peg,2019-12-17
+Spica,HR 5056,Vir,2016-06-30
+Sterrennacht,HAT-P-6,And,2019-12-17
+Stribor,HD 75898,Lyn,2019-12-17
+Sualocin,HR 7906,Del,2016-09-12
+Subra,HR 3852,Leo,2016-09-12
+Suhail,HR 3634,Vel,2016-08-21
+Sulafat,HR 7178,Lyr,2016-08-21
+Syrma,HR 5338,Vir,2016-09-12
+Tabit,HR 1543,Ori,2017-09-05
+Taika,HAT-P-40,Lac,2019-12-17
+Taiyangshou,HR 4518,UMa,2017-06-30
+Taiyi,HR 4916,Dra,2017-06-30
+Talitha,HR 3569,UMa,2016-07-20
+Tangra,WASP-21,Peg,2019-12-17
+Tania Australis,HR 4069,UMa,2016-07-20
+Tania Borealis,HR 4033,UMa,2016-07-20
+Tapecue,HD 63765,Car,2019-12-17
+Tarazed,HR 7525,Aql,2016-08-21
+Tarf,HR 3249,Cnc,2018-06-01
+Taygeta,HR 1145,Tau,2016-08-21
+Tegmine,HR 3208,Cnc,2016-09-12
+Tejat,HR 2286,Gem,2017-02-01
+Terebellum,HR 7597,Sgr,2017-09-05
+Tevel,HAT-P-9,Aur,2019-12-17
+Theemin,HR 1464,Eri,2017-02-01
+Thuban,HR 5291,Dra,2016-06-30
+Tiaki,HR 8636,Gru,2017-09-05
+Tianguan,HR 1910,Tau,2017-06-30
+Tianyi,HR 4863,Dra,2017-06-30
+Timir,HD 148427,Oph,2019-12-17
+Tislit,WASP-161,Pup,2019-12-17
+Titawin,HR 458,And,2015-12-15
+Tojil,WASP-22,Eri,2019-12-17
+Toliman,HR 5460,Cen,2018-08-10
+Tonatiuh,HR 4609,Cam,2015-12-15
+Torcular,HR 510,Psc,2017-09-05
+Tuiren,HAT-P-36,CVn,2019-12-17
+Tupa,HD 108147,Cru,2019-12-17
+Tupi,HD 23079,Ret,2019-12-17
+Tureis,HR 3185,Pup,2016-09-12
+Ukdah,HR 3845,Hya,2018-06-01
+Uklun,HD 102117,Cen,2019-12-17
+Unukalhai,HR 5854,Ser,2016-08-21
+Uruk,HD 231701,Sge,2019-12-17
+Vega,HR 7001,Lyr,2016-06-30
+Veritate,HR 8930,And,2015-12-15
+Vindemiatrix,HR 4932,Vir,2016-07-20
+Wasat,HR 2777,Gem,2016-08-21
+Wazn,HR 2040,Col,2016-07-20
+Wezen,HR 2693,CMa,2016-07-20
+Wurren,HR 338,Phe,2017-11-17
+Xamidimura,HR 6247,Sco,2017-09-05
+Xihe,HD 173416,Lyr,2019-12-17
+Xuange,HR 5351,Boo,2017-06-30
+Yed Posterior,HR 6075,Oph,2016-10-05
+Yed Prior,HR 6056,Oph,2016-10-05
+Yildun,HR 6789,UMi,2016-08-21
+Zaniah,HR 4689,Vir,2016-09-12
+Zaurak,HR 1231,Eri,2016-07-20
+Zavijava,HR 4540,Vir,2016-08-21
+Zhang,HR 3903,Hya,2017-06-30
+Zibal,HR 984,Eri,2016-09-12
+Zosma,HR 4357,Leo,2016-07-20
+Zubenelgenubi,HR 5531,Lib,2016-08-21
+Zubenelhakrabi,HR 5787,Lib,2017-09-05
+Zubeneschamali,HR 5685,Lib,2016-08-21

@@ -95,7 +95,13 @@
                          class="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-blue-500 transition-colors cursor-pointer group relative overflow-hidden">
                         <div class="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors"></div>
                         <div class="flex justify-between items-start mb-3 relative z-10">
-                            <h3 class="text-lg font-bold">System {{ system.systemId }}</h3>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold">{{ system.name }}</h3>
+                                <span v-if="system.hasProperName"
+                                      class="px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    IAU
+                                </span>
+                            </div>
                             <span class="text-sm text-gray-400">ID: {{ system.systemId }}</span>
                         </div>
 
