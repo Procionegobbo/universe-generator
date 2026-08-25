@@ -6,3 +6,9 @@ Licensed under Creative Commons Attribution (CC BY).
 The data has been modified: reduced to four columns and reformatted as CSV.
 No names, designations or approval dates were altered.
 See backend/src/assets/star-proper-names.csv.
+
+Planet proper names in backend/src/assets/planet-proper-names.csv are drawn from
+works of science fiction, from mythology, and from real astronomy. They are used
+solely as generated identifiers for procedurally created worlds. No affiliation
+with, or endorsement by, any rights holder is implied. The `source` column is
+provenance reference only and is not used at runtime.
