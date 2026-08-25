@@ -5,3 +5,4 @@
 - [life-on-planets-001-planet-name-asset-and-loader.md](COMPLETED/life-on-planets-001-planet-name-asset-and-loader.md)
 - [life-on-planets-002-life-model-library.md](COMPLETED/life-on-planets-002-life-model-library.md)
 - [life-on-planets-003-generator-wiring-types-and-api-contract.md](COMPLETED/life-on-planets-003-generator-wiring-types-and-api-contract.md)
+- [life-on-planets-004-frontend-planet-life-display.md](COMPLETED/life-on-planets-004-frontend-planet-life-display.md)

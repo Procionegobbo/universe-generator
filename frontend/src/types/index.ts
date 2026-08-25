@@ -141,3 +141,13 @@ export const STAR_TYPE_DESCRIPTIONS: Record<string, string> = {
     'cM': 'Red Supergiant',
     'BH': 'Black Hole'
 };
+
+// Evolutionary milestones from docs/exoplanet-habitability-model.md, Part 2.
+export const LIFE_STAGE_LABELS: Record<number, string> = {
+    1: 'Microbial life',
+    2: 'Oxygenic photosynthesis',
+    3: 'Eukaryotic life',
+    4: 'Multicellular life',
+    5: 'Complex animals',
+    6: 'Intelligent life'
+};

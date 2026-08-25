@@ -4,7 +4,8 @@
       <button @click="close" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
       <div class="flex flex-col items-center w-full">
         <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="planet.planetType" class="w-40 h-40 object-contain rounded-full border-4 border-gray-800 bg-black mb-4" />
-        <h2 class="text-2xl font-bold text-white mb-2">{{ getPlanetTypeDescription(planet.planetType) }}</h2>
+        <h2 class="text-2xl font-bold text-white mb-2">{{ planet.name || getPlanetTypeDescription(planet.planetType) }}</h2>
+        <div v-if="planet.name" class="text-gray-300 mb-1">{{ getPlanetTypeDescription(planet.planetType) }}</div>
         <div class="text-gray-400 mb-4">Type: <span class="font-mono">{{ planet.planetType }}</span></div>
         <div class="w-full flex flex-col gap-4">
           <div
@@ -18,6 +19,19 @@
               <svg class="w-5 h-5 inline-block text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
               In the Goldilocks Zone
             </div>
+          </div>
+          <div class="bg-gray-800/80 rounded-lg p-4 shadow modal-section modal-section-vertical">
+            <ul class="text-gray-300 space-y-2 w-full">
+              <li class="flex items-center gap-2">
+                <b>Life:</b>
+                <span v-if="planet.hasLife" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-700/80 text-emerald-100">
+                  {{ getLifeStageLabel(planet.lifeComplexity) }}
+                </span>
+                <span v-else class="text-gray-400">No life</span>
+              </li>
+              <li><b>Life probability:</b> {{ (planet.lifeProbability * 100).toFixed(2) }}%</li>
+              <li><b>Life complexity:</b> {{ planet.lifeComplexity.toFixed(1) }}</li>
+            </ul>
           </div>
           <div class="bg-gray-800/80 rounded-lg p-4 shadow modal-section modal-section-vertical">
             <ul class="text-gray-300 space-y-2 w-full">
@@ -39,7 +53,8 @@
 <script setup lang="ts">
 import type { Planet } from '../types';
 import { getPlanetImage } from '../utils/planetImages';
-import { PLANET_TYPE_DESCRIPTIONS, PLANET_TYPE_LONG_DESCRIPTIONS } from '../types';
+import { LIFE_STAGE_LABELS, PLANET_TYPE_DESCRIPTIONS, PLANET_TYPE_LONG_DESCRIPTIONS } from '../types';
+import { lifeStageLevel } from '../utils/lifeStage';
 
 const { planet, close } = defineProps<{
   planet: Planet;
@@ -50,6 +65,8 @@ const getPlanetTypeDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type
 const getPlanetTypeLongDescription = (type: string) => {
   return PLANET_TYPE_LONG_DESCRIPTIONS[type] || PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
 };
+// Only called for planets with hasLife === true; the 1-6 clamp is display-only.
+const getLifeStageLabel = (complexity: number) => LIFE_STAGE_LABELS[lifeStageLevel(complexity)];
 </script>
 
 <style scoped>

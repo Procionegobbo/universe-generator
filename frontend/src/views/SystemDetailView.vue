@@ -32,6 +32,10 @@
                                 <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                                 Z: {{ system.zPos }}
                             </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                                Age: {{ system.age }} Gyr
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -78,6 +82,13 @@
                                                     <svg v-if="getThermalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
                                                 </div>
                                                 <div class="min-w-0">
+                                                    <div v-if="planet.name" class="font-bold text-gray-100 text-sm truncate mb-0.5" :title="planet.name">
+                                                        {{ planet.name }}
+                                                    </div>
+                                                    <span v-if="planet.hasLife"
+                                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700/80 text-emerald-100 mb-1">
+                                                        Life
+                                                    </span>
                                                     <div class="font-medium text-gray-200 text-sm truncate" :title="getPlanetDescription(planet.planetType)">
                                                         {{ getPlanetDescription(planet.planetType) }}
                                                     </div>
