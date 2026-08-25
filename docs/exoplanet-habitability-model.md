@@ -119,3 +119,11 @@ $$C_{index} = 0.54 \times 3.9 \approx 2.1$$
 - The entire complexity model assumes Earth's evolutionary pace is "typical." This is unverifiable: evolution could be far slower (major bottlenecks like the oxygenation event took billions of years for reasons that are not fully understood) or Earth could be an unusually fast/lucky case.
 - The habitability formula is a heuristic multiplicative index inspired by ESI and Drake-equation-style reasoning, not a calibrated physical probability — there is no real dataset of confirmed inhabited exoplanets to fit it against.
 - Useful for relative ranking and order-of-magnitude intuition, not for literal probability claims.
+
+## Implementation notes
+
+This document is the input to the generator, not a description of it. Where the two differ, the generator is the authority on its own behaviour. Three divergences are worth knowing about:
+
+- **Abiogenesis factor.** `P` above says whether a world *could* host life. The generator multiplies it by a factor of `0.1` — the odds life ever got started — before drawing. Without it, roughly a quarter of all systems came out inhabited, which made life a routine feature of a sector rather than a discovery. Only the draw is scaled, so `P` and the complexity index keep the meaning they have here: life is rarer, not simpler. The factor is not modelled in this document.
+- **Radius bands below 0.5 R⊕.** The `R` table starts at 0.5 R⊕, but the generator routinely produces dwarf planets a few hundred kilometres across. Two bands were added below the table's floor (`< 0.3 → 0.1`, `0.3–0.5 → 0.5`); without them a Goldilocks iceball would score like Earth.
+- **The Part 1 worked example.** Its printed temperature factor of `0.995` and total of `P ≈ 0.54` do not follow from the formula above it, which gives `exp(-49/1800) = 0.97314` and `P = 0.5252`; the Part 2 figures inherit the discrepancy (`C_index = 2.07`, not `2.1`). The generator implements the formulas, not the printed totals. The example is left as written.
