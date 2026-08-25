@@ -24,12 +24,16 @@
             <ul class="text-gray-300 space-y-2 w-full">
               <li class="flex items-center gap-2">
                 <b>Life:</b>
-                <span v-if="planet.hasLife" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-700/80 text-emerald-100">
-                  {{ getLifeStageLabel(planet.lifeComplexity) }}
-                </span>
+                <span v-if="planet.hasLife" class="text-emerald-300">Present</span>
                 <span v-else class="text-gray-400">No life</span>
               </li>
-              <li v-if="planet.hasLife"><b>Complexity:</b> {{ planet.lifeComplexity.toFixed(1) }} of 6</li>
+              <li v-if="planet.hasLife" class="flex items-center gap-2">
+                <b>Complexity:</b>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-700/80 text-emerald-100">
+                  {{ getLifeStageLabel(planet.lifeComplexity) }}
+                </span>
+                <span class="text-gray-400 text-sm">({{ planet.lifeComplexity.toFixed(1) }} of 6)</span>
+              </li>
             </ul>
           </div>
           <div class="bg-gray-800/80 rounded-lg p-4 shadow modal-section modal-section-vertical">
