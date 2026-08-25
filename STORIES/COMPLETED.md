@@ -2,3 +2,8 @@
 - [system-names-001-star-name-asset-and-loader.md](COMPLETED/system-names-001-star-name-asset-and-loader.md)
 - [system-names-003-generator-wiring-types-and-api-contract.md](COMPLETED/system-names-003-generator-wiring-types-and-api-contract.md)
 - [system-names-004-frontend-surfacing.md](COMPLETED/system-names-004-frontend-surfacing.md)
+- [life-on-planets-001-planet-name-asset-and-loader.md](COMPLETED/life-on-planets-001-planet-name-asset-and-loader.md)
+- [life-on-planets-002-life-model-library.md](COMPLETED/life-on-planets-002-life-model-library.md)
+- [life-on-planets-003-generator-wiring-types-and-api-contract.md](COMPLETED/life-on-planets-003-generator-wiring-types-and-api-contract.md)
+- [life-on-planets-004-frontend-planet-life-display.md](COMPLETED/life-on-planets-004-frontend-planet-life-display.md)
+- [life-on-planets-005-frontend-systems-filter-and-docs.md](COMPLETED/life-on-planets-005-frontend-systems-filter-and-docs.md)

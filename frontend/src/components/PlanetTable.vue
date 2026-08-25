@@ -15,7 +15,7 @@
                     v-model="searchQuery"
                     type="text"
                     class="form-input"
-                    placeholder="Search by planet type, star ID, or orbit..."
+                    placeholder="Search by planet name, type, star ID, or orbit..."
                 />
             </div>
             <div class="w-full sm:w-48">
@@ -33,6 +33,14 @@
                     <option value="">All</option>
                     <option value="1">Only Goldilocks</option>
                     <option value="0">Exclude Goldilocks</option>
+                </select>
+            </div>
+            <div class="w-full sm:w-48">
+                <label class="form-label" for="lifeFilter">Life</label>
+                <select id="lifeFilter" v-model="lifeFilter" class="form-input">
+                    <option value="">All</option>
+                    <option value="1">With life</option>
+                    <option value="0">Without life</option>
                 </select>
             </div>
         </div>
@@ -53,6 +61,7 @@
                         <th>Moons</th>
                         <th>Temp (K)</th>
                         <th>Thermal Zone</th>
+                        <th>Life</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,6 +82,7 @@
                             </div>
                         </td>
                         <td class="text-gray-400 text-sm">
+                            <div v-if="planet.name" class="font-bold text-gray-100">{{ planet.name }}</div>
                             {{ getPlanetTypeDescription(planet.planetType) }}
                         </td>
                         <td class="font-mono">
@@ -92,6 +102,13 @@
                                 :class="getZoneColor(planet.orbitalZone)">
                                 {{ planet.orbitalZone === 'Goldilocks' ? 'Goldilocks' : planet.orbitalZone }}
                             </span>
+                        </td>
+                        <td>
+                            <span v-if="planet.hasLife"
+                                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-700/80 text-emerald-100">
+                                {{ getLifeStageLabel(planet.lifeComplexity) }}
+                            </span>
+                            <span v-else class="text-gray-500">—</span>
                         </td>
                     </tr>
                 </tbody>
@@ -168,8 +185,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { Planet, System, Star } from '../types';
-import { PLANET_TYPE_DESCRIPTIONS } from '../types';
+import { LIFE_STAGE_LABELS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getPlanetImage } from '../utils/planetImages';
+import { lifeStageLevel } from '../utils/lifeStage';
 import { useRouter } from 'vue-router';
 
 const props = defineProps<{
@@ -182,6 +200,7 @@ const props = defineProps<{
 const searchQuery = ref('');
 const planetTypeFilter = ref(props.initialTypeFilter || '');
 const goldilocksFilter = ref('');
+const lifeFilter = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const router = useRouter();
@@ -215,7 +234,8 @@ const filteredPlanets = computed(() => {
         filtered = filtered.filter(planet =>
             planet.planetType.toLowerCase().includes(query) ||
             planet.starId.toString().includes(query) ||
-            planet.orbitalNumber.toString().includes(query)
+            planet.orbitalNumber.toString().includes(query) ||
+            (planet.name ? planet.name.toLowerCase().includes(query) : false)
         );
     }
 
@@ -224,6 +244,13 @@ const filteredPlanets = computed(() => {
         filtered = filtered.filter(planet => planet.orbitalZone === 'Goldilocks');
     } else if (goldilocksFilter.value === '0') {
         filtered = filtered.filter(planet => planet.orbitalZone !== 'Goldilocks');
+    }
+
+    // Apply life filter
+    if (lifeFilter.value === '1') {
+        filtered = filtered.filter(planet => planet.hasLife);
+    } else if (lifeFilter.value === '0') {
+        filtered = filtered.filter(planet => !planet.hasLife);
     }
 
     return filtered;
@@ -272,7 +299,7 @@ const earthLikeCount = computed(() => {
 });
 
 // Reset pagination when filters change
-watch([searchQuery, planetTypeFilter, goldilocksFilter], () => {
+watch([searchQuery, planetTypeFilter, goldilocksFilter, lifeFilter], () => {
     currentPage.value = 1;
 });
 
@@ -300,6 +327,11 @@ const getPlanetTypeColor = (type: string) => {
 
 const getPlanetTypeDescription = (type: string) => {
     return PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
+};
+
+// Only called for planets with hasLife === true; the 1-6 clamp is display-only.
+const getLifeStageLabel = (complexity: number) => {
+    return LIFE_STAGE_LABELS[lifeStageLevel(complexity)];
 };
 
 // Label the thermal zone from the planet's surface temperature so it stays

@@ -89,7 +89,25 @@
 
             <!-- Systems Tab -->
             <div v-if="activeTab === 'systems'" class="animate-fade-in">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div class="w-full sm:w-48">
+                        <label class="form-label" for="systemLifeFilter">Life</label>
+                        <select id="systemLifeFilter" v-model="lifeFilter" class="form-input">
+                            <option value="">All</option>
+                            <option value="1">With life</option>
+                            <option value="0">Without life</option>
+                        </select>
+                    </div>
+                    <div class="text-gray-400 text-sm">
+                        Showing {{ filteredSystems.length }} of {{ systems.length }} systems
+                    </div>
+                </div>
+
+                <div v-if="filteredSystems.length === 0" class="text-center py-12 text-gray-500">
+                    No systems match the selected filter.
+                </div>
+
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div v-for="system in paginatedSystems" :key="system.systemId"
                          @click="navigateToSystem(system.systemId)"
                          class="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-blue-500 transition-colors cursor-pointer group relative overflow-hidden">
@@ -100,6 +118,10 @@
                                 <span v-if="system.hasProperName"
                                       class="px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30">
                                     IAU
+                                </span>
+                                <span v-if="systemsWithLife.has(system.systemId)"
+                                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-700/80 text-emerald-100">
+                                    Life
                                 </span>
                             </div>
                             <span class="text-sm text-gray-400">ID: {{ system.systemId }}</span>
@@ -140,7 +162,7 @@
                     </div>
                 </div>
 
-                <div v-if="systems.length > itemsPerPage" class="mt-6 flex justify-between items-center">
+                <div v-if="filteredSystems.length > itemsPerPage" class="mt-6 flex justify-between items-center">
                     <div class="text-gray-400 text-sm">
                         Page {{ currentSystemPage }} of {{ totalSystemPages }}
                     </div>
@@ -273,7 +295,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import StarTable from './StarTable.vue';
 import PlanetTable from './PlanetTable.vue';
@@ -305,12 +327,38 @@ const hasData = computed(() => {
     return props.systems.length > 0 || props.stars.length > 0 || props.planets.length > 0;
 });
 
+// Systems containing at least one inhabited planet. Built in a single
+// O(stars + planets) pass so filtering the grid stays O(systems).
+const systemsWithLife = computed(() => {
+    const starToSystem = new Map(props.stars.map(star => [star.starId, star.systemId]));
+    const withLife = new Set<number>();
+    props.planets.forEach(planet => {
+        if (!planet.hasLife) return;
+        const systemId = starToSystem.get(planet.starId);
+        if (systemId !== undefined) withLife.add(systemId);
+    });
+    return withLife;
+});
+
+// '' = All, '1' = with life, '0' = without life (same encoding as PlanetTable).
+const lifeFilter = ref('');
+
+const filteredSystems = computed(() => {
+    if (lifeFilter.value === '') return props.systems;
+    const wanted = lifeFilter.value === '1';
+    return props.systems.filter(system => systemsWithLife.value.has(system.systemId) === wanted);
+});
+
+watch(lifeFilter, () => {
+    currentSystemPage.value = 1;
+});
+
 // System pagination
-const totalSystemPages = computed(() => Math.ceil(props.systems.length / itemsPerPage));
+const totalSystemPages = computed(() => Math.ceil(filteredSystems.value.length / itemsPerPage));
 const paginatedSystems = computed(() => {
     const start = (currentSystemPage.value - 1) * itemsPerPage;
     const end = start + itemsPerPage;
-    return props.systems.slice(start, end);
+    return filteredSystems.value.slice(start, end);
 });
 
 // Helper functions

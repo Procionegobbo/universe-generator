@@ -4,7 +4,7 @@
   "description": "Backend API for stellar generation system",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && mkdir -p dist/assets && cp -R src/assets/. dist/assets && node -e \"require('fs').accessSync('dist/assets/star-proper-names.csv')\"",
+    "build": "tsc && mkdir -p dist/assets && cp -R src/assets/. dist/assets && node -e \"['star-proper-names.csv','planet-proper-names.csv'].forEach(f=>require('fs').accessSync('dist/assets/'+f))\"",
     "dev": "nodemon src/index.ts",
     "start": "node dist/index.js",
     "test": "jest",

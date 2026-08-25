@@ -11,6 +11,7 @@ A web application for generating procedural star systems with realistic astronom
 - **Habitable Zones**: Each orbit is classified against the star's optimistic Goldilocks bounds (recent Venus / early Mars, `√(L/1.78)` … `√(L/0.32)`); only planets in the habitable band are flagged
 - **Thermal Zoning**: Planet types are biased by orbital temperature — hot types (Molten, Hell) cluster near the star, frozen types (Ice, Methane) appear in the cold outer orbits
 - **Surface Temperature**: Every planet reports a surface temperature computed from stellar flux, corrected for the planet's albedo and greenhouse effect
+- **Life**: Planets in the habitable band are scored for habitability from their star, temperature, radius, atmosphere and system age, then gated by an abiogenesis probability — a default 100-system sector carries around 2–3 inhabited worlds, and some carry none. Inhabited planets get a proper name and a complexity from microbial life to intelligent life
 - **Realistic Orbits**: Refined Titius-Bode spacing with the special Mercury term and a damped outer growth ratio (so the outer planets match reality, e.g. Neptune ≈ 30 AU)
 - **Dice Notation Formulas**: Uses dice notation (e.g., "2d6+3") for probabilistic calculations
 - **Responsive UI**: Modern Vue.js interface with real-time data visualization
@@ -167,11 +168,17 @@ npm run test
   "gravity": 9.23,
   "semiMajorAxis": 1.0,
   "temperature": 288,
-  "habitableZone": true
+  "habitableZone": true,
+  "lifeProbability": 0.5252,
+  "lifeComplexity": 2.07,
+  "hasLife": true,
+  "name": "Arrakis"
 }
 ```
 
 `semiMajorAxis` is in AU, `temperature` is the surface temperature in Kelvin (albedo + greenhouse), and `habitableZone` is `true` only when the orbit falls in the star's habitable band.
+
+`lifeProbability` is the habitability score `P` — the odds the world *could* host life, not that it does; realisation is gated by a further abiogenesis factor. `lifeComplexity` is `P × C(t_bio)` on a 0–6 scale, which the UI rounds and clamps into the six named stages. `hasLife` is the realised outcome, and `name` is present only when it is `true`.
 
 ## Star Types
 
@@ -249,6 +256,16 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 - The zone drives both planet-type selection and the `habitableZone` flag (`true` only in Zone B)
 - Surface temperature: `T_eq = 278.3 · ((1 − albedo) · L)^0.25 · a^−0.5`, then `T_surface = T_eq + greenhouse`, with albedo and greenhouse taken from the planet type — so a thick-atmosphere world can be hotter than a closer bare rock (as Venus is hotter than Mercury)
 
+### Life & Habitability
+- Each system is given an `age` in Gyr, drawn from a range that follows the zone's stellar population — core sectors skew old, outer sectors young
+- Planets flagged `habitableZone` are scored `P = S × T × R × A × A_age`: the host star's spectral class, a Gaussian on Earth's 288 K with a 30 K tolerance, the planet's radius in Earth radii, an atmosphere factor by planet type, and a stellar-age factor gated by the star's main-sequence lifetime `L = 10 · (M/M☉)^−2.5`
+- Anything past its main sequence scores zero, so giants, white dwarfs, neutron stars, black holes and short-lived O and B stars carry no life by construction
+- `P` says whether a world *could* host life. It is multiplied by an abiogenesis factor of `0.1` — the odds life ever got started — before the draw that decides. That factor is the single knob for how common life is: at `0.1` a default 100-system sector carries around 2–3 inhabited worlds, and some carry none
+- Complexity follows the model's `C_index = P × C(t_bio)`, where `t_bio` is the system's age less a 0.5 Gyr delay for prebiotic chemistry. The API returns the raw index; the UI rounds and clamps it to six named stages, from microbial life to intelligent life
+- Inhabited worlds take a proper name drawn without replacement from a pool of 288 names. Only very large sectors exhaust it, after which worlds fall back to a `<star name> <roman orbit>` designation, so every inhabited planet stays uniquely named
+- Life draws from its own PRNG stream (`<seed>::life`), so adding it left the geometry, spectral classes, planets and system and star names of every pre-existing seed unchanged
+- The model is documented in `docs/exoplanet-habitability-model.md`; the abiogenesis factor is an implementation term the document does not model
+
 ### System Generation
 - Random 3D positions within sector cube
 - Star count determined probabilistically (1-4 stars per system)
@@ -257,7 +274,7 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 ## Frontend Features
 
 - **Sector Controls**: Adjust system count and sector size with sliders
-- **Data Tables**: Filterable and sortable tables for stars and planets
+- **Data Tables**: Filterable and sortable tables for stars and planets, including filters for which systems and planets carry life
 - **Statistics**: Visual distribution charts and averages
 - **Export**: Download generated data as JSON
 - **Responsive Design**: Works on desktop and mobile

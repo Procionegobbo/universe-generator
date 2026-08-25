@@ -73,6 +73,9 @@ describe('Sector API Integration', () => {
         expect(typeof system.name).toBe('string');
         expect(system.name.length).toBeGreaterThan(0);
         expect(typeof system.hasProperName).toBe('boolean');
+        // Life: the API exposes a system age (test 44)
+        expect(typeof system.age).toBe('number');
+        expect(system.age).toBeGreaterThanOrEqual(0.5);
       });
 
       // Verify each star
@@ -95,6 +98,10 @@ describe('Sector API Integration', () => {
         expect(planet.planetType).toBeDefined();
         expect(typeof planet.diameter).toBe('number');
         expect(typeof planet.moonCount).toBe('number');
+        // Life: the API exposes the three life fields (test 45)
+        expect(typeof planet.lifeProbability).toBe('number');
+        expect(typeof planet.lifeComplexity).toBe('number');
+        expect(typeof planet.hasLife).toBe('boolean');
       });
     });
 
@@ -166,6 +173,81 @@ describe('Sector API Integration', () => {
 
       // Names stay unique even past exhaustion
       const names = systems.map((s: any) => s.name);
+      expect(new Set(names).size).toBe(names.length);
+    });
+
+    test('should return identical life data for the same seed (test 46)', async () => {
+      const requestBody = {
+        systemCount: 25,
+        sectorVolume: 1000,
+        seed: 'life-determinism',
+        zone: 'medium'
+      };
+
+      const first = await request(app).post('/api/sector/generate').send(requestBody).expect(200);
+      const second = await request(app).post('/api/sector/generate').send(requestBody).expect(200);
+
+      const lifeOf = (body: any) => ({
+        ages: body.data.systems.map((s: any) => s.age),
+        probabilities: body.data.planets.map((p: any) => p.lifeProbability),
+        presence: body.data.planets.map((p: any) => p.hasLife),
+        names: body.data.planets.map((p: any) => p.name)
+      });
+
+      expect(lifeOf(second.body)).toEqual(lifeOf(first.body));
+    });
+
+    test('should return different life data for a different seed (test 47)', async () => {
+      const base = {
+        systemCount: 25,
+        sectorVolume: 1000,
+        zone: 'medium'
+      };
+
+      const first = await request(app)
+        .post('/api/sector/generate')
+        .send({ ...base, seed: 'life-seed-one' })
+        .expect(200);
+      const second = await request(app)
+        .post('/api/sector/generate')
+        .send({ ...base, seed: 'life-seed-two' })
+        .expect(200);
+
+      const presenceOne = first.body.data.planets.map((p: any) => p.hasLife);
+      const presenceTwo = second.body.data.planets.map((p: any) => p.hasLife);
+      const agesOne = first.body.data.systems.map((s: any) => s.age);
+      const agesTwo = second.body.data.systems.map((s: any) => s.age);
+
+      const differs =
+        JSON.stringify(presenceOne) !== JSON.stringify(presenceTwo) ||
+        JSON.stringify(agesOne) !== JSON.stringify(agesTwo);
+      expect(differs).toBe(true);
+    });
+
+    test('should score every planet and keep planet names unique at scale (test 48)', async () => {
+      // 1000 systems drives the 288-name planet pool towards exhaustion, so this
+      // exercises the designation fallback all the way through the HTTP layer.
+      const response = await request(app)
+        .post('/api/sector/generate')
+        .send({ systemCount: 1000, sectorVolume: 1000000, seed: 'life-exhaustion', zone: 'medium' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      const planets = response.body.data.planets;
+      expect(planets.length).toBeGreaterThan(0);
+
+      planets.forEach((planet: any) => {
+        expect(typeof planet.lifeProbability).toBe('number');
+        expect(typeof planet.lifeComplexity).toBe('number');
+        expect(typeof planet.hasLife).toBe('boolean');
+      });
+
+      // Every named (inhabited) planet is unique sector-wide, past exhaustion too
+      const names = planets
+        .filter((planet: any) => planet.name !== undefined)
+        .map((planet: any) => planet.name);
+      expect(names.length).toBeGreaterThan(0);
       expect(new Set(names).size).toBe(names.length);
     });
 

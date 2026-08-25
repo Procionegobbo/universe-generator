@@ -10,6 +10,7 @@
                     <a href="#planetary-types" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Planetary Types</a>
                     <a href="#orbital-mechanics" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Orbital Mechanics</a>
                     <a href="#temperature" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Temperature &amp; Habitability</a>
+                    <a href="#life" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Life &amp; Habitability</a>
                 </nav>
             </div>
 
@@ -172,7 +173,7 @@
                 <hr class="border-gray-800">
 
                 <!-- Temperature & Habitability -->
-                <section id="temperature" class="scroll-mt-24 pb-12">
+                <section id="temperature" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Temperature &amp; Habitability</h3>
                     <p class="text-gray-400 mb-6">
                         Every planet reports a surface temperature derived from the stellar flux it receives, then corrected for its own atmosphere. The orbital position relative to the star's habitable (Goldilocks) bounds also defines a thermal zone that steers which planet types can form there.
@@ -206,6 +207,73 @@
                                 A planet is flagged as being in the habitable zone only when it falls in Zone B — necessary, but not sufficient, for life (a runaway greenhouse can still make it too hot).
                             </p>
                         </div>
+                    </div>
+                </section>
+
+                <hr class="border-gray-800">
+
+                <!-- Life & Habitability -->
+                <section id="life" class="scroll-mt-24 pb-12">
+                    <h3 class="text-2xl font-bold text-white mb-6">Life &amp; Habitability</h3>
+                    <p class="text-gray-400 mb-6">
+                        Sitting in the habitable zone only makes a planet a candidate. Every candidate is then scored by a habitability probability <span class="font-mono text-emerald-300">P</span>, the product of five independent factors, and life is realised by a single random draw against it. A planet outside Zone B scores <span class="font-mono text-emerald-300">P = 0</span> and can never be inhabited.
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="card bg-emerald-900/10 border-emerald-800/50 p-6">
+                            <h4 class="text-lg font-bold text-emerald-300 mb-3">The Five Factors</h4>
+                            <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 mb-4">
+                                P = S · T · R · A · A_age
+                            </div>
+                            <ul class="text-sm text-gray-400 space-y-2">
+                                <li><span class="font-bold text-emerald-300">S · Star type</span> — G 1.0, K 0.9, F 0.7, M 0.5, every other class 0.1.</li>
+                                <li><span class="font-bold text-emerald-300">T · Temperature</span> — a Gaussian centred on Earth's 288 K with a 30 K tolerance: <span class="font-mono">exp(−(T − 288)² / (2 · 30²))</span>.</li>
+                                <li><span class="font-bold text-emerald-300">R · Radius</span> — 1.0 between 0.5 and 1.5 Earth radii, falling away on either side; gas and ice giants score 0.05 and asteroid belts 0.</li>
+                                <li><span class="font-bold text-emerald-300">A · Atmosphere</span> — 1.0 for Earth-like, Ocean and Jungle worlds, 0.3 where an atmosphere is absent or unstable, 0.6 otherwise.</li>
+                                <li><span class="font-bold text-emerald-300">A_age · Age</span> — has the system had time? See the age gate.</li>
+                            </ul>
+                            <p class="text-xs text-gray-500 mt-4 italic">
+                                Because the factors multiply, a single zero anywhere — a belt, a red giant host, a system younger than its chemistry needs — is enough to rule life out entirely.
+                            </p>
+                        </div>
+                        <div class="card bg-blue-900/10 border-blue-800/50 p-6">
+                            <h4 class="text-lg font-bold text-blue-300 mb-3">The Age Gate</h4>
+                            <p class="text-gray-400 text-sm mb-4">
+                                Each system draws an age in Gyr from a range set by its sector zone (the core and the halo are old, the central zone is young). The age factor is a sigmoid in that age, gated by a step function on the host star's main-sequence lifetime.
+                            </p>
+                            <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 space-y-1">
+                                <div>A_age = sigmoid(2 · (t − 0.5)) · H(L − t)</div>
+                                <div>L = 10 · (M / M☉)^−2.5 Gyr</div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-4 italic">
+                                t = system age (Gyr), M = stellar mass. The sigmoid encodes the ~0.5 Gyr prebiotic delay before life can start. The step function <span class="font-mono">H(L − t)</span> is zero once the star has outlived its main sequence — so a massive, short-lived O or B star gates out early, and any star observed off the main sequence (white dwarf, giant, supergiant, neutron star, black hole) yields exactly zero at any age.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card bg-gray-900/50 border-gray-800 p-6">
+                        <h4 class="text-lg font-bold text-emerald-300 mb-3">Complexity Scale</h4>
+                        <p class="text-gray-400 text-sm mb-4">
+                            Where <span class="font-mono text-emerald-300">P</span> answers "is there life?", the complexity index answers "how far has it got?". A logistic curve fitted to Earth's own evolutionary milestones runs over the biological time available (<span class="font-mono">t_bio = t − 0.5</span> Gyr), and is scaled by the habitability probability.
+                        </p>
+                        <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 space-y-1 mb-4">
+                            <div>C(t_bio) = 6 / (1 + exp(−1.3 · (t_bio − 3.2)))</div>
+                            <div>C_index = P · C(t_bio)</div>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4">
+                            The index is reported as a raw number in <span class="font-mono">[0, 6]</span>; the UI rounds it to the nearest milestone on the 1–6 scale below. An inhabited world is never shown below stage 1, since the presence of life already implies it.
+                        </p>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-400">
+                            <li><span class="font-mono text-emerald-300 mr-2">1</span>Microbial life</li>
+                            <li><span class="font-mono text-emerald-300 mr-2">2</span>Oxygenic photosynthesis</li>
+                            <li><span class="font-mono text-emerald-300 mr-2">3</span>Eukaryotic life</li>
+                            <li><span class="font-mono text-emerald-300 mr-2">4</span>Multicellular life</li>
+                            <li><span class="font-mono text-emerald-300 mr-2">5</span>Complex animals</li>
+                            <li><span class="font-mono text-emerald-300 mr-2">6</span>Intelligent life</li>
+                        </ul>
+                        <p class="text-xs text-gray-500 mt-4 italic">
+                            The score above says whether a world <em>could</em> host life, not whether it does. It is multiplied by an abiogenesis probability of <span class="font-mono">0.1</span> — the odds that life ever got started at all — before the draw, which is what keeps inhabited worlds scarce without making the ones that exist any simpler. In practice a default 100-system medium sector yields around 2–3 inhabited planets, and some sectors have none. Each one is given a proper name drawn without replacement from a pool of 288 catalogued exoplanet names; only in very large sectors does that pool run dry, after which the remaining worlds fall back to a <span class="font-mono">&lt;star name&gt; &lt;roman orbit&gt;</span> designation, so every inhabited planet still carries a unique name.
+                        </p>
                     </div>
                 </section>
             </div>

@@ -93,6 +93,10 @@
                             <li>orbitalNumber: number</li>
                             <li>diameter: number</li>
                             <li>moonCount: number</li>
+                            <li>lifeProbability: number</li>
+                            <li>lifeComplexity: number</li>
+                            <li>hasLife: boolean</li>
+                            <li>name?: string</li>
                         </ul>
                     </div>
                     <div class="p-4 bg-gray-800/30 rounded-lg border border-gray-700">
@@ -104,6 +108,7 @@
                             <li>xPos: number</li>
                             <li>yPos: number</li>
                             <li>zPos: number</li>
+                            <li>age: number</li>
                         </ul>
                     </div>
                 </div>

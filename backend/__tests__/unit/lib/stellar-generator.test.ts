@@ -549,4 +549,187 @@ describe('StellarGenerator', () => {
       expect(iceInC).toBeGreaterThan(iceInB);
     });
   });
+
+  describe('life', () => {
+    // One 300-system sector shared by the scale tests (39-41): generating it
+    // once keeps the suite fast, matching generation-stability.test.ts.
+    const LARGE_SYSTEM_COUNT = 300;
+    const large = new StellarGenerator(TEST_SEED).generateSector(LARGE_SYSTEM_COUNT, 1000);
+    const largeStarsById = new Map(large.stars.map((star) => [star.starId, star]));
+    const MAIN_SEQUENCE_CLASSES = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+
+    test('gives every system a numeric age inside its zone range (test 35)', () => {
+      const medium = new StellarGenerator(TEST_SEED, 'medium').generateSector(30, 1000);
+      expect(medium.systems.length).toBe(30);
+      medium.systems.forEach((system) => {
+        expect(typeof system.age).toBe('number');
+        expect(Number.isNaN(system.age)).toBe(false);
+        expect(system.age).toBeGreaterThanOrEqual(0.5);
+        expect(system.age).toBeLessThanOrEqual(10.0);
+      });
+
+      const core = new StellarGenerator(TEST_SEED, 'core').generateSector(30, 1000);
+      expect(core.systems.length).toBe(30);
+      core.systems.forEach((system) => {
+        expect(typeof system.age).toBe('number');
+        expect(system.age).toBeGreaterThanOrEqual(6.0);
+        expect(system.age).toBeLessThanOrEqual(13.0);
+      });
+    });
+
+    test('gives every planet the three required life fields, correctly typed and bounded (test 36)', () => {
+      expect(large.planets.length).toBeGreaterThan(0);
+      large.planets.forEach((planet) => {
+        expect(typeof planet.lifeProbability).toBe('number');
+        expect(Number.isNaN(planet.lifeProbability)).toBe(false);
+        expect(planet.lifeProbability).toBeGreaterThanOrEqual(0);
+        expect(planet.lifeProbability).toBeLessThanOrEqual(1);
+
+        expect(typeof planet.lifeComplexity).toBe('number');
+        expect(Number.isNaN(planet.lifeComplexity)).toBe(false);
+        expect(planet.lifeComplexity).toBeGreaterThanOrEqual(0);
+        expect(planet.lifeComplexity).toBeLessThanOrEqual(6);
+
+        expect(typeof planet.hasLife).toBe('boolean');
+      });
+    });
+
+    test('hard-zeroes every planet outside the Goldilocks zone (test 37)', () => {
+      const outside = large.planets.filter((planet) => planet.habitableZone === false);
+      expect(outside.length).toBeGreaterThan(0);
+      outside.forEach((planet) => {
+        expect(planet.lifeProbability).toBe(0);
+        expect(planet.lifeComplexity).toBe(0);
+        expect(planet.hasLife).toBe(false);
+      });
+    });
+
+    test('names inhabited planets and only inhabited planets (test 38)', () => {
+      const inhabited = large.planets.filter((planet) => planet.hasLife);
+      expect(inhabited.length).toBeGreaterThan(0);
+      inhabited.forEach((planet) => {
+        expect(planet.name).toBeDefined();
+        expect(typeof planet.name).toBe('string');
+        expect(planet.name!.length).toBeGreaterThan(0);
+      });
+
+      large.planets
+        .filter((planet) => !planet.hasLife)
+        .forEach((planet) => {
+          expect(planet.name).toBeUndefined();
+        });
+    });
+
+    test('produces both life outcomes at scale (test 39)', () => {
+      const inhabited = large.planets.filter((planet) => planet.hasLife);
+      const barrenGoldilocks = large.planets.filter(
+        (planet) => planet.habitableZone && !planet.hasLife
+      );
+
+      // Both branches of the presence draw are actually exercised.
+      expect(inhabited.length).toBeGreaterThan(0);
+      expect(barrenGoldilocks.length).toBeGreaterThan(0);
+    });
+
+    test('gives every inhabited planet a sector-unique name (test 40)', () => {
+      const names = large.planets
+        .filter((planet) => planet.hasLife)
+        .map((planet) => planet.name);
+
+      expect(names.length).toBeGreaterThan(0);
+      expect(new Set(names).size).toBe(names.length);
+    });
+
+    test('never yields life around an off-main-sequence host (test 41)', () => {
+      const offMainSequence = large.planets.filter((planet) => {
+        const host = largeStarsById.get(planet.starId);
+        return host !== undefined && !MAIN_SEQUENCE_CLASSES.includes(host.spectralClass);
+      });
+
+      // The assertion would be vacuous if the generator never produced one.
+      expect(offMainSequence.length).toBeGreaterThan(0);
+      offMainSequence.forEach((planet) => {
+        expect(planet.lifeProbability).toBe(0);
+      });
+    });
+
+    test('is deterministic for a fixed seed and diverges across seeds (test 42)', () => {
+      const lifeOf = (sector: ReturnType<StellarGenerator['generateSector']>) => ({
+        ages: sector.systems.map((system) => system.age),
+        probabilities: sector.planets.map((planet) => planet.lifeProbability),
+        complexities: sector.planets.map((planet) => planet.lifeComplexity),
+        presence: sector.planets.map((planet) => planet.hasLife),
+        names: sector.planets.map((planet) => planet.name)
+      });
+
+      const first = lifeOf(new StellarGenerator(TEST_SEED).generateSector(50, 1000));
+      const second = lifeOf(new StellarGenerator(TEST_SEED).generateSector(50, 1000));
+      expect(second).toEqual(first);
+
+      const other = lifeOf(new StellarGenerator('a-different-seed').generateSector(50, 1000));
+      const differs =
+        JSON.stringify(other.presence) !== JSON.stringify(first.presence) ||
+        JSON.stringify(other.ages) !== JSON.stringify(first.ages);
+      expect(differs).toBe(true);
+    });
+  });
+
+  /**
+   * Golden-fixture regression guard for the life feature's effect on naming.
+   *
+   * The literals below were captured by running `generateSector` against the
+   * generator as it stood BEFORE any life code was wired in. They prove that
+   * drawing life from the separate `::life` stream leaves the `namePrng` stream
+   * — and therefore every system and star name — untouched.
+   *
+   * This complements generation-stability.test.ts, which guards the main `prng`
+   * stream and needs no change because it strips fields explicitly.
+   *
+   * If a change ever makes this file fail on purpose, the fixture must be
+   * re-captured deliberately and the change called out as a break in seed
+   * compatibility.
+   */
+  describe('name-stream stability under the life feature (golden fixture)', () => {
+    const GOLDEN_SYSTEM_NAMES: string[] = [
+      'UG-0001', 'Ebla', 'Imai', 'Mpingo',
+      'UG-0005', 'UG-0006', 'Ancha', 'UG-0008',
+      'UG-0009', 'Baten Kaitos', 'UG-0011', 'UG-0012',
+      'Tupa', 'Prima Hyadum', 'UG-0015', 'UG-0016',
+      'UG-0017', 'UG-0018', 'Funi', 'UG-0020'
+    ];
+
+    const GOLDEN_HAS_PROPER_NAME: boolean[] = [
+      false, true, true, true,
+      false, false, true, false,
+      false, true, false, false,
+      true, true, false, false,
+      false, false, true, false
+    ];
+
+    const GOLDEN_STAR_NAMES: string[] = [
+      'UG-0001', 'Ebla-A', 'Ebla-B', 'Imai',
+      'Mpingo-A', 'Mpingo-B', 'UG-0005-A', 'UG-0005-B',
+      'UG-0005-C', 'UG-0006-A', 'UG-0006-B', 'Ancha-A',
+      'Ancha-B', 'UG-0008-A', 'UG-0008-B', 'UG-0009',
+      'Baten Kaitos', 'UG-0011-A', 'UG-0011-B', 'UG-0011-C',
+      'UG-0012-A', 'UG-0012-B', 'Tupa-A', 'Tupa-B',
+      'Prima Hyadum-A', 'Prima Hyadum-B', 'UG-0015-A', 'UG-0015-B',
+      'UG-0016-A', 'UG-0016-B', 'UG-0017-A', 'UG-0017-B',
+      'UG-0018-A', 'UG-0018-B', 'Funi', 'UG-0020'
+    ];
+
+    const actual = new StellarGenerator('test-seed-123').generateSector(20, 1000);
+
+    test('produces the pre-life system names (test 43)', () => {
+      expect(actual.systems.map((system) => system.name)).toEqual(GOLDEN_SYSTEM_NAMES);
+    });
+
+    test('produces the pre-life hasProperName flags (test 43)', () => {
+      expect(actual.systems.map((system) => system.hasProperName)).toEqual(GOLDEN_HAS_PROPER_NAME);
+    });
+
+    test('produces the pre-life star names (test 43)', () => {
+      expect(actual.stars.map((star) => star.name)).toEqual(GOLDEN_STAR_NAMES);
+    });
+  });
 });
