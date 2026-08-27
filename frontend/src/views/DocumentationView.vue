@@ -88,7 +88,7 @@
                 <section id="planetary-types" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Planetary Types</h3>
                     <p class="text-gray-400 mb-6">
-                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. The base weights are then biased by the orbital thermal zone (see <a href="#temperature" class="text-blue-400 hover:underline">Temperature &amp; Habitability</a>): hot types such as Molten or Hell worlds cluster in the inner orbits, while frozen types such as Ice or Methane worlds appear in the cold outer orbits — with rare exceptions still possible. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges.
+                        Planets are generated using a weighted random distribution based on exoplanet statistics and scientific plausibility. The base weights are then biased by the orbital thermal zone (see <a href="#temperature" class="text-blue-400 hover:underline">Temperature &amp; Habitability</a>): hot types such as Molten or Hell worlds cluster in the inner orbits, while frozen types such as Ice or Methane worlds appear in the cold outer orbits — with rare exceptions still possible. Each type has a realistic diameter formula, density, mass, and surface gravity, as well as a physical description. See below for all supported types and their typical diameter, mass, and gravity ranges. The names and descriptions below classify the type; an individual planet's description also reflects whether life arose there and how far it got — see Life &amp; Habitability.
                     </p>
                     <div class="space-y-4">
                         <div v-for="(desc, code) in PLANET_TYPE_DESCRIPTIONS" :key="code"
@@ -335,7 +335,7 @@ const getPlanetDetailDescription = (type: string) => {
         'T': 'Planets with highly poisonous atmospheres, uninhabitable for Earth life. Diameter: 4,000–15,000 km.',
         'N': 'Planets with ammonia-rich atmospheres and possibly ammonia oceans. Diameter: 6,000–15,000 km.',
         'B': 'Planets with methane-rich atmospheres and surfaces, possibly with methane lakes. Diameter: 6,000–15,000 km.',
-        'J': 'Lush worlds covered in dense forests and rich vegetation. Diameter: 6,000–9,000 km.',
+        'J': 'Warm, cloud-wrapped worlds under permanent overcast and near-continuous rainfall, with standing water across most of the surface. Diameter: 6,000–9,000 km.',
         'W': 'Small planetary bodies, not massive enough to clear their orbit. Diameter: 600–2,500 km.',
         'H': 'Inhospitable worlds subject to tidal heating or extreme greenhouse effects. Diameter: 3,000–9,000 km.',
         'M': 'Worlds with high surface temperatures and persistent lava flows. Diameter: 3,000–9,000 km.',

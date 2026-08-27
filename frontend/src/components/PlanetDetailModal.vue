@@ -3,9 +3,9 @@
     <div class="bg-gray-900 rounded-xl shadow-2xl p-8 w-full max-w-md relative animate-fade-in">
       <button @click="close" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
       <div class="flex flex-col items-center w-full">
-        <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="planet.planetType" class="w-40 h-40 object-contain rounded-full border-4 border-gray-800 bg-black mb-4" />
-        <h2 class="text-2xl font-bold text-white mb-2">{{ planet.name || getPlanetTypeDescription(planet.planetType) }}</h2>
-        <div v-if="planet.name" class="text-gray-300 mb-1">{{ getPlanetTypeDescription(planet.planetType) }}</div>
+        <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="planetTypeLabel(planet)" class="w-40 h-40 object-contain rounded-full border-4 border-gray-800 bg-black mb-4" />
+        <h2 class="text-2xl font-bold text-white mb-2">{{ planet.name || planetTypeLabel(planet) }}</h2>
+        <div v-if="planet.name" class="text-gray-300 mb-1">{{ planetTypeLabel(planet) }}</div>
         <div class="text-gray-400 mb-4">Type: <span class="font-mono">{{ planet.planetType }}</span></div>
         <div class="w-full flex flex-col gap-4">
           <div
@@ -13,7 +13,7 @@
             :class="planet.habitableZone ? 'ring-4 ring-green-400/60 ring-offset-2 ring-offset-gray-900' : ''"
           >
             <div class="text-gray-300 italic text-center">
-              {{ getPlanetTypeLongDescription(planet.planetType) }}
+              {{ planetLongDescription(planet) }}
             </div>
             <div v-if="planet.habitableZone" class="mt-2 text-green-300 text-center font-bold text-sm flex items-center justify-center gap-2">
               <svg class="w-5 h-5 inline-block text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
@@ -56,7 +56,8 @@
 <script setup lang="ts">
 import type { Planet } from '../types';
 import { getPlanetImage } from '../utils/planetImages';
-import { LIFE_STAGE_LABELS, PLANET_TYPE_DESCRIPTIONS, PLANET_TYPE_LONG_DESCRIPTIONS } from '../types';
+import { LIFE_STAGE_LABELS } from '../types';
+import { planetLongDescription, planetTypeLabel } from '../utils/planetDescription';
 import { lifeStageLevel } from '../utils/lifeStage';
 
 const { planet, close } = defineProps<{
@@ -64,10 +65,6 @@ const { planet, close } = defineProps<{
   close: () => void;
 }>();
 
-const getPlanetTypeDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
-const getPlanetTypeLongDescription = (type: string) => {
-  return PLANET_TYPE_LONG_DESCRIPTIONS[type] || PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown planet type';
-};
 // Only called for planets with hasLife === true; the 1-6 clamp is display-only.
 const getLifeStageLabel = (complexity: number) => LIFE_STAGE_LABELS[lifeStageLevel(complexity)];
 </script>
