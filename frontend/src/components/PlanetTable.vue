@@ -73,7 +73,7 @@
                         <td class="font-mono">{{ planet.orbitalNumber }}</td>
                         <td>
                             <div class="flex items-center gap-2">
-                                <img :src="getPlanetImage(planet.planetType, 'thumbs')" :alt="getPlanetTypeDescription(planet.planetType)" class="w-8 h-8 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                <img :src="getPlanetImage(planet.planetType, 'thumbs')" :alt="planetTypeLabel(planet)" class="w-8 h-8 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
                                     :class="getPlanetTypeColor(planet.planetType)">
                                     {{ planet.planetType }}
@@ -83,7 +83,7 @@
                         </td>
                         <td class="text-gray-400 text-sm">
                             <div v-if="planet.name" class="font-bold text-gray-100">{{ planet.name }}</div>
-                            {{ getPlanetTypeDescription(planet.planetType) }}
+                            {{ planetTypeLabel(planet) }}
                         </td>
                         <td class="font-mono">
                             {{ planet.diameter.toLocaleString() }}
@@ -187,6 +187,7 @@ import { computed, ref, watch } from 'vue';
 import type { Planet, System, Star } from '../types';
 import { LIFE_STAGE_LABELS, PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { getPlanetImage } from '../utils/planetImages';
+import { planetTypeLabel } from '../utils/planetDescription';
 import { lifeStageLevel } from '../utils/lifeStage';
 import { useRouter } from 'vue-router';
 

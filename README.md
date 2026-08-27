@@ -265,6 +265,7 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 - Inhabited worlds take a proper name drawn without replacement from a pool of 288 names. Only very large sectors exhaust it, after which worlds fall back to a `<star name> <roman orbit>` designation, so every inhabited planet stays uniquely named
 - Life draws from its own PRNG stream (`<seed>::life`), so adding it left the geometry, spectral classes, planets and system and star names of every pre-existing seed unchanged
 - The model is documented in `docs/exoplanet-habitability-model.md`; the abiogenesis factor is an implementation term the document does not model
+- A planet's displayed label and description are resolved from its type together with its life outcome, so a Jungle-class world with no biosphere is presented as a rain world rather than a jungle. The stored planet type is unchanged.
 
 ### System Generation
 - Random 3D positions within sector cube

@@ -76,7 +76,7 @@
                                              :class="['bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer', getZoneColor(getThermalZone(planet)), getThermalZone(planet) === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
                                              @click="openPlanetDetail(planet)">
                                             <div class="flex items-start gap-3">
-                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="getPlanetDescription(planet.planetType)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
+                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="planetTypeLabel(planet)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
                                                 <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
                                                     {{ planet.planetType }}
                                                     <svg v-if="getThermalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
@@ -89,8 +89,8 @@
                                                           class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700/80 text-emerald-100 mb-1">
                                                         Life
                                                     </span>
-                                                    <div class="font-medium text-gray-200 text-sm truncate" :title="getPlanetDescription(planet.planetType)">
-                                                        {{ getPlanetDescription(planet.planetType) }}
+                                                    <div class="font-medium text-gray-200 text-sm truncate" :title="planetTypeLabel(planet)">
+                                                        {{ planetTypeLabel(planet) }}
                                                     </div>
                                                     <div class="text-xs text-gray-500 mt-1 space-y-0.5">
                                                         <div class="flex gap-2">
@@ -129,9 +129,10 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
-import { PLANET_TYPE_DESCRIPTIONS, STAR_TYPE_DESCRIPTIONS } from '../types';
+import { STAR_TYPE_DESCRIPTIONS } from '../types';
 import { getStarImage } from '../utils/starColors';
 import { getPlanetImage } from '../utils/planetImages';
+import { planetTypeLabel } from '../utils/planetDescription';
 import PlanetDetailModal from '../components/PlanetDetailModal.vue';
 
 const route = useRoute();
@@ -187,7 +188,6 @@ const getStarRingColor = (spectralClass: string) => {
 };
 
 const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';
-const getPlanetDescription = (type: string) => PLANET_TYPE_DESCRIPTIONS[type] || 'Unknown Planet';
 
 const selectedPlanet = ref(null);
 function openPlanetDetail(planet: any) {
