@@ -15,3 +15,4 @@
 - [new-design-003-store-generation-and-ui-state.md](COMPLETED/new-design-003-store-generation-and-ui-state.md)
 - [new-design-004-parameter-rail-kpi-strip-and-states.md](COMPLETED/new-design-004-parameter-rail-kpi-strip-and-states.md)
 - [new-design-004b-interaction-test-harness-and-004-gaps.md](COMPLETED/new-design-004b-interaction-test-harness-and-004-gaps.md)
+- [new-design-005-overview-and-statistics-tabs.md](COMPLETED/new-design-005-overview-and-statistics-tabs.md)

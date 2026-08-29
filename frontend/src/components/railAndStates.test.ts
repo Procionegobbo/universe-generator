@@ -261,7 +261,7 @@ describe('HomeView — the console shell', () => {
         const { html } = await render(HomeView);
 
         expect(html).toContain('GENERATION PARAMETERS');
-        expect(html).toContain('md:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]');
+        expect(html).toContain('lg:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]');
         // The KPI strip and the sticky mobile bar are present on every tab.
         expect(html).toContain('WORLDS WITH LIFE');
         expect(html).toContain('PARAMETERS ▲');

@@ -2,12 +2,12 @@
     <div class="flex min-h-full flex-col">
         <div
             class="grid flex-1 items-start"
-            :class="showInlineRail ? 'md:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'"
+            :class="showInlineRail ? 'lg:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'"
         >
             <!-- Parameter rail — Overview tab only (D-31), and only in the
-                 inline tier. The `md:` prefix below is inert under 1024px
-                 because this class is bound only while `showInlineRail` holds;
-                 what it still carries is the 260px -> 300px step at `xl`. -->
+                 inline tier, which starts at 1024px. The `lg:` prefix matches
+                 that tier exactly; what it carries on top is the 260px -> 300px
+                 step at `xl`. -->
             <aside
                 v-if="showInlineRail"
                 data-rail="inline"
@@ -65,16 +65,15 @@
                     </div>
                 </div>
 
-                <!-- The tab bodies land in stories 005-008; until then the new
-                     shell hosts the pre-redesign results body unchanged. -->
-                <div v-else-if="store.sectorData" class="p-4">
-                    <ResultsDisplay
-                        :systems="store.sectorData.systems"
-                        :stars="store.sectorData.stars"
-                        :planets="store.sectorData.planets"
-                        :sectorVolume="store.sectorVolume"
-                    />
-                </div>
+                <!-- The tab host: the tab bar plus whichever body store.activeTab
+                     selects. It is full-bleed, so the bar's bottom border runs the
+                     full width of the column as in the design. -->
+                <ResultsDisplay
+                    v-else-if="store.sectorData"
+                    :systems="store.sectorData.systems"
+                    :stars="store.sectorData.stars"
+                    :planets="store.sectorData.planets"
+                />
 
                 <EmptyState v-else @generate="handleGenerate" @restore="handleRestore" />
             </div>
