@@ -392,6 +392,39 @@ body {
   50% { opacity: .45; }
 }
 
+/* The KPI-style numeral beside a rail slider's label is a live number input, so
+   it reads as text until it is hovered or focused. */
+.ug-value-input {
+  width: 88px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-ctl);
+  background: transparent;
+  padding: 1px 4px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--color-ink);
+  outline: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ug-value-input:hover {
+  border-color: var(--color-line-soft);
+}
+
+.ug-value-input:focus {
+  border-color: var(--color-acc-blue);
+  background: var(--color-input);
+}
+
+.ug-value-input::-webkit-outer-spin-button,
+.ug-value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

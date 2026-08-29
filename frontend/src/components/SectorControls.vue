@@ -1,397 +1,393 @@
 <template>
-    <div class="card">
-        <div v-if="showRestoreModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-            <div class="bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full">
-                <h3 class="text-lg font-bold mb-2">Restore previous sector?</h3>
-                <p class="mb-4">A previous sector generation was found. Do you want to regenerate it using the saved parameters?</p>
-                <div class="flex gap-4 justify-end">
-                    <button class="btn btn-secondary" @click="onRestoreCancel">No, start fresh</button>
-                    <button class="btn btn-primary" @click="onRestoreConfirm">Yes, regenerate</button>
-                </div>
-            </div>
+    <div class="flex flex-col">
+        <div
+            class="border-b border-line-soft px-[18px] py-[14px] font-mono font-semibold text-[10px] tracking-[.14em] text-dim"
+        >
+            GENERATION PARAMETERS
         </div>
 
-        <h2 class="text-2xl font-bold mb-6 text-center">Generate Stellar Sector</h2>
-
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-            <div class="form-group">
-                <label class="form-label" for="systemCount">
-                    Number of Systems
-                    <span class="text-gray-400 text-sm ml-2">(1-5,000)</span>
-                </label>
-                <input
-                    id="systemCount"
-                    v-model.number="systemCount"
-                    type="number"
-                    min="1"
-                    max="5000"
-                    required
-                    class="form-input"
-                    placeholder="e.g., 100"
-                />
-                <div class="flex items-center mt-2 group">
-                    <span class="text-xs text-gray-500 mr-2">1</span>
-                    <input
-                        id="systemCountRange"
-                        v-model.number="systemCount"
-                        type="range"
-                        min="1"
-                        max="5000"
-                        step="1"
-                        class="flex-1 mr-2"
-                    />
-                    <span class="text-xs text-gray-500">5k</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="sectorVolume">
-                    Sector Volume (cubic parsec)
-                    <span class="text-gray-400 text-sm ml-2">(10-1,000,000)</span>
-                </label>
-                <input
-                    id="sectorVolume"
-                    v-model.number="sectorVolume"
-                    type="number"
-                    min="10"
-                    max="1000000"
-                    step="10"
-                    required
-                    class="form-input"
-                    placeholder="e.g., 1000"
-                />
-                <div class="flex items-center mt-2 group">
-                    <span class="text-xs text-gray-500 mr-2">10</span>
-                    <input
-                        id="sectorVolumeRange"
-                        v-model.number="sectorVolume"
-                        type="range"
-                        min="10"
-                        max="100000"
-                        step="10"
-                        class="flex-1 mr-2"
-                    />
-                    <span class="text-xs text-gray-500">100k</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="zone">
-                    Sector Zone
-                    <span class="text-gray-400 text-sm ml-2">(Affects star distribution)</span>
-                </label>
-                <select
-                    id="zone"
-                    v-model="zone"
-                    class="form-input"
-                >
-                    <option value="extragalactic">Extragalactic</option>
-                    <option value="galactic edge">Galactic Edge</option>
-                    <option value="medium">Medium (Standard)</option>
-                    <option value="central zone">Central Zone</option>
-                    <option value="core">Galactic Core</option>
-                </select>
-            </div>
-
-            <div class="p-3 bg-gray-800/50 border rounded-lg text-sm"
-                 :class="{
-                   'border-green-700/50': densityStatus.color === 'green',
-                   'border-yellow-700/50': densityStatus.color === 'yellow',
-                   'border-orange-700/50': densityStatus.color === 'orange',
-                   'border-red-700/50': densityStatus.color === 'red',
-                   'border-gray-700/50': densityStatus.color === 'gray',
-                 }">
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Stellar density</span>
-                    <span class="font-semibold px-2 py-0.5 rounded text-xs"
-                          :class="{
-                            'bg-green-900/50 text-green-300': densityStatus.color === 'green',
-                            'bg-yellow-900/50 text-yellow-300': densityStatus.color === 'yellow',
-                            'bg-orange-900/50 text-orange-300': densityStatus.color === 'orange',
-                            'bg-red-900/50 text-red-300': densityStatus.color === 'red',
-                            'bg-gray-700/50 text-gray-400': densityStatus.color === 'gray',
-                          }">
-                        {{ densityStatus.label }}
-                    </span>
-                </div>
-                <div class="mt-1 text-gray-300">
-                    {{ currentStarDensity.toFixed(3) }} stars/pc³
-                    <span class="text-gray-500 ml-1">(expected: {{ DENSITY_MAP[zone] }} stars/pc³)</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="seed">
-                    Generation Seed
-                    <span class="text-gray-400 text-sm ml-2">(Shared seed = Identical sector)</span>
-                </label>
-                <div class="flex gap-2">
-                    <input
-                        id="seed"
-                        v-model.number="seed"
-                        type="number"
-                        class="form-input flex-1"
-                        placeholder="e.g., 123456"
-                    />
-                    <button 
-                        type="button" 
-                        @click="randomizeSeed" 
-                        class="btn btn-secondary px-4"
-                        title="Generate Random Seed"
+        <form class="flex flex-col gap-5 p-[18px]" @submit.prevent="handleSubmit">
+            <!-- 1. Systems (logarithmic, D-18) -->
+            <div class="flex flex-col gap-[7px]">
+                <div class="flex items-baseline justify-between gap-2">
+                    <label
+                        for="systemCount"
+                        class="font-mono font-medium text-[10px] tracking-[.1em] text-muted"
                     >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+                        SYSTEMS
+                    </label>
+                    <input
+                        id="systemCount"
+                        v-model="systemsDraft"
+                        type="number"
+                        inputmode="numeric"
+                        :min="SYSTEMS_RANGE.min"
+                        :max="SYSTEMS_RANGE.max"
+                        class="ug-value-input"
+                        :style="systemsInvalid ? INVALID_FIELD : undefined"
+                        @blur="commitSystems"
+                    />
+                </div>
+                <input
+                    aria-label="Systems"
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="1"
+                    :value="systemsSlider"
+                    @input="onSystemsSlider"
+                />
+                <div class="flex justify-between font-mono text-[9px] text-faint">
+                    <span>{{ SYSTEMS_RANGE.min }}</span>
+                    <span>{{ thinThousands(SYSTEMS_RANGE.max) }}</span>
+                </div>
+                <p v-if="systemsInvalid" class="font-mono text-[9px] text-acc-red-light">
+                    {{ SYSTEMS_RANGE.min }} – {{ thinThousands(SYSTEMS_RANGE.max) }}
+                </p>
+            </div>
+
+            <!-- 2. Volume (logarithmic, D-18) -->
+            <div class="flex flex-col gap-[7px]">
+                <div class="flex items-baseline justify-between gap-2">
+                    <label
+                        for="sectorVolume"
+                        class="font-mono font-medium text-[10px] tracking-[.1em] text-muted"
+                    >
+                        VOLUME pc³
+                    </label>
+                    <input
+                        id="sectorVolume"
+                        v-model="volumeDraft"
+                        type="number"
+                        inputmode="numeric"
+                        :min="VOLUME_RANGE.min"
+                        :max="VOLUME_RANGE.max"
+                        class="ug-value-input"
+                        :style="volumeInvalid ? INVALID_FIELD : undefined"
+                        @blur="commitVolume"
+                    />
+                </div>
+                <input
+                    aria-label="Volume in cubic parsecs"
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="1"
+                    :value="volumeSlider"
+                    @input="onVolumeSlider"
+                />
+                <div class="flex justify-between font-mono text-[9px] text-faint">
+                    <span>{{ VOLUME_RANGE.min }}</span>
+                    <span>100 k</span>
+                </div>
+                <p v-if="volumeInvalid" class="font-mono text-[9px] text-acc-red-light">
+                    {{ VOLUME_RANGE.min }} – {{ thinThousands(VOLUME_RANGE.max) }} pc³
+                </p>
+            </div>
+
+            <!-- 3. Galactic zone — single-select segmented control -->
+            <div class="flex flex-col gap-2">
+                <span class="font-mono font-medium text-[10px] tracking-[.1em] text-muted">
+                    GALACTIC ZONE
+                </span>
+                <div class="grid grid-cols-2 gap-[6px]" role="radiogroup" aria-label="Galactic zone">
+                    <button
+                        v-for="option in ZONE_OPTIONS"
+                        :key="option.value"
+                        type="button"
+                        role="radio"
+                        :aria-checked="store.zone === option.value"
+                        :class="[
+                            'rounded-ctl border p-2 text-center font-mono text-[10px] transition-colors duration-150',
+                            option.wide ? 'col-span-2' : '',
+                            store.zone === option.value
+                                ? 'border-acc-blue font-semibold text-acc-blue-pale'
+                                : 'border-line-control bg-input font-medium text-dim hover:text-ink-2'
+                        ]"
+                        :style="store.zone === option.value ? SELECTED_ZONE : undefined"
+                        @click="store.zone = option.value"
+                    >
+                        {{ option.label }}
                     </button>
                 </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-4">
+            <!-- 4. Density readout (D-17) — advisory only, never blocking -->
+            <div
+                class="flex flex-col gap-[9px] rounded-card p-3"
+                :style="{ border: `1px solid ${TONE[verdict.tone].border}`, background: TONE[verdict.tone].bg }"
+            >
+                <div class="flex items-center justify-between gap-2">
+                    <span class="font-mono font-medium text-[10px] tracking-[.1em] text-muted">
+                        STELLAR DENSITY
+                    </span>
+                    <span
+                        class="rounded-badge px-[7px] py-[2px] font-mono font-semibold text-[9px] tracking-[.08em]"
+                        :style="{ background: TONE[verdict.tone].pillBg, color: TONE[verdict.tone].pillInk }"
+                    >
+                        {{ verdict.label }}
+                    </span>
+                </div>
+                <div class="flex items-baseline gap-[6px]">
+                    <span class="font-mono font-semibold text-[22px] text-ink">
+                        {{ currentDensity.toFixed(3) }}
+                    </span>
+                    <span class="font-mono text-[10px] text-dim">stars / pc³</span>
+                </div>
+                <div class="relative h-4">
+                    <div
+                        class="absolute top-[7px] right-0 left-0 h-[2px]"
+                        style="background: linear-gradient(90deg, #475569, #10b981 45%, #f59e0b 75%, #ef4444)"
+                    ></div>
+                    <!-- Faint expected tick: ratio 1, always at 50%. -->
+                    <div
+                        class="absolute top-[2px] left-1/2 h-3 w-px"
+                        style="background: rgb(148 163 184 / .5)"
+                    ></div>
+                    <div
+                        class="absolute top-[2px] h-3 w-[2px] bg-ink"
+                        :style="{ left: `${markerPercent}%` }"
+                    ></div>
+                </div>
+                <div class="font-mono text-[9px] text-faint">
+                    expected {{ expectedDensity(store.zone).toFixed(3) }} · marker at current
+                </div>
+            </div>
+
+            <!-- 5. Seed -->
+            <div class="flex flex-col gap-2">
+                <label for="seed" class="font-mono font-medium text-[10px] tracking-[.1em] text-muted">
+                    SEED
+                </label>
+                <div class="flex gap-[6px]">
+                    <input
+                        id="seed"
+                        v-model.number="store.currentSeed"
+                        type="number"
+                        min="0"
+                        placeholder="random"
+                        class="flex-1 rounded-ctl border border-line-control bg-input px-[11px] py-[9px] font-mono font-medium text-[12px] text-ink-2 outline-none focus:border-acc-blue"
+                    />
+                    <button
+                        type="button"
+                        title="Generate random seed"
+                        aria-label="Generate random seed"
+                        class="w-[38px] rounded-ctl border border-line-control bg-input font-mono font-medium text-[13px] text-muted transition-colors duration-150 hover:text-ink"
+                        @click="randomizeSeed"
+                    >
+                        ⟳
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. Actions -->
+            <div class="flex flex-col gap-2">
                 <button
                     type="submit"
-                    :disabled="isLoading"
-                    class="btn btn-primary flex-1"
+                    class="ug-btn-primary w-full p-[13px]"
+                    :disabled="!isValid || isRunning"
+                    :style="!isValid ? { opacity: 0.4 } : undefined"
                 >
-                    <span v-if="isLoading" class="loading mr-2"></span>
-                    {{ isLoading ? 'Generating...' : 'Generate Sector' }}
+                    {{ isRunning ? 'GENERATING…' : 'GENERATE SECTOR' }}
                 </button>
-                <button
-                    type="button"
-                    @click="resetForm"
-                    class="btn btn-secondary flex-1"
-                    :disabled="isLoading"
-                >
-                    Reset
-                </button>
-                <button
-                    type="button"
-                    @click="resetMemory"
-                    class="btn btn-danger flex-1"
-                    :disabled="isLoading"
-                >
-                    Reset Memory
-                </button>
-            </div>
-
-            <div v-if="error" class="p-4 bg-red-900/30 border border-red-700 rounded-lg">
-                <p class="text-red-300 font-medium">Error: {{ error }}</p>
+                <p v-if="isLargeSector" class="font-mono text-[9px] text-faint">
+                    large sectors may take several seconds
+                </p>
+                <div class="flex gap-2">
+                    <button
+                        type="button"
+                        class="ug-btn-outline flex-1 p-[9px]"
+                        :disabled="isRunning"
+                        @click="resetForm"
+                    >
+                        RESET
+                    </button>
+                    <button
+                        type="button"
+                        class="ug-btn-danger flex-1 p-[9px]"
+                        :disabled="isRunning"
+                        @click="clearMemory"
+                    >
+                        CLEAR MEMORY
+                    </button>
+                </div>
             </div>
         </form>
-
-        <div v-if="lastStats" class="mt-8 pt-6 border-t border-gray-700">
-            <h3 class="text-lg font-semibold mb-4">Last Generation Stats</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="text-center p-4 bg-blue-900/20 rounded-lg">
-                    <div class="text-2xl font-bold text-blue-300">{{ lastStats.systemCount }}</div>
-                    <div class="text-sm text-gray-400">Systems</div>
-                </div>
-                <div class="text-center p-4 bg-purple-900/20 rounded-lg">
-                    <div class="text-2xl font-bold text-purple-300">{{ lastStats.starCount }}</div>
-                    <div class="text-sm text-gray-400">Stars</div>
-                </div>
-                <div class="text-center p-4 bg-green-900/20 rounded-lg">
-                    <div class="text-2xl font-bold text-green-300">{{ lastStats.planetCount }}</div>
-                    <div class="text-sm text-gray-400">Planets</div>
-                </div>
-                <div class="text-center p-4 bg-yellow-900/20 rounded-lg">
-                    <div class="text-2xl font-bold text-yellow-300">{{ lastStats.generationTimeMs }}ms</div>
-                    <div class="text-sm text-gray-400">Generation Time</div>
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
-import type { GenerationRequest, SectorZone } from '../types';
-import { storeToRefs } from 'pinia';
+import { computed, ref, watch } from 'vue';
+import type { SectorZone } from '../types';
 import { useSectorStore } from '../stores/sectorStore';
+import { SYSTEMS_RANGE, VOLUME_RANGE, fromSlider, toSlider } from '../utils/logScale';
+import { densityMarker, densityVerdict, expectedDensity, starDensity } from '../utils/density';
+import { thinThousands } from '../utils/format';
 
 const store = useSectorStore();
-const { systemCount, sectorVolume, zone, currentSeed: seed } = storeToRefs(store);
 
 const emit = defineEmits<{
-    generate: [request: GenerationRequest];
+    generate: [];
     reset: [];
 }>();
 
-const error = ref<string | null>(null);
-const isLoading = ref(false);
-const lastStats = ref<{ systemCount: number; starCount: number; planetCount: number; generationTimeMs: number } | null>(null);
+const ZONE_OPTIONS: Array<{ value: SectorZone; label: string; wide?: boolean }> = [
+    { value: 'extragalactic', label: 'EXTRAGAL.' },
+    { value: 'galactic edge', label: 'EDGE' },
+    { value: 'medium', label: 'MEDIUM' },
+    { value: 'central zone', label: 'CENTRAL' },
+    { value: 'core', label: 'GALACTIC CORE', wide: true }
+];
 
-const showRestoreModal = ref(false);
-let savedParams: any = null;
+const SELECTED_ZONE = { background: 'rgb(59 130 246 / .18)' };
+const INVALID_FIELD = { borderColor: 'rgb(239 68 68 / .5)' };
 
-onMounted(() => {
-    savedParams = store.loadSavedParams();
-    if (!store.sectorData && savedParams && savedParams.currentSeed && savedParams.systemCount && savedParams.sectorVolume && savedParams.zone) {
-        showRestoreModal.value = true;
+const TONE = {
+    slate: {
+        border: 'rgb(148 163 184 / .3)',
+        bg: 'rgb(148 163 184 / .05)',
+        pillBg: 'rgb(148 163 184 / .18)',
+        pillInk: '#cbd5e1'
+    },
+    green: {
+        border: 'rgb(16 185 129 / .35)',
+        bg: 'rgb(16 185 129 / .07)',
+        pillBg: 'rgb(16 185 129 / .2)',
+        pillInk: '#6ee7b7'
+    },
+    amber: {
+        border: 'rgb(245 158 11 / .35)',
+        bg: 'rgb(245 158 11 / .07)',
+        pillBg: 'rgb(245 158 11 / .2)',
+        pillInk: '#fcd34d'
+    },
+    red: {
+        border: 'rgb(239 68 68 / .35)',
+        bg: 'rgb(239 68 68 / .07)',
+        pillBg: 'rgb(239 68 68 / .2)',
+        pillInk: '#fca5a5'
     }
+} as const;
+
+// --- Editable numerals (D-18) ---------------------------------------------
+// The draft holds what the user is typing so an in-progress value is never
+// written to the store; a valid draft updates the store live (so the density
+// gauge follows), and blur clamps it back into the documented range (§8).
+
+const systemsDraft = ref(String(store.systemCount));
+const volumeDraft = ref(String(store.sectorVolume));
+
+const inRange = (draft: string, min: number, max: number): boolean => {
+    const value = Number(draft);
+    return draft.trim() !== '' && Number.isInteger(value) && value >= min && value <= max;
+};
+
+const clampInt = (value: number, min: number, max: number): number =>
+    Math.min(max, Math.max(min, Math.round(value)));
+
+const systemsInvalid = computed(() => !inRange(systemsDraft.value, SYSTEMS_RANGE.min, SYSTEMS_RANGE.max));
+const volumeInvalid = computed(() => !inRange(volumeDraft.value, VOLUME_RANGE.min, VOLUME_RANGE.max));
+
+watch(systemsDraft, draft => {
+    if (!systemsInvalid.value) store.systemCount = Number(draft);
 });
 
-function onRestoreConfirm() {
-    showRestoreModal.value = false;
-    // Update store parameters and re-trigger generation
-    seed.value = savedParams.currentSeed;
-    systemCount.value = savedParams.systemCount;
-    sectorVolume.value = savedParams.sectorVolume;
-    zone.value = savedParams.zone;
-    handleSubmit();
-}
-function onRestoreCancel() {
-    showRestoreModal.value = false;
-    store.clearPersistentMemory();
-}
+watch(volumeDraft, draft => {
+    if (!volumeInvalid.value) store.sectorVolume = Number(draft);
+});
+
+// Anything that moves the store value (slider, reset, restore, clear memory)
+// writes the draft back so the two never drift apart.
+watch(() => store.systemCount, value => {
+    if (Number(systemsDraft.value) !== value) systemsDraft.value = String(value);
+});
+
+watch(() => store.sectorVolume, value => {
+    if (Number(volumeDraft.value) !== value) volumeDraft.value = String(value);
+});
+
+const commitSystems = () => {
+    const value = Number(systemsDraft.value);
+    const clamped = Number.isFinite(value)
+        ? clampInt(value, SYSTEMS_RANGE.min, SYSTEMS_RANGE.max)
+        : store.systemCount;
+    store.systemCount = clamped;
+    systemsDraft.value = String(clamped);
+};
+
+const commitVolume = () => {
+    const value = Number(volumeDraft.value);
+    const clamped = Number.isFinite(value)
+        ? clampInt(value, VOLUME_RANGE.min, VOLUME_RANGE.max)
+        : store.sectorVolume;
+    store.sectorVolume = clamped;
+    volumeDraft.value = String(clamped);
+};
+
+// The clamps the pre-redesign component carried are kept: the sliders cannot
+// produce an out-of-range value, but a restored or hand-edited one might.
+watch(() => store.systemCount, value => {
+    if (value < 1) store.systemCount = 1;
+    if (value > 5000) store.systemCount = 5000;
+});
+
+watch(() => store.sectorVolume, value => {
+    if (value < 10) store.sectorVolume = 10;
+    if (value > 1000000) store.sectorVolume = 1000000;
+});
+
+// --- Logarithmic sliders (D-18) -------------------------------------------
+
+const SLIDER_STEPS = 1000;
+
+const systemsSlider = computed(() =>
+    Math.round(toSlider(store.systemCount, SYSTEMS_RANGE.min, SYSTEMS_RANGE.max) * SLIDER_STEPS));
+
+const volumeSlider = computed(() =>
+    Math.round(toSlider(store.sectorVolume, VOLUME_RANGE.min, VOLUME_RANGE.max) * SLIDER_STEPS));
+
+const onSystemsSlider = (event: Event) => {
+    const t = Number((event.target as HTMLInputElement).value) / SLIDER_STEPS;
+    store.systemCount = fromSlider(t, SYSTEMS_RANGE.min, SYSTEMS_RANGE.max, SYSTEMS_RANGE.step);
+};
+
+const onVolumeSlider = (event: Event) => {
+    const t = Number((event.target as HTMLInputElement).value) / SLIDER_STEPS;
+    store.sectorVolume = fromSlider(t, VOLUME_RANGE.min, VOLUME_RANGE.max, VOLUME_RANGE.step);
+};
+
+// --- Density gauge (D-17) --------------------------------------------------
+// Read-only guidance. It replaces the removed [sectorVolume, zone] -> systemCount
+// auto-suggest watcher (D-16) and never writes back to any parameter.
+
+const currentDensity = computed(() => starDensity(store.systemCount, store.sectorVolume));
+const verdict = computed(() => densityVerdict(currentDensity.value, store.zone));
+const markerPercent = computed(() => densityMarker(currentDensity.value, store.zone) * 100);
+
+// --- Actions ---------------------------------------------------------------
+
+const isRunning = computed(() => store.generationStatus === 'running');
+const isValid = computed(() => !systemsInvalid.value && !volumeInvalid.value);
+const isLargeSector = computed(() => store.systemCount > 2000);
 
 const randomizeSeed = () => {
-    seed.value = Math.floor(Math.random() * 1000000);
+    store.currentSeed = Math.floor(Math.random() * 1000000);
 };
-
-// Sync range inputs with number inputs
-watch(systemCount, (value) => {
-    if (value < 1) systemCount.value = 1;
-    if (value > 5000) systemCount.value = 5000;
-});
-
-watch(sectorVolume, (value) => {
-    if (value < 10) sectorVolume.value = 10;
-    if (value > 1000000) sectorVolume.value = 1000000;
-});
-
-// Density constants (stars per cubic parsec)
-const DENSITY_MAP: Record<SectorZone, number> = {
-    'extragalactic': 0.001,
-    'galactic edge': 0.01,
-    'medium': 0.14,
-    'central zone': 1.0,
-    'core': 10.0
-};
-
-const AVG_STARS_PER_SYSTEM = 1.71;
-
-const currentStarDensity = computed(() => {
-    if (!sectorVolume.value || sectorVolume.value === 0) return 0;
-    return (systemCount.value / sectorVolume.value) * AVG_STARS_PER_SYSTEM;
-});
-
-const densityStatus = computed(() => {
-    const expected = DENSITY_MAP[zone.value as SectorZone] || 0.14;
-    const ratio = currentStarDensity.value / expected;
-    if (ratio < 0.05) return { label: 'Very sparse', color: 'gray', ratio };
-    if (ratio < 0.5)  return { label: 'Sparse', color: 'yellow', ratio };
-    if (ratio <= 2.0) return { label: 'Realistic', color: 'green', ratio };
-    if (ratio <= 10)  return { label: 'Dense', color: 'orange', ratio };
-    return { label: 'Very dense', color: 'red', ratio };
-});
-
-// Automatically calculate suggested system count based on volume and zone
-watch([sectorVolume, zone], ([newVolume, newZone]) => {
-    const density = DENSITY_MAP[newZone as SectorZone] || 0.14;
-    const suggestedCount = Math.max(1, Math.round(newVolume * density));
-    // Limit to a reasonable number for simulation
-    systemCount.value = Math.min(suggestedCount, 5000);
-});
 
 const handleSubmit = () => {
-    error.value = null;
-
-    if (systemCount.value < 1 || systemCount.value > 10000) {
-        error.value = 'System count must be between 1 and 10000';
-        return;
-    }
-
-    if (sectorVolume.value < 10 || sectorVolume.value > 10000000) {
-        error.value = 'Sector volume must be between 10 and 10,000,000';
-        return;
-    }
-
-    if (seed.value === '' || seed.value === 0 || seed.value === null) {
-        randomizeSeed();
-    }
-
-    const request: GenerationRequest = {
-        systemCount: systemCount.value,
-        sectorVolume: sectorVolume.value,
-        seed: seed.value,
-        zone: zone.value
-    };
-
-    emit('generate', request);
+    if (!isValid.value || isRunning.value) return;
+    emit('generate');
 };
 
 const resetForm = () => {
-    systemCount.value = 100;
-    sectorVolume.value = 1000;
-    zone.value = 'medium';
-    seed.value = '';
-    error.value = null;
-    lastStats.value = null;
+    store.systemCount = 100;
+    store.sectorVolume = 1000;
+    store.zone = 'medium';
+    store.currentSeed = '';
     emit('reset');
 };
 
-const resetMemory = () => {
+const clearMemory = () => {
     store.clearPersistentMemory();
-    error.value = null;
-    lastStats.value = null;
 };
-
-// Expose methods to update stats
-const updateStats = (stats: { systemCount: number; starCount: number; planetCount: number; generationTimeMs: number }) => {
-    lastStats.value = stats;
-};
-
-const setLoading = (loading: boolean) => {
-    isLoading.value = loading;
-};
-
-const setError = (err: string | null) => {
-    error.value = err;
-};
-
-defineExpose({
-    updateStats,
-    setLoading,
-    setError
-});
 </script>
-
-<style scoped>
-input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 6px;
-    background: rgba(59, 130, 246, 0.2);
-    border-radius: 3px;
-    outline: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-    background: #1d4ed8;
-}
-
-input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: #3b82f6;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    transition: background 0.2s ease;
-}
-
-input[type="range"]::-moz-range-thumb:hover {
-    background: #1d4ed8;
-}
-</style>

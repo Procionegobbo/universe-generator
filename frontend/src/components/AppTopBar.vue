@@ -26,7 +26,7 @@
                 class="hidden sm:flex items-center gap-2 rounded-pill border border-line-control bg-input px-2.5 py-1.5"
             >
                 <span class="h-1.5 w-1.5 rounded-full" :style="ledStyle"></span>
-                <span class="font-mono font-semibold text-[9px] tracking-[.08em]" :style="{ color: ledColor }">
+                <span class="font-mono font-semibold text-[9px] tracking-[.08em]" :style="{ color: ledTextColor }">
                     {{ ledLabel }}
                 </span>
             </div>
@@ -61,14 +61,20 @@ const router = useRouter();
 const store = useSectorStore();
 const { status } = useBackendHealth();
 
-// The blue GENERATING branch is added in story 004, once store.generationStatus exists.
+// A generation in flight overrides the online/offline colour for its duration.
+const isGenerating = computed(() => store.generationStatus === 'running');
+
 const ledColor = computed(() => {
+    if (isGenerating.value) return '#3b82f6';
     if (status.value === 'online') return '#34d399';
     if (status.value === 'offline') return '#f87171';
     return '#64748b';
 });
 
+const ledTextColor = computed(() => (isGenerating.value ? '#93c5fd' : ledColor.value));
+
 const ledLabel = computed(() => {
+    if (isGenerating.value) return 'GENERATING';
     if (status.value === 'online') return 'BACKEND ONLINE';
     if (status.value === 'offline') return 'BACKEND OFFLINE';
     return 'BACKEND CHECKING';
