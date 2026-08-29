@@ -384,6 +384,13 @@ body {
   box-shadow: inset 2px 0 0 #34d399;
 }
 
+/* 4a highlights a habitable-zone planet row the way 3a highlights a system with
+   life — same tint, same inset rule, different meaning, hence its own class. */
+.ug-row-habitable {
+  background: rgb(16 185 129 / .06);
+  box-shadow: inset 2px 0 0 #34d399;
+}
+
 .ug-row:hover {
   background: rgb(148 163 184 / .04);
 }

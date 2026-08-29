@@ -68,12 +68,7 @@
                 <!-- The tab host: the tab bar plus whichever body store.activeTab
                      selects. It is full-bleed, so the bar's bottom border runs the
                      full width of the column as in the design. -->
-                <ResultsDisplay
-                    v-else-if="store.sectorData"
-                    :systems="store.sectorData.systems"
-                    :stars="store.sectorData.stars"
-                    :planets="store.sectorData.planets"
-                />
+                <ResultsDisplay v-else-if="store.sectorData" />
 
                 <EmptyState v-else @generate="handleGenerate" @restore="handleRestore" />
             </div>

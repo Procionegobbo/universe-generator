@@ -9,13 +9,17 @@
         <!-- D-29: the Overview grid shows the top 8 present types with a "+N"
              chip; the Statistics grid wraps and shows every present type. -->
         <div class="grid gap-[10px]" :class="gridClass">
-            <div
+            <button
                 v-for="row in visibleRows"
                 :key="row.type"
-                class="flex flex-col gap-[9px] rounded-card border p-[11px]"
+                type="button"
+                :data-type-card="row.type"
+                :aria-label="`Show ${planetShortLabel(row.type)} planets`"
+                class="flex cursor-pointer flex-col gap-[9px] rounded-card border p-[11px] text-left transition-colors duration-150"
                 :class="isHighlighted(row.type)
                     ? 'border-acc-green/50 bg-acc-green/10'
-                    : 'border-line-soft bg-panel'"
+                    : 'border-line-soft bg-panel hover:border-line-control'"
+                @click="filterToType(row.type)"
             >
                 <div class="flex items-center justify-between gap-2">
                     <CelestialThumb kind="planet" :code="row.type" :px="30" />
@@ -45,7 +49,7 @@
                 >
                     {{ secondaryFact(row) }}
                 </span>
-            </div>
+            </button>
 
             <div
                 v-if="overflowCount > 0"
@@ -62,6 +66,7 @@
 import { computed } from 'vue';
 import CelestialThumb from './CelestialThumb.vue';
 import type { PlanetTypeRow } from '../composables/useSectorStats';
+import { useSectorStore } from '../stores/sectorStore';
 import { PLANET_TYPE_DESCRIPTIONS } from '../types';
 import { planetShortLabel } from '../utils/planetDisplay';
 import { formatPercent, thinThousands } from '../utils/format';
@@ -112,6 +117,18 @@ const barWidth = (row: PlanetTypeRow): string =>
     (maxCount.value > 0 ? `${((row.count / maxCount.value) * 100).toFixed(1)}%` : '0%');
 
 const isHighlighted = (type: string): boolean => type === HIGHLIGHT_TYPE;
+
+const store = useSectorStore();
+
+/**
+ * Spec §11 Slice 5: a type card is a cross-filter. It replaces whatever the
+ * Planets tab was filtered to with this one type and opens that tab, so the
+ * card and the tab's own pill strip always agree.
+ */
+const filterToType = (type: string) => {
+    store.planetFilters.types = [type];
+    store.activeTab = 'planets';
+};
 
 const secondaryFact = (row: PlanetTypeRow): string => {
     const share = formatPercent(row.count, props.total);

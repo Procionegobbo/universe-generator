@@ -9,7 +9,8 @@ import { computed, toValue } from 'vue';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import type { Planet, Sector, SectorZone, Star, System } from '../types';
 import { orbitBand, type OrbitBand } from '../utils/starPhysical';
-import { thermalZone } from '../utils/thermalZone';
+import { thermalZone, type ThermalZone } from '../utils/thermalZone';
+import { planetDisplayName } from '../utils/planetDisplay';
 import { expectedShare } from '../utils/expectedStarShares';
 import { lifeStageLevel } from '../utils/lifeStage';
 
@@ -90,6 +91,27 @@ export interface StarRow {
     moonCount: number;
     /** BH or NS — the two classes the Stars index calls exotic (D-23). */
     isExotic: boolean;
+}
+
+export interface PlanetRow {
+    /** D-32's composite key, `${starId}-${orbitalNumber}` — unique by construction. */
+    key: string;
+    starId: number;
+    orbitalNumber: number;
+    /** D-10: the payload's name when it has one, else `<star name> <orbit letter>`. */
+    name: string;
+    planetType: string;
+    systemId: number;
+    systemName: string;
+    starName: string;
+    /** The star's class as the tables print it: `K-4`, or bare `BH`. */
+    starClass: string;
+    diameter: number;
+    temperature: number;
+    moonCount: number;
+    habitableZone: boolean;
+    hasLife: boolean;
+    zone: ThermalZone;
 }
 
 interface SystemBucket {
@@ -339,6 +361,37 @@ export function useSectorStats(
             };
         }));
 
+    // One row per planet for the Planets index (4a), in payload order. Like
+    // orbitBands, a planet whose star is missing from the payload is skipped: it
+    // can be neither named (D-10) nor attributed to a system.
+    const planetRows = computed<PlanetRow[]>(() => {
+        const rows: PlanetRow[] = [];
+        for (const planet of index.value.planets) {
+            const star = index.value.starsById.get(planet.starId);
+            if (!star) continue;
+            rows.push({
+                key: `${planet.starId}-${planet.orbitalNumber}`,
+                starId: planet.starId,
+                orbitalNumber: planet.orbitalNumber,
+                name: planetDisplayName(planet, star),
+                planetType: planet.planetType,
+                systemId: star.systemId,
+                systemName: index.value.systemsById.get(star.systemId)?.name || '',
+                starName: star.name,
+                starClass: star.subclass !== undefined
+                    ? `${star.spectralClass}-${star.subclass}`
+                    : star.spectralClass,
+                diameter: planet.diameter,
+                temperature: planet.temperature,
+                moonCount: planet.moonCount,
+                habitableZone: planet.habitableZone,
+                hasLife: planet.hasLife,
+                zone: thermalZone(planet)
+            });
+        }
+        return rows;
+    });
+
     const maxPlanetDiameter = computed(() =>
         index.value.planets.reduce((max, planet) => Math.max(max, planet.diameter), 0));
 
@@ -365,6 +418,7 @@ export function useSectorStats(
         notableSystems,
         systemRows,
         starRows,
+        planetRows,
         maxPlanetDiameter
     };
 }

@@ -107,11 +107,7 @@ function mountResults(sector: Sector = FIXTURE) {
     const store = useSectorStore();
     store.sectorData = sector;
     store.generationStatus = 'done';
-    const wrapper = mountWith(
-        ResultsDisplay,
-        { systems: sector.systems, stars: sector.stars, planets: sector.planets },
-        pinia
-    );
+    const wrapper = mountWith(ResultsDisplay, {}, pinia);
     return { store, wrapper };
 }
 

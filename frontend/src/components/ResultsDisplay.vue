@@ -10,9 +10,7 @@
 
         <StarTable v-else-if="store.activeTab === 'stars'" />
 
-        <div v-else-if="store.activeTab === 'planets'" class="p-4">
-            <PlanetTable :planets="planets" :systems="systems" :stars="stars" />
-        </div>
+        <PlanetTable v-else-if="store.activeTab === 'planets'" />
     </div>
 </template>
 
@@ -23,17 +21,9 @@ import SectorStatistics from './SectorStatistics.vue';
 import SystemsTable from './SystemsTable.vue';
 import StarTable from './StarTable.vue';
 import PlanetTable from './PlanetTable.vue';
-import type { System, Star, Planet } from '../types';
 import { useSectorStore } from '../stores/sectorStore';
 
-// The tab host aggregates nothing: every body reads useSectorStats (spec §7.5).
-// The props are here only for PlanetTable, which still takes the raw arrays
-// until story 008 rewrites it.
-defineProps<{
-    systems: System[];
-    stars: Star[];
-    planets: Planet[];
-}>();
-
+// The tab host aggregates nothing and takes no props: every body reads the
+// store and useSectorStats for itself (spec §7.5).
 const store = useSectorStore();
 </script>
