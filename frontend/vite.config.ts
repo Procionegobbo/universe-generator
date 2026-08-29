@@ -3,6 +3,31 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Two Vitest projects, so only the tests that need a DOM pay for one. jsdom
+  // costs ~100ms per test file to construct; the pure-module and SSR-markup
+  // tests do not need it, and a global switch made the suite four times slower.
+  // Interaction tests are named "*.dom.test.ts" and run under jsdom.
+  test: {
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: ['src/**/*.test.ts'],
+          exclude: ['src/**/*.dom.test.ts']
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          environment: 'jsdom',
+          include: ['src/**/*.dom.test.ts']
+        }
+      }
+    ]
+  },
   base: '/',
   plugins: [vue()],
   server: {

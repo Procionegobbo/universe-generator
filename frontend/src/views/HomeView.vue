@@ -2,13 +2,16 @@
     <div class="flex min-h-full flex-col">
         <div
             class="grid flex-1 items-start"
-            :class="showRail ? 'md:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'"
+            :class="showInlineRail ? 'md:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'"
         >
-            <!-- Parameter rail — Overview tab only (D-31); below md it lives in
-                 the sticky PARAMETERS sheet instead. -->
+            <!-- Parameter rail — Overview tab only (D-31), and only in the
+                 inline tier. The `md:` prefix below is inert under 1024px
+                 because this class is bound only while `showInlineRail` holds;
+                 what it still carries is the 260px -> 300px step at `xl`. -->
             <aside
-                v-if="showRail"
-                class="hidden min-h-[820px] self-stretch border-r border-line-strong bg-panel md:block"
+                v-if="showInlineRail"
+                data-rail="inline"
+                class="min-h-[820px] self-stretch border-r border-line-strong bg-panel"
             >
                 <SectorControls @generate="handleGenerate" @reset="handleReset" />
             </aside>
@@ -19,6 +22,26 @@
                     class="border-b border-line-strong px-[18px] py-3 font-mono text-[10px] tracking-[.08em] text-dim"
                 >
                     {{ subHeader }}
+                </div>
+
+                <!-- 768-1023px (spec §4d): the rail becomes a collapsible top
+                     drawer. It sits in normal flow above the KPI strip, so
+                     opening it pushes the strip down instead of covering it. -->
+                <div v-if="showDrawer" data-rail="drawer" class="border-b border-line-strong bg-panel">
+                    <button
+                        type="button"
+                        data-rail-toggle="drawer"
+                        class="flex w-full items-center justify-between px-[18px] py-[14px] font-mono font-semibold text-[10px] tracking-[.14em] text-dim transition-colors duration-150 hover:text-ink"
+                        :aria-expanded="drawerOpen"
+                        aria-controls="parameter-drawer"
+                        @click="drawerOpen = !drawerOpen"
+                    >
+                        <span>PARAMETERS</span>
+                        <span aria-hidden="true">{{ drawerOpen ? '▲' : '▼' }}</span>
+                    </button>
+                    <div v-if="drawerOpen" id="parameter-drawer" class="border-t border-line-soft">
+                        <SectorControls @generate="handleGenerate" @reset="handleReset" />
+                    </div>
                 </div>
 
                 <KpiStrip />
@@ -64,9 +87,10 @@
         />
 
         <!-- Mobile parameter sheet: the rail is reachable on every tab. -->
-        <div v-if="sheetOpen" class="fixed inset-0 z-40 md:hidden">
+        <div v-if="showSheet" class="fixed inset-0 z-40">
             <div class="absolute inset-0 bg-black/60" @click="sheetOpen = false"></div>
             <div
+                data-rail="sheet"
                 class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto border-t border-line-strong bg-panel"
             >
                 <div class="flex justify-end p-2">
@@ -86,25 +110,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import SectorControls from '../components/SectorControls.vue';
 import ResultsDisplay from '../components/ResultsDisplay.vue';
 import KpiStrip from '../components/KpiStrip.vue';
 import EmptyState from '../components/EmptyState.vue';
 import GeneratingState from '../components/GeneratingState.vue';
 import MobileActionBar from '../components/MobileActionBar.vue';
+import { useRailTier } from '../composables/useRailTier';
 import { useSectorStore } from '../stores/sectorStore';
 import { thinThousands } from '../utils/format';
 import type { GenerationRequest, SectorZone } from '../types';
 
 const store = useSectorStore();
 
+const { tier } = useRailTier();
+
 const sheetOpen = ref(false);
+const drawerOpen = ref(false);
 const lastRequest = ref<GenerationRequest | null>(null);
 let controller: AbortController | null = null;
 
 const isRunning = computed(() => store.generationStatus === 'running');
 const showRail = computed(() => store.activeTab === 'overview');
+
+// One rail host at a time (spec §4d). The sheet is reachable on every tab, the
+// drawer and the inline rail only on Overview (D-31).
+const showInlineRail = computed(() => showRail.value && tier.value === 'inline');
+const showDrawer = computed(() => showRail.value && tier.value === 'drawer');
+const showSheet = computed(() => sheetOpen.value && tier.value === 'sheet');
+
+// Crossing a breakpoint hands the rail to another host; the one being left
+// should not come back open when the viewport comes back.
+watch(tier, () => {
+    sheetOpen.value = false;
+    drawerOpen.value = false;
+});
 
 const subHeader = computed(() =>
     `SECTOR ${store.currentSeed} · ${store.zone.toUpperCase()} ZONE · ${thinThousands(store.sectorVolume)} pc³`);

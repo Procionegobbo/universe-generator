@@ -47,15 +47,58 @@
             >
                 EXPORT JSON
             </button>
+
+            <!-- The `≡` glyph of the handoff's 4d top bar, kept at every width:
+                 it is the only in-app way back to the two legacy pages since
+                 the old footer went away. -->
+            <div class="relative">
+                <button
+                    type="button"
+                    data-testid="app-menu"
+                    class="rounded-ctl border border-line-control bg-input px-2.5 py-1 font-mono text-[14px] leading-[1.4] text-muted transition-colors duration-150 hover:text-ink"
+                    aria-haspopup="menu"
+                    :aria-expanded="menuOpen"
+                    aria-label="Open menu"
+                    @click="menuOpen = !menuOpen"
+                >
+                    ≡
+                </button>
+
+                <div v-if="menuOpen" class="fixed inset-0 z-40" @click="menuOpen = false"></div>
+
+                <div
+                    v-if="menuOpen"
+                    role="menu"
+                    class="absolute right-0 z-50 mt-2 flex w-[168px] flex-col rounded-card border border-line-control bg-panel py-1"
+                >
+                    <RouterLink
+                        v-for="item in MENU_ITEMS"
+                        :key="item.to"
+                        role="menuitem"
+                        :to="item.to"
+                        class="px-3 py-2 font-mono text-[11px] text-muted transition-colors duration-150 hover:text-ink"
+                        @click="menuOpen = false"
+                    >
+                        {{ item.label }}
+                    </RouterLink>
+                </div>
+            </div>
         </div>
     </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import { useBackendHealth } from '../composables/useBackendHealth';
+
+const MENU_ITEMS = [
+    { to: '/documentation', label: 'Documentation' },
+    { to: '/api-reference', label: 'API Reference' }
+] as const;
+
+const menuOpen = ref(false);
 
 const router = useRouter();
 const store = useSectorStore();
