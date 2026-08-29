@@ -62,10 +62,17 @@
   --gray-light: #cbd5e1;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* This reset sits in the `base` layer on purpose. Unlayered CSS outranks every
+   cascade layer, so leaving it outside one made `* { margin/padding: 0 }` beat
+   Tailwind's own `@layer utilities`, silently killing every p-*, px-*, m-* class
+   in the app. Inside `base` it still lands after Tailwind's preflight, so the
+   legacy pages reset exactly as before, but utilities can now win. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 body {

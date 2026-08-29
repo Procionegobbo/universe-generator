@@ -8,7 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
+      // Trailing slash on purpose: a bare '/api' key is a prefix match, so it
+      // also swallowed the '/api-reference' route and proxied it to the API,
+      // which answers "Cannot GET /api-reference". Every real endpoint lives
+      // under '/api/sector', so '/api/' still matches them all.
+      '/api/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       }

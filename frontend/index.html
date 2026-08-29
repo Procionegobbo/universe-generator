@@ -13,10 +13,17 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
     />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      /* Pre-paint styles, so the dark ground is up before the app CSS loads.
+         The reset is layered for the same reason as its twin in style.css:
+         unlayered rules outrank every cascade layer, so an unlayered
+         `* { padding: 0 }` here would override Tailwind's @layer utilities and
+         flatten every p-*/px-*/m-* class in the app. */
+      @layer base {
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
       }
 
       body {

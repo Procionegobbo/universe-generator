@@ -21,7 +21,10 @@ app.use(express.static(publicPath));
 
 // Support for Single Page Application routing (fallback to index.html)
 app.get('*', (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/api')) {
+    // '/api/' rather than '/api': the bare prefix also matched the SPA's own
+    // '/api-reference' route, so it fell through to the 404 handler instead of
+    // being served index.html. All endpoints are mounted under '/api/sector'.
+    if (req.path.startsWith('/api/')) {
         return next();
     }
     res.sendFile(path.join(publicPath, 'index.html'), (err) => {
