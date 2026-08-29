@@ -11,3 +11,4 @@
 - [life-planet-types-002-wire-per-planet-display-surfaces.md](COMPLETED/life-planet-types-002-wire-per-planet-display-surfaces.md)
 - [life-planet-types-003-documentation-alignment.md](COMPLETED/life-planet-types-003-documentation-alignment.md)
 - [new-design-001-design-foundation-and-app-shell.md](COMPLETED/new-design-001-design-foundation-and-app-shell.md)
+- [new-design-002-derived-data-layer.md](COMPLETED/new-design-002-derived-data-layer.md)
