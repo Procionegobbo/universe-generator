@@ -12,3 +12,4 @@
 - [life-planet-types-003-documentation-alignment.md](COMPLETED/life-planet-types-003-documentation-alignment.md)
 - [new-design-001-design-foundation-and-app-shell.md](COMPLETED/new-design-001-design-foundation-and-app-shell.md)
 - [new-design-002-derived-data-layer.md](COMPLETED/new-design-002-derived-data-layer.md)
+- [new-design-003-store-generation-and-ui-state.md](COMPLETED/new-design-003-store-generation-and-ui-state.md)

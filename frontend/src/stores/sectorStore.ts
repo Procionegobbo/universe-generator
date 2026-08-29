@@ -1,7 +1,22 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import type { Sector, GenerationRequest, SectorZone } from '../types';
+import { computed, ref, watch } from 'vue';
+import type { Sector, GenerationRequest, GenerationResponse, SectorZone } from '../types';
 import axios from 'axios';
+
+export type GenerationStatus = 'idle' | 'running' | 'done' | 'error';
+export type GenerationStage = 'coordinates' | 'stars' | 'planets' | 'moons' | 'habitability';
+export type SectorTab = 'overview' | 'statistics' | 'systems' | 'stars' | 'planets';
+
+const defaultSystemFilters = () => ({ query: '', preset: 'all', primaryClass: 'any', sort: 'planets-desc' });
+const defaultStarFilters = () => ({ query: '', preset: 'all', sort: 'id-asc' });
+const defaultPlanetFilters = () => ({
+    types: [] as string[],
+    zone: 'any',
+    hasLife: false,
+    hasMoons: false,
+    sort: 'diameter-desc'
+});
+const defaultPage = () => ({ systems: 1, stars: 1, planets: 1 });
 
 export const useSectorStore = defineStore('sector', () => {
     // --- LocalStorage Key ---
@@ -36,6 +51,27 @@ export const useSectorStore = defineStore('sector', () => {
     if (isNumber(initial['sectorVolume'])) sectorVolume.value = initial['sectorVolume'] as number;
     if (isZone(initial['zone'])) zone.value = initial['zone'] as SectorZone;
 
+    // --- Generation state (animated, never measured — see D-19) ---
+    const generationStatus = ref<GenerationStatus>('idle');
+    const generationStage = ref<GenerationStage>('coordinates');
+    const generationProgress = ref(0); // 0..1
+    const generationElapsedMs = ref(0);
+    const lastStats = ref<GenerationResponse['stats'] | null>(null);
+
+    // isLoading keeps its original meaning and stays in sync with the new status,
+    // so existing consumers reading it are unaffected.
+    watch(generationStatus, (status) => {
+        isLoading.value = status === 'running';
+    });
+
+    // --- UI state ---
+    const activeTab = ref<SectorTab>('overview');
+    const systemFilters = ref(defaultSystemFilters());
+    const starFilters = ref(defaultStarFilters());
+    const planetFilters = ref(defaultPlanetFilters());
+    const selectedPlanetKey = ref<string | null>(null); // "<starId>-<orbitalNumber>"
+    const page = ref(defaultPage());
+
     // --- Persistenza automatica SOLO parametri su LocalStorage ---
     // (RIMOSSO IL WATCHER)
 
@@ -50,6 +86,32 @@ export const useSectorStore = defineStore('sector', () => {
         }
     }
 
+    // localStorage is not reactive: bumped whenever the saved parameters are written or
+    // removed, so hasSavedParams re-reads them.
+    const savedParamsRevision = ref(0);
+
+    // True only when localStorage holds a complete, valid parameter set (D-15).
+    const hasSavedParams = computed(() => {
+        void savedParamsRevision.value;
+        const saved = loadSavedParams();
+        if (!saved) return false;
+        return (isNumber(saved['currentSeed']) || isString(saved['currentSeed']))
+            && isNumber(saved['systemCount'])
+            && isNumber(saved['sectorVolume'])
+            && isZone(saved['zone']);
+    });
+
+    function resetFilters() {
+        systemFilters.value = defaultSystemFilters();
+        starFilters.value = defaultStarFilters();
+        planetFilters.value = defaultPlanetFilters();
+        page.value = defaultPage();
+    }
+
+    function selectPlanet(key: string | null) {
+        selectedPlanetKey.value = key;
+    }
+
     // Actions
     const checkHealth = async (): Promise<boolean> => {
         try {
@@ -60,8 +122,14 @@ export const useSectorStore = defineStore('sector', () => {
         }
     };
 
-    const generateSector = async (request: GenerationRequest) => {
+    const generateSector = async (request: GenerationRequest, signal?: AbortSignal) => {
+        // Snapshot restored if the request is aborted (D-20).
+        const snapshot = sectorData.value;
         isLoading.value = true;
+        generationStatus.value = 'running';
+        generationStage.value = 'coordinates';
+        generationProgress.value = 0;
+        generationElapsedMs.value = 0;
         error.value = null;
 
         // Aggiorna i valori dello store con quelli della request
@@ -91,18 +159,32 @@ export const useSectorStore = defineStore('sector', () => {
                 zone: zone.value
             }));
         } catch (e) { /* ignore */ }
+        savedParamsRevision.value++;
 
         try {
-            const response = await axios.post('/api/sector/generate', request);
+            const response = await axios.post('/api/sector/generate', request, { signal });
             if (response.data.success) {
                 sectorData.value = response.data.data;
+                lastStats.value = response.data.stats ?? null;
+                generationStatus.value = 'done';
+                generationProgress.value = 1;
+                activeTab.value = 'overview';
                 return response.data;
             } else {
                 error.value = response.data.error || 'Failed to generate sector';
+                generationStatus.value = 'error';
                 return null;
             }
         } catch (e: any) {
+            if (axios.isCancel(e)) {
+                // Cancelled: leave the previous sector exactly as it was (D-20).
+                sectorData.value = snapshot;
+                generationStatus.value = snapshot ? 'done' : 'idle';
+                generationProgress.value = snapshot ? 1 : 0;
+                return null;
+            }
             error.value = e.message || 'An error occurred';
+            generationStatus.value = 'error';
             return null;
         } finally {
             isLoading.value = false;
@@ -125,6 +207,10 @@ export const useSectorStore = defineStore('sector', () => {
         systemCount.value = 100;
         sectorVolume.value = 1000;
         zone.value = 'medium';
+        savedParamsRevision.value++;
+        lastStats.value = null;
+        activeTab.value = 'overview';
+        resetFilters();
     };
 
     return {
@@ -139,6 +225,20 @@ export const useSectorStore = defineStore('sector', () => {
         generateSector,
         getSystemById,
         clearPersistentMemory,
-        loadSavedParams
+        loadSavedParams,
+        generationStatus,
+        generationStage,
+        generationProgress,
+        generationElapsedMs,
+        lastStats,
+        activeTab,
+        systemFilters,
+        starFilters,
+        planetFilters,
+        selectedPlanetKey,
+        page,
+        hasSavedParams,
+        resetFilters,
+        selectPlanet
     };
 });
