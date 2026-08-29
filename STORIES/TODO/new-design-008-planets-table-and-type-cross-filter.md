@@ -84,12 +84,25 @@ Feature: Planets table (4a) and the type-card cross-filter
       PLANET_TYPE_DESCRIPTIONS
     And no story adds, removes or renames a planet type (D-36); no artwork is generated,
       redrawn or copied (D-37)
+
+  # --- Loading / skeleton state (carried here from story 004 by story 004b) ---
+
+  Scenario: Tables render skeleton rows while loading
+    Given a table awaiting data
+    Then it renders 8 ".ug-skeleton" rows, never a spinner that collapses the layout
 ```
 
 ## Technical Notes
 
 **Scope of this story: the Planets tab, plus wiring the type-card cross-filter into the
 `PlanetTypeDistribution.vue` cards built in story 005.** Reuses `TablePager.vue` from story 006.
+
+### Loading state — 8 `.ug-skeleton` rows
+
+While the table is awaiting data it renders **8 `.ug-skeleton` rows**, never a spinner and never
+a collapsed layout. `.ug-skeleton` is already defined in `frontend/src/style.css` from story 001
+and is unused until a table story consumes it. This criterion was written into story 004, which
+owns no table; story 004b carried it here.
 
 ### `PlanetTable.vue` — full rewrite (4a)
 

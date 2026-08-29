@@ -89,6 +89,12 @@ Feature: Systems table (3a)
     And the carried-over inline markup and its filteredSystems/paginatedSystems computeds are
       deleted from ResultsDisplay.vue
     And no aggregation logic of any kind remains in ResultsDisplay.vue
+
+  # --- Loading / skeleton state (carried here from story 004 by story 004b) ---
+
+  Scenario: Tables render skeleton rows while loading
+    Given a table awaiting data
+    Then it renders 8 ".ug-skeleton" rows, never a spinner that collapses the layout
 ```
 
 ## Technical Notes
@@ -96,6 +102,13 @@ Feature: Systems table (3a)
 **Scope of this story: the Systems tab only**, plus `TablePager.vue`, a new shared component
 reused unchanged by the Stars tab (story 007) and the Planets tab (story 008) — build it once
 here.
+
+### Loading state — 8 `.ug-skeleton` rows
+
+While the table is awaiting data it renders **8 `.ug-skeleton` rows**, never a spinner and never
+a collapsed layout. `.ug-skeleton` is already defined in `frontend/src/style.css` from story 001
+and is unused until a table story consumes it. This criterion was written into story 004, which
+owns no table; story 004b carried it here.
 
 ### `SystemsTable.vue` (new) — 3a
 
