@@ -21,6 +21,7 @@ import SpectralDistribution from './SpectralDistribution.vue';
 import PlanetTypeDistribution from './PlanetTypeDistribution.vue';
 import StarTable from './StarTable.vue';
 import PlanetTable from './PlanetTable.vue';
+import SystemsTable from './SystemsTable.vue';
 
 vi.mock('axios', () => ({
     default: { post: vi.fn(), get: vi.fn(), isCancel: vi.fn() }
@@ -186,17 +187,16 @@ describe('ResultsDisplay — the thin tab host', () => {
         expect(wrapper.findComponent(StarTable).exists()).toBe(false);
     });
 
-    it('keeps the pre-redesign Systems markup as the stopgap for the systems tab', async () => {
+    it('renders SystemsTable for the systems tab, with the story-005 stopgap gone', async () => {
         const { wrapper } = mountResults();
 
         await wrapper.get('[data-tab="systems"]').trigger('click');
 
-        // The carried-over life filter and its counter, verbatim from the old body.
-        expect(wrapper.find('#systemLifeFilter').exists()).toBe(true);
-        expect(wrapper.text()).toContain('Showing 3 of 3 systems');
-
-        await wrapper.get('#systemLifeFilter').setValue('1');
-        expect(wrapper.text()).toContain('Showing 1 of 3 systems');
+        expect(wrapper.findComponent(SystemsTable).exists()).toBe(true);
+        expect(wrapper.findComponent(OverviewPanel).exists()).toBe(false);
+        // The carried-over life select and its counter are gone with the stopgap.
+        expect(wrapper.find('#systemLifeFilter').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain('Showing 3 of 3 systems');
     });
 
     it('no longer offers the 3D view (D-24)', () => {
