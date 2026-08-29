@@ -77,6 +77,21 @@ export interface SystemRow {
     planets: Planet[];
 }
 
+export interface StarRow {
+    starId: number;
+    systemId: number;
+    /** D-11: the payload's name, carried through verbatim. */
+    name: string;
+    spectralClass: string;
+    subclass?: number;
+    systemName: string;
+    planetCount: number;
+    habitableCount: number;
+    moonCount: number;
+    /** BH or NS — the two classes the Stars index calls exotic (D-23). */
+    isExotic: boolean;
+}
+
 interface SystemBucket {
     system: System;
     stars: Star[];
@@ -88,6 +103,8 @@ interface SectorIndex {
     stars: Star[];
     planets: Planet[];
     starsById: Map<number, Star>;
+    systemsById: Map<number, System>;
+    planetsByStar: Map<number, Planet[]>;
     buckets: SystemBucket[];
 }
 
@@ -108,10 +125,13 @@ export function useSectorStats(
         const { systems, stars, planets } = data;
 
         const starsById = new Map<number, Star>();
+        const systemsById = new Map<number, System>();
+        const planetsByStar = new Map<number, Planet[]>();
         const bucketBySystem = new Map<number, SystemBucket>();
         const buckets: SystemBucket[] = systems.map(system => {
             const bucket: SystemBucket = { system, stars: [], planets: [] };
             bucketBySystem.set(system.systemId, bucket);
+            systemsById.set(system.systemId, system);
             return bucket;
         });
 
@@ -124,9 +144,12 @@ export function useSectorStats(
             const star = starsById.get(planet.starId);
             if (!star) continue;
             bucketBySystem.get(star.systemId)?.planets.push(planet);
+            const perStar = planetsByStar.get(planet.starId);
+            if (perStar) perStar.push(planet);
+            else planetsByStar.set(planet.starId, [planet]);
         }
 
-        return { systems, stars, planets, starsById, buckets };
+        return { systems, stars, planets, starsById, systemsById, planetsByStar, buckets };
     });
 
     const systemCount = computed(() => index.value.systems.length);
@@ -296,6 +319,26 @@ export function useSectorStats(
             planets: [...bucket.planets].sort((a, b) => a.orbitalNumber - b.orbitalNumber)
         })));
 
+    // One row per star for the Stars index (D-23), in payload order. The counts
+    // are the star's own planets, not its system's: a companion in a multi-star
+    // system reports only what orbits it.
+    const starRows = computed<StarRow[]>(() =>
+        index.value.stars.map(star => {
+            const planets = index.value.planetsByStar.get(star.starId) || [];
+            return {
+                starId: star.starId,
+                systemId: star.systemId,
+                name: star.name,
+                spectralClass: star.spectralClass,
+                subclass: star.subclass,
+                systemName: index.value.systemsById.get(star.systemId)?.name || '',
+                planetCount: planets.length,
+                habitableCount: planets.filter(planet => planet.habitableZone).length,
+                moonCount: planets.reduce((total, planet) => total + planet.moonCount, 0),
+                isExotic: star.spectralClass === 'BH' || star.spectralClass === 'NS'
+            };
+        }));
+
     const maxPlanetDiameter = computed(() =>
         index.value.planets.reduce((max, planet) => Math.max(max, planet.diameter), 0));
 
@@ -321,6 +364,7 @@ export function useSectorStats(
         lifeByStage,
         notableSystems,
         systemRows,
+        starRows,
         maxPlanetDiameter
     };
 }

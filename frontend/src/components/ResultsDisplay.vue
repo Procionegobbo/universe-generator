@@ -8,9 +8,7 @@
 
         <SystemsTable v-else-if="store.activeTab === 'systems'" />
 
-        <div v-else-if="store.activeTab === 'stars'" class="p-4">
-            <StarTable :stars="stars" />
-        </div>
+        <StarTable v-else-if="store.activeTab === 'stars'" />
 
         <div v-else-if="store.activeTab === 'planets'" class="p-4">
             <PlanetTable :planets="planets" :systems="systems" :stars="stars" />
@@ -29,8 +27,8 @@ import type { System, Star, Planet } from '../types';
 import { useSectorStore } from '../stores/sectorStore';
 
 // The tab host aggregates nothing: every body reads useSectorStats (spec §7.5).
-// The props are here only for StarTable and PlanetTable, which still take the
-// raw arrays until stories 007-008 rewrite them.
+// The props are here only for PlanetTable, which still takes the raw arrays
+// until story 008 rewrites it.
 defineProps<{
     systems: System[];
     stars: Star[];

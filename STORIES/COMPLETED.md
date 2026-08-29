@@ -17,3 +17,4 @@
 - [new-design-004b-interaction-test-harness-and-004-gaps.md](COMPLETED/new-design-004b-interaction-test-harness-and-004-gaps.md)
 - [new-design-005-overview-and-statistics-tabs.md](COMPLETED/new-design-005-overview-and-statistics-tabs.md)
 - [new-design-006-systems-table.md](COMPLETED/new-design-006-systems-table.md)
+- [new-design-007-stars-table.md](COMPLETED/new-design-007-stars-table.md)

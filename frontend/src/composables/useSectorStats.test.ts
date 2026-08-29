@@ -303,6 +303,68 @@ describe('systemRows', () => {
     });
 });
 
+describe('starRows', () => {
+    it('summarises each star with its own planets, not its system\'s', () => {
+        const rows = stats.starRows.value;
+        expect(rows.map(row => row.starId)).toEqual([1, 2, 3, 4, 5]);
+
+        // Star 1 (G) and star 2 (M) share system 1; each reports only its own.
+        expect(rows[0]).toMatchObject({
+            starId: 1,
+            systemId: 1,
+            name: 'Star-1',
+            spectralClass: 'G',
+            systemName: 'UG-0001',
+            planetCount: 3,
+            habitableCount: 1,
+            moonCount: 13,
+            isExotic: false
+        });
+        expect(rows[1]).toMatchObject({
+            starId: 2,
+            systemId: 1,
+            systemName: 'UG-0001',
+            planetCount: 2,
+            habitableCount: 1,
+            moonCount: 0
+        });
+        expect(rows[2]).toMatchObject({ starId: 3, systemName: 'Necklace', planetCount: 2 });
+    });
+
+    it('flags BH and NS as exotic, and a planetless star as zero rather than absent', () => {
+        const rows = stats.starRows.value;
+
+        expect(rows[3]).toMatchObject({
+            starId: 4,
+            spectralClass: 'BH',
+            isExotic: true,
+            planetCount: 0,
+            habitableCount: 0,
+            moonCount: 0
+        });
+        expect(rows.filter(row => row.isExotic).map(row => row.starId)).toEqual([4]);
+
+        const neutron: Sector = {
+            systems: [system(1, 'UG-0001')],
+            stars: [star(1, 1, 'NS')],
+            planets: []
+        };
+        expect(useSectorStats(() => neutron).starRows.value[0].isExotic).toBe(true);
+    });
+
+    it('carries the subclass through when the payload has one', () => {
+        const withSubclass: Sector = {
+            systems: [system(1, 'UG-0001')],
+            stars: [{ ...star(1, 1, 'K'), subclass: 4 }, star(2, 1, 'M')],
+            planets: []
+        };
+        const rows = useSectorStats(() => withSubclass).starRows.value;
+
+        expect(rows[0].subclass).toBe(4);
+        expect(rows[1].subclass).toBeUndefined();
+    });
+});
+
 describe('percentages and maxPlanetDiameter', () => {
     it('reports life and habitable shares as fractions of planetCount', () => {
         expect(stats.lifePercent.value).toBeCloseTo(1 / 9, 12);
@@ -343,6 +405,7 @@ describe('an empty sector (T-F41)', () => {
         expect(empty.planetTypeDistribution.value).toEqual([]);
         expect(empty.notableSystems.value).toEqual([]);
         expect(empty.systemRows.value).toEqual([]);
+        expect(empty.starRows.value).toEqual([]);
         expect(empty.thermalOccupancy.value).toEqual({ hot: 0, goldilocks: 0, temperate: 0, cold: 0 });
         expect(empty.orbitBands.value).toEqual({ inner: 0, medium: 0, outer: 0 });
         expect(empty.multiplicity.value).toEqual({ one: 0, two: 0, three: 0, fourPlus: 0 });
