@@ -207,6 +207,30 @@ remove or rename an entry in either canonical map — both stay exactly the clos
 22-code sets. Any thumbnail rendered here goes through `CelestialThumb.vue` (story 001), so
 **D-37 (must hold)** is inherited: no artwork is generated, redrawn or copied here.
 
+### Carried here from story 004b: correct the rail grid's breakpoint prefix
+
+`frontend/src/views/HomeView.vue` binds the rail grid as
+`showInlineRail ? 'md:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'`.
+Since story 004b introduced the three responsive tiers, the inline rail only ever mounts at
+**≥1024px**, so the `md:` prefix (768px) is wrong in intent even though it is inert in
+effect — at any width where the class is bound, `md:` has long since applied. Story 004b's
+reviewer preferred correcting it, but story 004b was forbidden from editing any pre-existing
+test, and the prefix is asserted as a literal string at
+`frontend/src/components/railAndStates.test.ts:264`.
+
+This story already rewrites `ResultsDisplay.vue` into that same grid, so it is the natural
+place to settle it. **This is the one pre-existing test assertion this story may edit**, and
+only this one:
+
+- change the prefix to `lg:` in `HomeView.vue`, and update the literal in
+  `railAndStates.test.ts:264` to match;
+- keep the comment above the binding explaining which tier owns the inline rail;
+- the rendered output must not change at any width — verify at 800px (drawer, no inline rail)
+  and 1100px (inline rail) that the layout is identical before and after.
+
+If the change turns out to alter rendering at any width, stop and leave the prefix alone: it
+is a readability fix, not a behavioural one, and it is not worth a regression.
+
 ### Not touched by this story
 
 `SystemsTable.vue` — this story does **not** create it, stub it, or import it; the `'systems'`
