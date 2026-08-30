@@ -359,6 +359,19 @@ body {
   color: var(--color-acc-green-mid);
 }
 
+/* The two exotic badges the handoff lists for the SYSTEM column but leaves
+   uncoloured; they reuse the spectral-class colours BH #7f1d1d and NS #a855f7
+   rather than introducing a colour the design never specified. */
+.ug-badge-bh {
+  background: rgb(127 29 29 / .45);
+  color: var(--color-acc-red-pale);
+}
+
+.ug-badge-ns {
+  background: rgb(168 85 247 / .18);
+  color: var(--color-acc-violet-pale);
+}
+
 .ug-badge-hot {
   background: rgb(239 68 68 / .18);
   color: var(--color-acc-red-pale);

@@ -156,8 +156,8 @@
                             </RouterLink>
                             <span v-if="row.hasProperName" class="ug-badge ug-badge-iau">IAU</span>
                             <span v-if="row.hasLife" class="ug-badge ug-badge-life">LIFE</span>
-                            <span v-if="row.hasBH" class="ug-badge" :style="BH_BADGE">BH</span>
-                            <span v-if="row.hasNS" class="ug-badge" :style="NS_BADGE">NS</span>
+                            <span v-if="row.hasBH" class="ug-badge ug-badge-bh">BH</span>
+                            <span v-if="row.hasNS" class="ug-badge ug-badge-ns">NS</span>
                         </div>
 
                         <div class="flex items-center gap-2 overflow-hidden" :title="row.primaryLabel">
@@ -244,12 +244,6 @@ const SORTS = [
     { id: 'id-asc', label: 'ID ↑' },
     { id: 'id-desc', label: 'ID ↓' }
 ] as const;
-
-// The two exotic badges the handoff lists for the SYSTEM column but leaves
-// uncoloured; they reuse the spectral-class colours BH #7f1d1d and NS #a855f7
-// rather than introducing a colour the design never specified.
-const BH_BADGE = { background: 'rgb(127 29 29 / .45)', color: '#fca5a5' };
-const NS_BADGE = { background: 'rgb(168 85 247 / .18)', color: '#ddd6fe' };
 
 const store = useSectorStore();
 const router = useRouter();
