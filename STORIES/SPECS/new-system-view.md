@@ -116,28 +116,61 @@ paint a 150px gradient box whose only content is the string "no planetary bodies
 a header that already says "0 planets" — two statements of nothing. So: group yes, header yes,
 one line of prose, no map.
 
-**S-4 · The orbital map moves inside the group, one per star that has planets. The single
-primary-only map at the top is removed.**
+**S-4 · Each star carries its own orbital map, in the `compact` variant, inside its group
+header. The single primary-only map at the top is removed.**
 This is the largest genuine choice, and it departs from `new-design.md` §"1d System detail"
 ("`OrbitalMap.vue` shows the **primary star only**"). Reasons to depart:
 
 - The draft's stated defect — "it's difficult to understand which planet orbits which star" — is
   caused as much by the map as by the table. A primary-only map at the top of a page whose list
   below is organised per star leaves the page with two contradictory organising ideas.
-- Each map is scaled to *its own* star's habitable-zone bounds (`habitableZoneBounds(spectralClass)`).
-  A secondary's planets cannot be read against the primary's HZ rules at all, so there is no
-  correct way to show them on one map.
-- It costs no change to `OrbitalMap.vue`: it already takes `star` + `planets` props and is already
-  mounted twice on other screens (full on 1d, `compact` in the planet panel).
+- Each map is scaled to *its own* star's habitable-zone bounds (`habitableZoneBounds(spectralClass)`)
+  and to its own planets' distances. A secondary's planets cannot be read against the primary's
+  scale at all, so there is no correct way to show them on one map. **Measured**, on UG-0052 of
+  seed 644212: the A group's axis runs 0.067–0.39 AU and the B group's 0.059–6.5 AU, a factor of
+  sixteen. B's outer planets have no position on A's axis.
+- It costs no change to `OrbitalMap.vue`: it already takes `star` + `planets` props and already
+  ships a `compact` variant, mounted in the planet panel.
 - The design mock (`STORIES/SPECS/design_handoff_universe_generator_ui/screenshots/1d-system-detail.png`)
   happens to show a system whose secondary has **zero** planets, so the mock never exercises the
   case the draft is complaining about. The design is not evidence against this change; it is
   silent on it.
 
-Cost, accepted: a system whose stars all bear planets shows more than one 150px map, making the
-page taller. Bounded — `determineStarCount()` returns at most 4, only 10% of systems have 3+
-stars, and S-3 removes the map for every barren star, which is the common secondary. Scrolling on
-a detail page is acceptable; showing a reader planets with no picture is not.
+**Compact, in the header, rather than the full map stacked under it.** The first draft of this
+decision put a full 150px map inside each group, below the star header. Prototyped against the
+running app, that is the worse of the two:
+
+- It is redundant with the table directly beneath it. Both enumerate the same planets, one with
+  labels and one with rows. The `compact` variant instead does a *different* job — the shape of
+  the system at a glance — and leaves the detail to the table, which is a division of labour
+  rather than a repetition.
+- Four full maps on a four-star system add roughly 600px of scroll. Four 56px strips inside
+  headers that already exist are nearly free.
+- The legibility risk was the reason to doubt it, and it did not materialise: `compact` drops the
+  per-planet letters and renders 8–16px bodies, and a nine-planet secondary was still fully
+  separated at both 1400px and 900px, because the log scale spreads the crowded inner orbits.
+
+What `compact` gives up, accepted: the per-planet letters, the legend, and the separate HZ rule
+captions — it prints one `HZ <inner> – <outer> AU` in its axis row instead. A reader who wants to
+know *which* body sits where reads the row beneath it; the map answers "what shape is this
+system", which the old one could not answer for a secondary at all.
+
+Cost, accepted: the group header grows from one line to a 56px row. Bounded at four by
+`determineStarCount()`, and S-3 gives a barren star no map at all, which is the common secondary.
+
+**Consequence — the `full` variant loses its last consumer.** `OrbitalMap` is mounted in exactly
+two places: this view, with the default `full`, and `PlanetDetailPanel.vue`, with `compact`. Once
+this view mounts `compact` too, nothing renders `full`, and with it nothing renders the per-planet
+letters, the legend, the primary-star bleed, or the per-rule HZ captions — including the
+caption-collision fix those captions carry. The component is still *unchanged*, but half of it
+becomes unreachable from the app.
+
+This is accepted rather than solved, for two reasons: the alternative is keeping a redundant map
+on the page purely to exercise code, and the behaviour stays pinned by the direct-mount tests the
+impact table below requires. It is recorded here so that whoever later finds `variant="full"`
+apparently unused knows it was made unused deliberately, and by which decision. Removing the
+variant is **not** in scope for this spec — that is a separate decision about a shared component,
+and a future screen may well want the labelled map back.
 
 **S-5 · The grouping is computed in `useSectorStats`, as a new `starGroups` field on `SystemRow`.**
 The project rule is that components aggregate nothing and every count comes from the one indexing
@@ -217,7 +250,8 @@ under **Future Considerations**.
 Neither was asked for, both add state and interaction to test, and the bounded group count (≤ 4)
 makes the page navigable without them. Recorded under **Future Considerations**.
 
-**S-17 · Open risk — `OrbitalMap` instance count.**
+**S-17 · Open risk — `OrbitalMap` instance count.** (Unchanged by S-4's move to `compact`: the
+listeners are per instance, not per variant, and the count is the same.)
 Each map registers a `window.resize` listener and a `ResizeObserver` on mount and tears both down
 on unmount (`OrbitalMap.vue`, `onMounted`/`onBeforeUnmount`). Mounting up to 4 instead of 1 means
 up to four listeners on this screen. Bounded by `determineStarCount()` ≤ 4, symmetric teardown is
@@ -250,12 +284,9 @@ router  /system/:id
 ├ 5-up KPI strip ──────────────────────────────────────────── unchanged ─┤
 ├ STARS & PLANETS                   each star with the planets that orbit it
 │ ┌ [data-star-group="1"] ──────────────────────────────────────────────┐│
-│ │ (o)  Kepler-442 A                          ← [data-star-entry="1"]  ││
-│ │      K-4 · Orange dwarf                                             ││
+│ │ (o)  Kepler-442 A    ░░▒▒▓▓ ·  · │· ·│   ·    ·    ·   ← compact,  ││
+│ │      K-4 · Orange dwarf   0.4 AU  HZ 0.7 – 1.4 AU  12 AU  in the   ││
 │ │      0.61 M☉ · 4 402 K · 7 planets         ← [data-star-facts]      ││
-│ ├─────────────────────────────────────────────────────────────────────┤│
-│ │ ORBITAL MAP · KEPLER-442 A   [HOT] [GOLDILOCKS] [COLD]              ││
-│ │ ░░▒▒▓▓  b   c    │d   e│      f      g     h                        ││
 │ ├─────────────────────────────────────────────────────────────────────┤│
 │ │ #  PLANET      TYPE      Ø KM   TEMP  MOONS   ZONE   ← per group    ││
 │ │ 1  Kepler-442 b  Molten  6 118  1 022     0   [HOT]   ┐             ││
@@ -413,7 +444,7 @@ rather than deleted:
 | `:369` — `data-planets-header` reads `PLANETS · 5` | `data-contents-header` reads `STARS & PLANETS` (S-9) | Rewrite |
 | `:377-380` — exactly one `OrbitalMap`, `star.starId === 1` | One per non-empty group; group 1's map has `star.starId === 1` | Rewrite |
 | `:281-298` — `OrbitalMap`'s "no planetary bodies" empty state, reached through an NS primary on this view | The view no longer mounts a map for a barren star (S-3), so this path is unreachable **from this view** | **Do not delete the coverage.** Re-express it as a direct `mount(OrbitalMap, { props: { star, planets: [] } })` so the component's empty state, absent HZ rules, absent axis captions and empty summary line stay pinned |
-| `:224-278` — the HZ-caption merge at narrow widths | Unchanged behaviour, but "the" map is now one of several | Re-point `wrapper.get('[data-map-box]')` at the map inside a named group |
+| `:224-278` — the HZ-caption merge at narrow widths | **Unreachable from this view.** The merge is a `full`-variant behaviour: `compact` renders no per-rule captions at all, printing one `HZ <inner> – <outer> AU` in its axis row instead | **Do not delete the coverage.** Re-express it as a direct `mount(OrbitalMap, { props: { …, variant: 'full' } })`, alongside the empty-state relocation above, so the caption-collision fix stays pinned |
 | `:163-173` — the rail lists every star with its own planet count | Every star has a group header with the same fields | Re-point at `[data-star-group]` / `[data-star-entry]`; the guarantee "a secondary is not hidden" is strengthened, not dropped |
 | `:335-345` — a change of `:id` re-renders | Unchanged | Keep as-is |
 | `:383-389` — `data-system-missing` for an unknown system | Unchanged | Keep as-is |
@@ -476,6 +507,11 @@ Everything above the content region is untouched: `data-breadcrumb`, `data-syste
       <h2 :id="`star-name-${group.starId}`">{{ group.name }}</h2>
       <span>{{ group.classCode }} · {{ group.classLabel }}</span>
       <span data-star-facts>{{ group.facts }}</span>
+      </div>                                      ← the identity block ends here
+
+      <div v-if="group.rawPlanets.length" class="min-w-0 flex-1">   ← S-4: in the header
+        <OrbitalMap :star="group.star" :planets="group.rawPlanets" variant="compact" />
+      </div>
     </header>
 
     <p v-if="group.planets.length === 0" :data-star-empty="group.starId">
@@ -483,10 +519,6 @@ Everything above the content region is untouched: `data-breadcrumb`, `data-syste
     </p>
 
     <template v-else>
-      <div class="px-[18px] py-[16px]">           ← same padding the top map had
-        <OrbitalMap :star="group.star" :planets="group.planets" />
-      </div>
-
       <div class="overflow-x-auto">               ← S-10: only this scrolls
         <div class="min-w-[620px] px-[18px]">
           <div :class="GRID"> # PLANET TYPE Ø KM TEMP MOONS ZONE </div>   ← S-8
@@ -572,7 +604,14 @@ which is unchanged; no import becomes unused.
 ### 7.5 Components not modified
 
 `OrbitalMap.vue`, `PlanetDetailPanel.vue`, `CelestialThumb.vue` — used as-is, with their existing
-props. `OrbitalMap` is given `variant="full"` (its default) and no `highlightKey` (S-15).
+props. `OrbitalMap` is given `variant="compact"` (S-4) and no `highlightKey` (S-15).
+
+**It must be handed the raw planets, not the group's display rows.** `groups[].planets` is a
+view-model built for the table — `key`, `name`, `planetType`, the formatted cells — and carries
+neither `starId` nor `semiMajorAxis`. Passing it to `OrbitalMap` fails *silently*: the domain
+collapses, every body renders at `left: 50%`, and both axis captions read `—`, with no error
+anywhere. So `groups[]` also carries `rawPlanets: group.planets` straight off `starGroups`, and
+that is what the map is given. This was found by prototyping, not by reading.
 
 ---
 
@@ -683,8 +722,10 @@ The existing `KEPLER` fixture (G primary with 4 planets, M secondary with 1) and
     `star.starId === 2` and `planets` of length 1.
 17. **A map draws only its own star's planets.** Group 2's `[data-map-planet]` keys equal
     `['2-1']`; group 1's equal `['1-1','1-2','1-3','1-4']`.
-18. **Each map is headed by its own star.** Group 2's `[data-map-header]` reads
-    `ORBITAL MAP · KEPLER-442 B`.
+18. **Each map belongs to its own star, and says which.** `compact` renders no
+    `[data-map-header]` — that element is gated on the full variant — so the binding is the
+    group: group 2's `[data-orbital-map]` sits inside `[data-star-group="2"]`, whose `<h2>` names
+    Kepler-442 B, and the map's own `[data-map-summary]` names that star's planets.
 19. **A barren star renders no map and states its emptiness.** For `EXOTIC`,
     `[data-star-group="9"]` contains no `[data-orbital-map]` and its `[data-star-empty="9"]` reads
     `No planets orbit this star.`; `[data-star-group="10"]` contains a map and the row `10-1`.
@@ -796,8 +837,9 @@ Each is binary pass/fail.
    never `1-1, 2-1, 1-2, 1-3, 1-4`.
 4. Every star of the system has a block, including one with no planets; a star with no planets
    shows its header and the text `No planets orbit this star.` and renders no `OrbitalMap`.
-5. Every star that has planets renders exactly one `OrbitalMap` inside its own block, headed
-   `ORBITAL MAP · <that star's name>`, drawing only that star's planets.
+5. Every star that has planets renders exactly one `OrbitalMap`, in the `compact` variant, inside
+   its own group header, drawing only that star's planets. It carries no map header of its own —
+   the `<h2>` beside it names the star.
 6. No `OrbitalMap` is rendered outside a star block.
 7. Clicking, or pressing Enter or Space on, a planet row sets `store.selectedPlanetKey` to
    `<starId>-<orbitalNumber>`, opens `PlanetDetailPanel`, and leaves `route.path` at

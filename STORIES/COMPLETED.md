@@ -22,3 +22,4 @@
 - [new-design-009-system-detail-and-planet-panel.md](COMPLETED/new-design-009-system-detail-and-planet-panel.md)
 - [new-system-view-001-star-planet-groups-in-sector-stats.md](COMPLETED/new-system-view-001-star-planet-groups-in-sector-stats.md)
 - [new-system-view-002-grouped-star-planet-listing.md](COMPLETED/new-system-view-002-grouped-star-planet-listing.md)
+- [new-system-view-003-per-star-orbital-maps.md](COMPLETED/new-system-view-003-per-star-orbital-maps.md)

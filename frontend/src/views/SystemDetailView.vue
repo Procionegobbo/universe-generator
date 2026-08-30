@@ -60,11 +60,6 @@
                 </div>
             </div>
 
-            <!-- The centrepiece: the primary star's orbital map. -->
-            <div class="border-b border-line-strong px-[18px] py-[16px]">
-                <OrbitalMap v-if="row.primaryStar" :star="row.primaryStar" :planets="primaryPlanets" />
-            </div>
-
             <!-- S-1: one full-width stack, no rail — every planet is listed
                  under the star it orbits. -->
             <section data-system-contents class="flex-1">
@@ -105,6 +100,15 @@
                             <span data-star-facts class="truncate font-mono text-[9px] text-faint">
                                 {{ group.facts }}
                             </span>
+                        </div>
+
+                        <!-- S-4: every star that has planets carries its own map,
+                             here in its own header rather than one primary-only
+                             map above a list organised per star. `rawPlanets`,
+                             not the table's display rows — those carry neither
+                             starId nor semiMajorAxis. -->
+                        <div v-if="group.rawPlanets.length" class="min-w-0 flex-1">
+                            <OrbitalMap :star="group.star" :planets="group.rawPlanets" variant="compact" />
                         </div>
                     </header>
 
@@ -281,13 +285,6 @@ const kpis = computed(() => {
     ];
 });
 
-/** The primary's own planets — the map shows the primary star only. */
-const primaryPlanets = computed(() => {
-    const primary = row.value?.primaryStar;
-    if (!primary) return [];
-    return (row.value?.planets ?? []).filter(planet => planet.starId === primary.starId);
-});
-
 // One block per star, in payload order (story 001's starGroups), each carrying
 // the planets that orbit it in orbitalNumber order.
 const groups = computed(() => {
@@ -314,6 +311,9 @@ const groups = computed(() => {
             // Handoff 1d: 52-64px, sized by mass relative to the heaviest star.
             px: maxMass > 0 ? Math.round(52 + 12 * (physical.mass / maxMass)) : 52,
             facts: `${physical.mass.toFixed(2)} M☉ · ${temp} · ${group.planets.length} planets`,
+            // The map needs the domain model — starId and semiMajorAxis — which
+            // the display rows below deliberately drop.
+            rawPlanets: group.planets,
             planets: group.planets.map(planet => ({
                 key: `${planet.starId}-${planet.orbitalNumber}`,
                 orbitalNumber: planet.orbitalNumber,

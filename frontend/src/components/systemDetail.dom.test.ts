@@ -142,6 +142,32 @@ const rowKeysIn = (wrapper: VueWrapper, starId: string): string[] =>
 const nodePx = (wrapper: VueWrapper, key: string): number =>
     wrapper.get(`[data-map-planet="${key}"]`).findComponent(CelestialThumb).props('px') as number;
 
+/** The one OrbitalMap mounted inside a given star's group (story 003). */
+const mapIn = (wrapper: VueWrapper, starId: string) => {
+    const inGroup = wrapper.findAllComponents(OrbitalMap).filter(map =>
+        map.element.closest('[data-star-group]')?.getAttribute('data-star-group') === starId);
+    expect(inGroup).toHaveLength(1);
+    return inGroup[0];
+};
+
+/** The [data-map-planet] keys drawn by one group's map, in document order. */
+const mapKeysIn = (wrapper: VueWrapper, starId: string): string[] =>
+    mapIn(wrapper, starId).findAll('[data-map-planet]')
+        .map(node => node.attributes('data-map-planet') as string);
+
+/** The primary's own planets, for the direct OrbitalMap mounts below. */
+const KEPLER_PRIMARY_PLANETS = KEPLER.planets.filter(entry => entry.starId === 1);
+
+/**
+ * A bare OrbitalMap, outside the view. Nothing in the app renders `variant:
+ * 'full'` any more (story 003, S-4) — these mounts are what keeps it pinned.
+ */
+const mountMap = (props: { star: Star; planets: Planet[]; variant?: 'full' | 'compact' }) => {
+    const wrapper = mount(OrbitalMap, { props });
+    mounted.push(wrapper);
+    return wrapper;
+};
+
 beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
@@ -152,28 +178,103 @@ afterEach(() => {
     for (const wrapper of mounted) wrapper.unmount();
 });
 
-describe('OrbitalMap — the top-level map (removed by story 003)', () => {
-    it('heads the map with ORBITAL MAP · <primary star name>', async () => {
+describe('OrbitalMap — one compact map per star, inside its own group header', () => {
+    it('renders one map per non-empty group, in the compact variant', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
 
-        expect(wrapper.get('[data-map-header]').text()).toBe('ORBITAL MAP · KEPLER-442 A');
+        expect(wrapper.findAllComponents(OrbitalMap)).toHaveLength(2);
+
+        const primary = mapIn(wrapper, '1');
+        expect((primary.props('star') as Star).starId).toBe(1);
+        expect(primary.props('planets') as Planet[]).toHaveLength(4);
+        expect(primary.props('variant')).toBe('compact');
+
+        const secondary = mapIn(wrapper, '2');
+        expect((secondary.props('star') as Star).starId).toBe(2);
+        expect(secondary.props('planets') as Planet[]).toHaveLength(1);
+        expect(secondary.props('variant')).toBe('compact');
     });
 
-    it('draws only the primary star\'s planets', async () => {
+    it('sits in its own group\'s header, never outside a star block', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
-        const keys = wrapper.findAll('[data-map-planet]')
-            .map(node => node.attributes('data-map-planet') as string);
+        const maps = wrapper.findAllComponents(OrbitalMap);
 
-        expect(keys).toEqual(['1-1', '1-2', '1-3', '1-4']);
-        // The secondary's planet is on the screen, but never on the map.
-        expect(wrapper.find('[data-map-planet="2-1"]').exists()).toBe(false);
-        expect(wrapper.find('[data-planet-row="2-1"]').exists()).toBe(true);
+        expect(maps).toHaveLength(2);
+        for (const map of maps) {
+            expect(map.element.closest('[data-star-group]')).not.toBeNull();
+            expect(map.element.closest('[data-star-entry]')).not.toBeNull();
+        }
+        // The old top-level, primary-only block above the listing is gone: the
+        // only maps on the page are the two inside the two group headers.
+        expect(wrapper.findAll('[data-orbital-map]')).toHaveLength(2);
+    });
+
+    it('is handed its star\'s raw planets, not the table\'s display rows', async () => {
+        // Passing groups[].planets here fails silently: with no semiMajorAxis
+        // there is no domain, every body collapses to left: 50% and both axis
+        // captions read "—", with nothing thrown. So it is asserted, not trusted.
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const passed = mapIn(wrapper, '1').props('planets') as Planet[];
+
+        for (const entry of passed) {
+            expect(entry.starId).toBe(1);
+            expect(typeof entry.semiMajorAxis).toBe('number');
+            // The table's view-model fields, which the raw planets never carry.
+            expect(entry).not.toHaveProperty('key');
+            expect(entry).not.toHaveProperty('zone');
+        }
+        expect(passed.map(entry => entry.semiMajorAxis)).toEqual([0.4, 1.0, 2.5, 8.13]);
+
+        const lefts = ['1-1', '1-2', '1-3', '1-4'].map(key => nodeLeft(wrapper, key));
+        expect(new Set(lefts).size).toBe(4);
+        expect(lefts).not.toContain(50);
+        expect(mapIn(wrapper, '1').get('[data-map-axis]').text()).not.toContain('—');
+    });
+
+    it('draws only its own star\'s planets', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+
+        expect(mapKeysIn(wrapper, '1')).toEqual(['1-1', '1-2', '1-3', '1-4']);
+        expect(mapKeysIn(wrapper, '2')).toEqual(['2-1']);
+    });
+
+    it('carries no header, no legend and no per-planet orbit letters', async () => {
+        // Once story 003 lands this file is the only place in the suite that
+        // exercises any of compact's suppressions, so they are pinned here.
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const primary = mapIn(wrapper, '1');
+
+        expect(wrapper.find('[data-map-header]').exists()).toBe(false);
+        // The legend swatches share the header's v-if="!isCompact"; the only
+        // other aria-hidden node inside a map is CelestialThumb's <img>.
+        expect(primary.findAll('span[aria-hidden="true"]')).toHaveLength(0);
+        // No visible letter beside the thumbnail: the node holds nothing else.
+        for (const key of ['1-1', '1-2', '1-3', '1-4']) {
+            expect(wrapper.get(`[data-map-planet="${key}"]`).text()).toBe('');
+        }
+        // compact prints one merged HZ caption in its axis row instead of the
+        // two per-rule captions the full variant hangs off its rules.
+        expect(primary.findAll('[data-hz-caption]')).toHaveLength(0);
+        const hzAxis = primary.get('[data-axis="hz"]').text();
+        expect(hzAxis).toMatch(/^HZ /);
+        expect(hzAxis).toContain(G_ZONE.inner.toFixed(3));
+        expect(hzAxis).toContain(G_ZONE.outer.toFixed(3));
+    });
+
+    it('leaves the star\'s identity to the group header and its own summary', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const group = wrapper.get('[data-star-group="2"]');
+
+        expect(group.get('[data-star-entry] h2').text()).toBe('Kepler-442 B');
+        expect(group.get('[data-map-summary] p').text())
+            .toBe('Orbital map of Kepler-442 B: 1 body.');
     });
 });
 
-describe('OrbitalMap — the documented projection', () => {
+describe('OrbitalMap — the documented projection, per group', () => {
     it('positions every body where orbitalProjection puts it', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
+        const map = mapIn(wrapper, '1');
         const distances = [0.4, 1.0, 2.5, 8.13];
         const { positions, hzRules } = orbitalProjection(distances, G_ZONE.inner, G_ZONE.outer);
 
@@ -191,40 +292,54 @@ describe('OrbitalMap — the documented projection', () => {
         }
 
         const ruleLeft = (id: string) => {
-            const style = wrapper.get(`[data-hz-rule="${id}"]`).attributes('style') as string;
+            const style = map.get(`[data-hz-rule="${id}"]`).attributes('style') as string;
             return Number(/left:\s*([\d.]+)%/.exec(style)![1]);
         };
         expect(ruleLeft('inner')).toBeCloseTo(hzRules!.inner, 4);
         expect(ruleLeft('outer')).toBeCloseTo(hzRules!.outer, 4);
     });
 
-    it('sizes a body 20 + 24 × (d / dMax) px, and an asteroid belt at 14px', async () => {
+    it('sizes a body 8 + 8 × (d / dMax) px, and an asteroid belt at 8px', async () => {
+        // compact's formula, not the full variant's 20 + 24 / 14px belt.
         const { wrapper } = await mountDetail(KEPLER, 1);
-        const size = (d: number) => Math.round(20 + 24 * (d / 140000));
+        const size = (d: number) => Math.round(8 + 8 * (d / 140000));
 
         expect(nodePx(wrapper, '1-1')).toBe(size(9000));
         expect(nodePx(wrapper, '1-2')).toBe(size(13402));
         expect(nodePx(wrapper, '1-4')).toBe(size(140000));
-        expect(nodePx(wrapper, '1-4')).toBe(44);
-        // diameter === 0: a belt is drawn at a flat 14px, not at 20px.
-        expect(nodePx(wrapper, '1-3')).toBe(14);
+        expect(nodePx(wrapper, '1-4')).toBe(16);
+        // diameter === 0: a belt is drawn at a flat 8px, not at 9px.
+        expect(nodePx(wrapper, '1-3')).toBe(8);
     });
 
     it('prints the axis captions to two significant digits', async () => {
+        // The axis domain and its captions are variant-independent.
         const { wrapper } = await mountDetail(KEPLER, 1);
+        const map = mapIn(wrapper, '1');
 
         // domainMin = min(0.4, hzInner) * 0.8 = 0.32; domainMax = 8.13 * 1.1 = 8.943
-        expect(wrapper.get('[data-axis="min"]').text()).toBe('0.32 AU');
-        expect(wrapper.get('[data-axis="max"]').text()).toBe('8.9 AU');
+        expect(map.get('[data-axis="min"]').text()).toBe('0.32 AU');
+        expect(map.get('[data-axis="max"]').text()).toBe('8.9 AU');
     });
 });
 
-describe('OrbitalMap — the HZ captions at narrow widths', () => {
+describe('OrbitalMap — the HZ captions at narrow widths (direct full-variant mount)', () => {
     // Both captions hang to the right of their own rule, so a band narrower than
     // one caption made the second print through the first — at 500px the pair
     // overlapped by 6px and the join was unreadable. jsdom lays nothing out, so
     // the map's width is stated outright and the resize the component listens
     // for is dispatched by hand.
+    //
+    // Story 003 (S-4) made this unreachable through SystemDetailView: every map
+    // that view mounts is compact, and compact renders no per-rule caption at
+    // all. The coverage is relocated here rather than dropped, so the
+    // caption-collision fix stays pinned even with no consumer in the app.
+    const mountFull = () => mountMap({
+        star: KEPLER.stars[0],
+        planets: KEPLER_PRIMARY_PLANETS,
+        variant: 'full'
+    });
+
     const setMapWidth = async (wrapper: VueWrapper, width: number) => {
         const box = wrapper.get('[data-map-box]').element;
         Object.defineProperty(box, 'clientWidth', { value: width, configurable: true });
@@ -237,7 +352,7 @@ describe('OrbitalMap — the HZ captions at narrow widths', () => {
             .map(el => ({ id: el.attributes('data-hz-caption'), text: el.text() }));
 
     it('keeps the two captions apart when the band has room', async () => {
-        const { wrapper } = await mountDetail(KEPLER, 1);
+        const wrapper = mountFull();
         await setMapWidth(wrapper, 1400);
 
         expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
@@ -246,7 +361,7 @@ describe('OrbitalMap — the HZ captions at narrow widths', () => {
     });
 
     it('merges them into one when the band is too narrow to hold both', async () => {
-        const { wrapper } = await mountDetail(KEPLER, 1);
+        const wrapper = mountFull();
         await setMapWidth(wrapper, 200);
 
         const shown = captions(wrapper);
@@ -260,7 +375,7 @@ describe('OrbitalMap — the HZ captions at narrow widths', () => {
     });
 
     it('re-splits them when the map grows again', async () => {
-        const { wrapper } = await mountDetail(KEPLER, 1);
+        const wrapper = mountFull();
         await setMapWidth(wrapper, 200);
         expect(captions(wrapper)).toHaveLength(1);
 
@@ -268,16 +383,28 @@ describe('OrbitalMap — the HZ captions at narrow widths', () => {
         expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
     });
 
-    it('keeps the pair while the width is still unmeasured', async () => {
+    it('keeps the pair while the width is still unmeasured', () => {
         // Never collapse on a guess: with no measurement the split stands.
-        const { wrapper } = await mountDetail(KEPLER, 1);
+        const wrapper = mountFull();
         expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
+    });
+
+    it('still renders the header, the legend and the per-planet letters', () => {
+        // The other half of the compact assertions above: what full keeps is
+        // exactly what compact drops, and nothing in the app renders it now.
+        const wrapper = mountFull();
+
+        expect(wrapper.get('[data-map-header]').text()).toBe('ORBITAL MAP · KEPLER-442 A');
+        expect(wrapper.findAll('span[aria-hidden="true"]')).toHaveLength(3);
+        expect(wrapper.get('[data-map-planet="1-1"]').text()).toBe('b');
     });
 });
 
-describe('OrbitalMap — the empty state and the text summary', () => {
-    it('shows "no planetary bodies" in #334155 and omits the HZ rules for an NS primary', async () => {
-        const { wrapper } = await mountDetail(EXOTIC, 7);
+describe('OrbitalMap — the empty state (direct mount)', () => {
+    // Relocated by story 003: a barren star mounts no map in the view any more
+    // (S-3), so this state has no route through SystemDetailView to reach it.
+    it('shows "no planetary bodies" in #334155 and omits the rules, bodies and axis', () => {
+        const wrapper = mountMap({ star: EXOTIC.stars[0], planets: [] });
         const empty = wrapper.get('[data-map-empty]');
 
         expect(empty.text()).toBe('no planetary bodies');
@@ -290,14 +417,15 @@ describe('OrbitalMap — the empty state and the text summary', () => {
         // No bodies, so no domain and no axis captions either.
         expect(wrapper.find('[data-map-axis]').exists()).toBe(false);
 
-        // The secondary's planet is still reachable in the rail and the table.
-        expect(wrapper.findAll('[data-star-entry]')).toHaveLength(2);
-        expect(wrapper.find('[data-planet-row="10-1"]').exists()).toBe(true);
+        expect(wrapper.get('[data-map-summary] p').text())
+            .toBe('Orbital map of UG-0007-A: no planetary bodies.');
     });
+});
 
+describe('OrbitalMap — the text summary', () => {
     it('carries a visually-hidden summary naming each body, its type, distance and zone', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
-        const summary = wrapper.get('[data-map-summary]');
+        const summary = mapIn(wrapper, '1').get('[data-map-summary]');
 
         expect(summary.classes()).toContain('sr-only');
         expect(summary.get('p').text()).toBe('Orbital map of Kepler-442 A: 4 bodies.');
@@ -308,13 +436,6 @@ describe('OrbitalMap — the empty state and the text summary', () => {
         expect(lines[1]).toBe(`Thalassa — ${planetShortLabel('E')}, 1.000 AU, goldilocks zone`);
         expect(lines[2]).toBe(`Kepler-442 A d — ${planetShortLabel('A')}, 2.500 AU, cold zone`);
         expect(lines[3]).toBe(`Kepler-442 A e — ${planetShortLabel('G')}, 8.130 AU, cold zone`);
-    });
-
-    it('says so in the summary when the primary has nothing orbiting it', async () => {
-        const { wrapper } = await mountDetail(EXOTIC, 7);
-
-        expect(wrapper.get('[data-map-summary] p').text())
-            .toBe('Orbital map of UG-0007-A: no planetary bodies.');
     });
 });
 
@@ -369,16 +490,21 @@ describe('SystemDetailView — the grouped star/planet listing', () => {
         expect(keys).not.toEqual(['1-1', '2-1', '1-2', '1-3', '1-4']);
     });
 
-    it('gives a star with no planets its own empty line', async () => {
+    it('gives a star with no planets its own empty line, and no map', async () => {
         const { wrapper } = await mountDetail(EXOTIC, 7);
         const barren = wrapper.get('[data-star-group="9"]');
 
         expect(barren.get('[data-star-empty="9"]').text()).toBe('No planets orbit this star.');
         expect(barren.findAll('[data-planet-row]')).toHaveLength(0);
+        // S-3: no 56px box whose only content is "no planetary bodies", under a
+        // header that already says 0 planets.
+        expect(barren.find('[data-orbital-map]').exists()).toBe(false);
 
         const populated = wrapper.get('[data-star-group="10"]');
         expect(populated.find('[data-star-empty]').exists()).toBe(false);
+        expect(populated.find('[data-orbital-map]').exists()).toBe(true);
         expect(rowKeysIn(wrapper, '10')).toEqual(['10-1']);
+        expect(mapKeysIn(wrapper, '10')).toEqual(['10-1']);
     });
 
     it('states the section once, and drops the rail and the PLANETS header', async () => {
@@ -471,6 +597,8 @@ describe('SystemDetailView — the grouped listing\'s a11y and narrow widths', (
 
         expect(scroller).not.toBeNull();
         expect(scroller!.querySelector('[data-star-entry]')).toBeNull();
+        // The map moved into the header, so it must not scroll away either.
+        expect(scroller!.querySelector('[data-orbital-map]')).toBeNull();
         expect(scroller!.querySelector('[data-planet-row]')).not.toBeNull();
     });
 });
@@ -520,14 +648,6 @@ describe('SystemDetailView — the 1d shell', () => {
         expect(wrapper.get('[data-kpi="IN HABITABLE ZONE"]').text()).toContain('1');
         // G (1.0 M☉) + M (0.3 M☉)
         expect(wrapper.get('[data-kpi="TOTAL MASS"]').text()).toContain('1.30');
-    });
-
-    it('renders one OrbitalMap, for the system primary', async () => {
-        const { wrapper } = await mountDetail(KEPLER, 1);
-        const maps = wrapper.findAllComponents(OrbitalMap);
-
-        expect(maps).toHaveLength(1);
-        expect((maps[0].props('star') as Star).starId).toBe(1);
     });
 
     it('degrades to a not-found message for a system outside the sector', async () => {
