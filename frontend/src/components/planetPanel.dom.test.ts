@@ -56,6 +56,9 @@ const planet = (
  *  1-2  a lifeless rocky world with a real, non-zero life probability
  *  1-3  an asteroid belt: mass 0, diameter 0 — the degenerate "—" case
  */
+/** The seed that produced FIXTURE; the deep link is scoped to it. */
+const SEED = 504752;
+
 const FIXTURE: Sector = {
     systems: [system(1, 'Kepler-442')],
     stars: [star(1, 1, 'Kepler-442 A')],
@@ -101,6 +104,7 @@ async function mountResults(url = '/', sector: Sector = FIXTURE) {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = sector;
+    store.loadedSeed = SEED;
     store.generationStatus = 'done';
     store.activeTab = 'planets';
 
@@ -128,6 +132,7 @@ async function mountCold(url: string) {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = null;
+    store.loadedSeed = null;
     store.activeTab = 'planets';
 
     const router = makeRouter();
@@ -149,6 +154,7 @@ async function mountDetail() {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = FIXTURE;
+    store.loadedSeed = SEED;
     store.generationStatus = 'done';
 
     const router = makeRouter();
@@ -496,7 +502,7 @@ describe('PlanetDetailPanel — the actions', () => {
 
 describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     it('reopens the exact planet a shared link names', async () => {
-        const { store, wrapper } = await mountResults(`/?planet=${LIFE_KEY}`);
+        const { store, wrapper } = await mountResults(`/?seed=${SEED}&planet=${LIFE_KEY}`);
 
         expect(store.selectedPlanetKey).toBe(LIFE_KEY);
         expect(panelOf(wrapper).exists()).toBe(true);
@@ -510,6 +516,9 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         await wrapper.get(`[data-planet-row="${LIFELESS_KEY}"]`).trigger('click');
         await flushPromises();
         expect(router.currentRoute.value.query.planet).toBe(LIFELESS_KEY);
+        // The seed rides along, so the link names one planet rather than one
+        // coordinate that any sector could answer.
+        expect(router.currentRoute.value.query.seed).toBe(String(SEED));
 
         // A reload of that very URL comes back to the same planet.
         const reloaded = await mountResults(router.currentRoute.value.fullPath);
@@ -519,12 +528,13 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         await flushPromises();
         expect(store.selectedPlanetKey).toBeNull();
         expect(router.currentRoute.value.query.planet).toBeUndefined();
+        expect(router.currentRoute.value.query.seed).toBeUndefined();
     });
 
     it.each(['not-a-key', '7', '999999-1'])(
         'ignores the invalid value %s, strips the param and opens no panel',
         async (value) => {
-            const { store, wrapper, router } = await mountResults(`/?planet=${value}`);
+            const { store, wrapper, router } = await mountResults(`/?seed=${SEED}&planet=${value}`);
 
             expect(store.selectedPlanetKey).toBeNull();
             expect(panelOf(wrapper).exists()).toBe(false);
@@ -533,14 +543,14 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     );
 
     it('leaves the rest of the query string alone', async () => {
-        const { router } = await mountResults('/?tab=planets&planet=not-a-key');
+        const { router } = await mountResults(`/?tab=planets&seed=${SEED}&planet=not-a-key`);
 
         expect(router.currentRoute.value.query.planet).toBeUndefined();
         expect(router.currentRoute.value.query.tab).toBe('planets');
     });
 
     it('does not throw when the sector is regenerated under an open panel', async () => {
-        const { store, wrapper } = await mountResults(`/?planet=${LIFE_KEY}`);
+        const { store, wrapper } = await mountResults(`/?seed=${SEED}&planet=${LIFE_KEY}`);
         expect(panelOf(wrapper).exists()).toBe(true);
 
         // A different sector in which that key no longer resolves.
@@ -557,7 +567,7 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     });
 
     it('holds a well-formed key while no sector has loaded yet, then opens it', async () => {
-        const { store, wrapper, router } = await mountCold(`/?planet=${LIFE_KEY}`);
+        const { store, wrapper, router } = await mountCold(`/?seed=${SEED}&planet=${LIFE_KEY}`);
 
         // Nothing to resolve against yet: the link is kept, not thrown away,
         // because the sector only arrives once the user generates or restores.
@@ -567,6 +577,7 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
 
         store.sectorData = FIXTURE;
+        store.loadedSeed = SEED;
         await flushPromises();
         await settle();
 
@@ -577,12 +588,52 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     });
 
     it('strips the held key once a sector arrives that does not contain it', async () => {
-        const { store, wrapper, router } = await mountCold('/?planet=999999-1');
+        const { store, wrapper, router } = await mountCold(`/?seed=${SEED}&planet=999999-1`);
 
         expect(router.currentRoute.value.query.planet).toBe('999999-1');
         expect(panelOf(wrapper).exists()).toBe(false);
 
         store.sectorData = FIXTURE;
+        store.loadedSeed = SEED;
+        await flushPromises();
+
+        expect(store.selectedPlanetKey).toBeNull();
+        expect(panelOf(wrapper).exists()).toBe(false);
+        expect(router.currentRoute.value.query.planet).toBeUndefined();
+    });
+
+    // The bug these pin: (starId, orbitalNumber) is unique inside one sector but
+    // not across two, so before the seed was carried a link shared between
+    // sectors opened a different planet and looked like it had worked.
+    it('refuses a key whose seed is not the loaded sector\'s', async () => {
+        const { store, wrapper, router } = await mountResults(
+            `/?seed=999&planet=${LIFE_KEY}`
+        );
+
+        expect(store.selectedPlanetKey).toBeNull();
+        expect(panelOf(wrapper).exists()).toBe(false);
+        expect(router.currentRoute.value.query.planet).toBeUndefined();
+        expect(router.currentRoute.value.query.seed).toBeUndefined();
+    });
+
+    it('refuses a key that names no seed at all, rather than guessing', async () => {
+        const { store, wrapper, router } = await mountResults(`/?planet=${LIFE_KEY}`);
+
+        expect(store.selectedPlanetKey).toBeNull();
+        expect(panelOf(wrapper).exists()).toBe(false);
+        expect(router.currentRoute.value.query.planet).toBeUndefined();
+    });
+
+    it('refuses a held key when the sector that lands has another seed', async () => {
+        const { store, wrapper, router } = await mountCold(
+            `/?seed=${SEED}&planet=${LIFE_KEY}`
+        );
+        expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
+
+        // The same fixture, but generated under a different seed: the key would
+        // resolve, which is exactly why the seed has to be checked first.
+        store.sectorData = FIXTURE;
+        store.loadedSeed = 999;
         await flushPromises();
 
         expect(store.selectedPlanetKey).toBeNull();

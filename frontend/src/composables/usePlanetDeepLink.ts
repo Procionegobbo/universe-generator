@@ -2,6 +2,14 @@
 // `?planet=<starId>-<orbitalNumber>` on whatever route is current. Planets carry
 // no id, but (starId, orbitalNumber) is unique by construction.
 //
+// The pair is unique only *within one sector*, so the link carries `?seed=` as
+// well. Without it a link shared between two sectors still resolves — against a
+// different planet — and opens the panel on the wrong world with no sign that
+// anything is amiss. The seed is what makes the key mean one planet rather than
+// one coordinate, so a key whose seed is absent or does not match the loaded
+// sector is refused: showing nothing is right where showing the wrong planet is
+// not.
+//
 // This keeps `store.selectedPlanetKey` and the query param in step in both
 // directions, so a reload or a shared link opens straight to one planet and a
 // row click makes the current URL shareable. Per spec §8 a value is honoured
@@ -25,10 +33,26 @@ export function usePlanetDeepLink() {
         return typeof value === 'string' && value.length > 0 ? value : null;
     };
 
+    const seedValue = (): string | null => {
+        const raw = route.query.seed;
+        const value = Array.isArray(raw) ? raw[0] : raw;
+        return typeof value === 'string' && value.length > 0 ? value : null;
+    };
+
+    /** The seed of the sector actually loaded, as it appears in a URL. */
+    const loadedSeed = (): string | null =>
+        store.loadedSeed === null ? null : String(store.loadedSeed);
+
     const writeParam = (key: string | null) => {
         const query = { ...route.query };
-        if (key === null) delete query.planet;
-        else query.planet = key;
+        if (key === null) {
+            delete query.planet;
+            delete query.seed;
+        } else {
+            query.planet = key;
+            const seed = loadedSeed();
+            if (seed !== null) query.seed = seed;
+        }
         // replace, not push: the panel is a view of the current page, so closing
         // it must not need two presses of the browser's back button.
         router.replace({ query });
@@ -58,7 +82,7 @@ export function usePlanetDeepLink() {
     // sector only lands after the user generates or restores it, and is then
     // either opened or rejected.
     watch(
-        [paramValue, () => store.sectorData],
+        [paramValue, () => store.sectorData, () => store.loadedSeed],
         ([key]) => {
             if (key === null) return;
 
@@ -67,6 +91,12 @@ export function usePlanetDeepLink() {
                 return;
             }
             if (!store.sectorData) return;
+            // The sector has landed, so its seed is known and the link's claim
+            // about which sector it meant can finally be checked.
+            if (seedValue() !== loadedSeed()) {
+                reject();
+                return;
+            }
             if (!resolves(key)) {
                 reject();
                 return;
