@@ -326,11 +326,29 @@ vs 2a/3a/4a (full width, sub-header reads `SECTOR <seed> · <ZONE> ZONE · <volu
 On the other tabs the rail is reachable on desktop by returning to Overview, and on mobile
 through the sticky `PARAMETERS ▲` sheet, which is available on every tab.
 
-**D-32 · The planet side panel is deep-linked by the composite key `starId-orbitalNumber`.**
-Planets carry no id, but `(starId, orbitalNumber)` is unique by construction. Query param
-`?planet=<starId>-<orbitalNumber>` on whatever route is current, per the handoff's
-"deep-link the panel via a query param". Invalid or unresolvable values are ignored and the
-param is stripped.
+**D-32 · The planet side panel is deep-linked by the composite key `starId-orbitalNumber`,
+scoped to its sector by `?seed=`.**
+Planets carry no id, but `(starId, orbitalNumber)` is unique by construction — *within one
+sector*. Query params `?seed=<seed>&planet=<starId>-<orbitalNumber>` on whatever route is
+current, per the handoff's "deep-link the panel via a query param". Invalid or unresolvable
+values are ignored and both params are stripped.
+
+The seed is what makes the key name one planet rather than one coordinate. Without it a
+link shared between two sectors does not fail — it resolves, against a different planet,
+and opens the panel on the wrong world with nothing to signal the substitution. So a key is
+honoured only when the URL's seed matches the seed of the sector actually loaded, and one
+naming no seed is refused rather than guessed at: showing nothing is right where showing
+the wrong planet is not. The seed is checked *before* the key is resolved, because the
+failing case is precisely the one where the key does resolve.
+
+This means the store must know which seed produced the loaded sector. `currentSeed` does
+not answer that — it is the input field, which the user can retype without regenerating —
+so `sectorStore` carries `loadedSeed`, set when a sector lands, restored with the snapshot
+when a generation is aborted (D-20), and cleared with the sector.
+
+**Recorded after the fact:** the original decision specified the key alone. The defect it
+allowed was found by opening the running app, after story 009 had closed; the seed scoping
+landed as a follow-up fix rather than as part of that story.
 
 **D-33 · Fonts load from Google Fonts with a full local fallback stack.**
 Exact URL taken from the canvas:
@@ -799,8 +817,8 @@ hover `#60a5fa → #3b82f6`), `.ug-btn-outline`, `.ug-btn-danger`, `.ug-badge`,
 ### 7.2 Routing — unchanged
 
 Routes stay `/`, `/system/:id`, `/api-reference`, `/documentation`. The planet panel is
-`?planet=<starId>-<orbitalNumber>` on the current route (D-32); the active tab is store
-state, not a route.
+`?seed=<seed>&planet=<starId>-<orbitalNumber>` on the current route (D-32); the active tab
+is store state, not a route.
 
 ### 7.3 Pinia store — `sectorStore.ts`, additive only
 
@@ -824,6 +842,8 @@ const starFilters   = ref({ query: '', preset: 'all', sort: 'id-asc' });
 const planetFilters = ref({ types: [] as string[], zone: 'any', hasLife: false,
                             hasMoons: false, sort: 'diameter-desc' });
 const selectedPlanetKey = ref<string | null>(null);   // "<starId>-<orbitalNumber>"
+const loadedSeed = ref<number | string | null>(null); // the seed sectorData came from,
+                                                     // which currentSeed is not (D-32)
 const page = ref({ systems: 1, stars: 1, planets: 1 });
 
 const hasSavedParams = computed(() => { /* loadSavedParams() has all four fields */ });
