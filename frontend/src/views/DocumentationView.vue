@@ -11,6 +11,7 @@
                     <a href="#orbital-mechanics" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Orbital Mechanics</a>
                     <a href="#temperature" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Temperature &amp; Habitability</a>
                     <a href="#life" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Life &amp; Habitability</a>
+                    <a href="#sharing" class="block px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-800/50 rounded-lg transition-colors">Sharing a View</a>
                 </nav>
             </div>
 
@@ -213,7 +214,7 @@
                 <hr class="border-gray-800">
 
                 <!-- Life & Habitability -->
-                <section id="life" class="scroll-mt-24 pb-12">
+                <section id="life" class="scroll-mt-24">
                     <h3 class="text-2xl font-bold text-white mb-6">Life &amp; Habitability</h3>
                     <p class="text-gray-400 mb-6">
                         Sitting in the habitable zone only makes a planet a candidate. Every candidate is then scored by a habitability probability <span class="font-mono text-emerald-300">P</span>, the product of five independent factors, and life is realised by a single random draw against it. A planet outside Zone B scores <span class="font-mono text-emerald-300">P = 0</span> and can never be inhabited.
@@ -273,6 +274,60 @@
                         </ul>
                         <p class="text-xs text-gray-500 mt-4 italic">
                             The score above says whether a world <em>could</em> host life, not whether it does. It is multiplied by an abiogenesis probability of <span class="font-mono">0.1</span> — the odds that life ever got started at all — before the draw, which is what keeps inhabited worlds scarce without making the ones that exist any simpler. In practice a default 100-system medium sector yields around 2–3 inhabited planets, and some sectors have none. Each one is given a proper name drawn without replacement from a pool of 288 catalogued exoplanet names; only in very large sectors does that pool run dry, after which the remaining worlds fall back to a <span class="font-mono">&lt;star name&gt; &lt;roman orbit&gt;</span> designation, so every inhabited planet still carries a unique name.
+                        </p>
+                    </div>
+                </section>
+
+                <hr class="border-gray-800">
+
+                <!-- Sharing a View -->
+                <section id="sharing" class="scroll-mt-24 pb-12">
+                    <h3 class="text-2xl font-bold text-white mb-6">Sharing a View</h3>
+                    <p class="text-gray-400 mb-6">
+                        No sector is ever stored — not on a server, not in your browser. Only the four
+                        parameters that make one are kept, and generation is deterministic, so the same
+                        parameters reproduce the same universe exactly. That is why a link carries them:
+                        opening it on a machine that has never seen that sector rebuilds it on the spot.
+                    </p>
+
+                    <div class="card bg-gray-900/50 border-gray-800 p-6 mb-6">
+                        <h4 class="text-lg font-bold text-blue-300 mb-3">The Link</h4>
+                        <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 mb-4 overflow-x-auto">
+                            /system/&lt;id&gt;?seed=&lt;seed&gt;&amp;zone=&lt;zone&gt;&amp;systems=&lt;count&gt;&amp;volume=&lt;pc³&gt;&amp;planet=&lt;starId&gt;-&lt;orbit&gt;
+                        </div>
+                        <ul class="text-sm text-gray-400 space-y-2">
+                            <li><span class="font-mono text-blue-300 mr-2">seed</span>the generator seed</li>
+                            <li><span class="font-mono text-blue-300 mr-2">zone</span>galactic zone — extragalactic, galactic edge, medium, central zone or core</li>
+                            <li><span class="font-mono text-blue-300 mr-2">systems</span>how many systems the sector holds</li>
+                            <li><span class="font-mono text-blue-300 mr-2">volume</span>sector volume in pc³</li>
+                            <li><span class="font-mono text-blue-300 mr-2">planet</span>optional — opens the detail panel on one planet</li>
+                        </ul>
+                        <p class="text-xs text-gray-500 mt-4 italic">
+                            You never have to assemble this. The four sector parameters appear in the
+                            address bar as soon as a sector is generated, and <span class="font-mono">planet</span>
+                            is added when you open a planet and removed when you close it. Copy the
+                            address bar and the link is already complete.
+                        </p>
+                    </div>
+
+                    <div class="card bg-blue-900/10 border-blue-800/50 p-6">
+                        <h4 class="text-lg font-bold text-blue-300 mb-3">Why all four</h4>
+                        <p class="text-gray-400 text-sm mb-4">
+                            A planet is identified by its star and its orbit, which is unique
+                            <em>within one sector</em> and meaningless across two. So the link has to say
+                            which sector it means, and saying it with the seed alone is not enough.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-2">
+                            <li><span class="font-bold text-blue-300">seed and zone</span> decide what every star and planet <em>is</em>. The same seed under a different zone is a different universe: one star goes from K-1 to K-8, and its third planet from a 16 000 km super-Earth to a 12 000 km ocean world.</li>
+                            <li><span class="font-bold text-blue-300">systems</span> decides how many systems exist. A link to system 250 finds nothing if the reader generates 100.</li>
+                            <li><span class="font-bold text-blue-300">volume</span> scales the coordinates, so the position readout matches what the sender saw.</li>
+                        </ul>
+                        <p class="text-xs text-gray-500 mt-4 italic">
+                            A link missing any of them is refused rather than completed from your own
+                            settings — a seed applied to the wrong zone would open a different world under
+                            the same name, and showing nothing is better than showing the wrong planet.
+                            Opening a link for the sector already on screen changes nothing; one naming a
+                            different seed or zone rebuilds it.
                         </p>
                     </div>
                 </section>
