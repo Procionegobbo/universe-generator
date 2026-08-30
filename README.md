@@ -103,11 +103,44 @@ npm start
 
 - The app saves only the generation parameters (seed, systemCount, sectorVolume, zone) in localStorage.
 - Parameters are saved **only** when a new sector is generated (not on every change).
-- On reload, if parameters are found, the app shows a confirmation message (in English):
-  > "A previous sector generation was found. Do you want to regenerate it using the saved parameters?"
-- If confirmed, the sector is regenerated using the saved parameters.
-- If declined, the parameters are cleared.
+- On reload, if parameters are found, the empty state offers a **RESTORE LAST SECTOR** button, which
+  regenerates from them. Nothing is restored without asking: generation is deterministic, so the same
+  parameters reproduce the same sector exactly.
+- **CLEAR MEMORY** discards the saved parameters.
 - No sector data is stored, only parameters.
+
+## Shareable Links
+
+Because no sector is ever stored, a link has to carry everything needed to rebuild the one it is
+pointing at. Opening a link on a machine that has never generated that sector makes it on the spot.
+
+```
+/system/<systemId>?seed=<seed>&zone=<zone>&systems=<count>&volume=<pc3>[&planet=<starId>-<orbitalNumber>]
+```
+
+| Parameter | Meaning |
+|---|---|
+| `seed` | generator seed |
+| `zone` | `extragalactic`, `galactic edge`, `medium`, `central zone` or `core` |
+| `systems` | how many systems to generate |
+| `volume` | sector volume in pc³ |
+| `planet` | optional; opens the detail panel on one planet |
+
+The app writes these itself: the four sector parameters appear as soon as a sector is loaded, and
+`planet` is added when a planet panel is opened and removed when it is closed. Copy the address bar
+and the link is complete.
+
+### Why all four
+
+`seed` and `zone` decide what every star and planet **is** — the same seed under a different zone is
+a different universe, so a link naming only the seed could open a different planet under the same
+name. `systems` decides how many systems exist, and a link to a system past the reader's own count
+would otherwise find nothing. `volume` scales the coordinates. All four are required: a partial set
+is refused rather than completed from whatever the reader happens to have set, and a `planet` whose
+sector cannot be read is dropped rather than resolved against the wrong sky.
+
+A link naming the sector already on screen changes nothing; one naming a different `seed` or `zone`
+rebuilds it. Links shared before this format existed carry only `seed` and will not rebuild anything.
 
 ## Testing
 
@@ -280,7 +313,8 @@ See `backend/src/lib/example_star_generator.ts` for the full table and scientifi
 - **Export**: Download generated data as JSON
 - **Responsive Design**: Works on desktop and mobile
 - **Persistent Parameters**: Parameters are saved only on generation, not on every change
-- **Regeneration Prompt**: Confirmation message on reload if parameters are found
+- **Restore**: An explicit RESTORE LAST SECTOR button regenerates from the saved parameters
+- **Shareable Links**: Every view names its sector in the URL, so a link rebuilds it on any machine
 
 ## Technology Stack
 

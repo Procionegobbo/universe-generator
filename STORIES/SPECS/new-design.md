@@ -326,29 +326,48 @@ vs 2a/3a/4a (full width, sub-header reads `SECTOR <seed> · <ZONE> ZONE · <volu
 On the other tabs the rail is reachable on desktop by returning to Overview, and on mobile
 through the sticky `PARAMETERS ▲` sheet, which is available on every tab.
 
-**D-32 · The planet side panel is deep-linked by the composite key `starId-orbitalNumber`,
-scoped to its sector by `?seed=`.**
+**D-32 · The URL names its sector, and the planet panel is deep-linked within it by the
+composite key `starId-orbitalNumber`.**
 Planets carry no id, but `(starId, orbitalNumber)` is unique by construction — *within one
-sector*. Query params `?seed=<seed>&planet=<starId>-<orbitalNumber>` on whatever route is
-current, per the handoff's "deep-link the panel via a query param". Invalid or unresolvable
-values are ignored and both params are stripped.
+sector*. Since no sector is ever stored, only the parameters that make one, the URL carries
+both:
 
-The seed is what makes the key name one planet rather than one coordinate. Without it a
-link shared between two sectors does not fail — it resolves, against a different planet,
-and opens the panel on the wrong world with nothing to signal the substitution. So a key is
-honoured only when the URL's seed matches the seed of the sector actually loaded, and one
-naming no seed is refused rather than guessed at: showing nothing is right where showing
-the wrong planet is not. The seed is checked *before* the key is resolved, because the
-failing case is precisely the one where the key does resolve.
+```
+?seed=<seed>&zone=<zone>&systems=<count>&volume=<pc3>[&planet=<starId>-<orbitalNumber>]
+```
 
-This means the store must know which seed produced the loaded sector. `currentSeed` does
-not answer that — it is the input field, which the user can retype without regenerating —
-so `sectorStore` carries `loadedSeed`, set when a sector lands, restored with the snapshot
-when a generation is aborted (D-20), and cleared with the sector.
+The four sector parameters are written as soon as a sector is loaded, on whatever route is
+current, so every view is shareable and not only one with a panel open — the sector names
+the page, not the panel, and outlives the panel being closed. `planet` is added when a
+panel opens and removed when it closes, per the handoff's "deep-link the panel via a query
+param".
 
-**Recorded after the fact:** the original decision specified the key alone. The defect it
-allowed was found by opening the running app, after story 009 had closed; the seed scoping
-landed as a follow-up fix rather than as part of that story.
+Measured against the generator, across systems 52, 199 and 287: `seed` and `zone` decide
+what every body *is*; `systems` decides only how many systems exist, leaving the earlier
+ones identical; `volume` scales the coordinates alone. So all four are carried — a system
+past the reader's own count would otherwise not be there, and the coordinates would not
+match what the sender saw — while `sameSector` compares the two that determine a planet.
+Comparing all four would refuse a link whose planet is demonstrably the same one.
+
+Opening a URL that names a sector other than the one loaded rebuilds it; one naming the
+sector already on screen changes nothing. The parameters come from the link alone, never
+completed from the reader's saved settings, since a seed applied to a different zone yields
+different worlds under the same name. A `planet` whose sector cannot be read is dropped
+before the loaded sector is published into the URL — publishing first would make the URL
+self-consistent and the key would then be honoured against whatever happened to be loaded,
+which is the wrong-planet failure this exists to prevent. A key naming a sector that is not
+loaded is *held* rather than refused, since the rebuild that makes it checkable is on its
+way; a key that does not resolve in the sector it named is refused.
+
+This means the store must know which parameters produced the loaded sector. `currentSeed`
+and the other inputs do not answer that — they are the form fields, which the user can
+retype without regenerating — so `sectorStore` carries `loadedParams`, set when a sector
+lands, restored with the snapshot when a generation is aborted (D-20), and cleared with the
+sector.
+
+**Recorded after the fact:** the original decision specified the key alone, then the key
+plus a seed. Both defects were found by opening the running app, after story 009 had
+closed, and landed as follow-up fixes rather than as part of that story.
 
 **D-33 · Fonts load from Google Fonts with a full local fallback stack.**
 Exact URL taken from the canvas:
@@ -817,8 +836,8 @@ hover `#60a5fa → #3b82f6`), `.ug-btn-outline`, `.ug-btn-danger`, `.ug-badge`,
 ### 7.2 Routing — unchanged
 
 Routes stay `/`, `/system/:id`, `/api-reference`, `/documentation`. The planet panel is
-`?seed=<seed>&planet=<starId>-<orbitalNumber>` on the current route (D-32); the active tab
-is store state, not a route.
+`?seed=&zone=&systems=&volume=` on every route, plus `&planet=<starId>-<orbitalNumber>`
+while a panel is open (D-32); the active tab is store state, not a route.
 
 ### 7.3 Pinia store — `sectorStore.ts`, additive only
 
@@ -842,8 +861,9 @@ const starFilters   = ref({ query: '', preset: 'all', sort: 'id-asc' });
 const planetFilters = ref({ types: [] as string[], zone: 'any', hasLife: false,
                             hasMoons: false, sort: 'diameter-desc' });
 const selectedPlanetKey = ref<string | null>(null);   // "<starId>-<orbitalNumber>"
-const loadedSeed = ref<number | string | null>(null); // the seed sectorData came from,
-                                                     // which currentSeed is not (D-32)
+const loadedParams = ref<SectorLinkParams | null>(null); // the parameters sectorData came
+                                                        // from, which the form fields are
+                                                        // not (D-32)
 const page = ref({ systems: 1, stars: 1, planets: 1 });
 
 const hasSavedParams = computed(() => { /* loadSavedParams() has all four fields */ });
