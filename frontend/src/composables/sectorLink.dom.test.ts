@@ -93,18 +93,47 @@ describe('useSectorLink — reading a sector out of the URL', () => {
         expect(store.loadedParams).toMatchObject({ seed: '644212', zone: 'medium' });
     });
 
-    it('leaves a sector already in memory alone', async () => {
-        const { store } = await mountAt(LINK, s => {
+    const LOADED = {
+        seed: '644212', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000
+    };
+
+    it('leaves the sector alone when the link names the one already loaded', async () => {
+        await mountAt(LINK, s => {
             s.sectorData = SECTOR;
-            s.loadedParams = {
-                seed: '1', zone: 'core', systemCount: 100, sectorVolume: 1000
-            };
+            s.loadedParams = LOADED;
         });
 
         expect(post).not.toHaveBeenCalled();
-        // Not even to correct it: the mismatch is the deep link's business, and
-        // it answers by refusing the planet, not by rebuilding the sector.
-        expect(store.loadedParams).toMatchObject({ seed: '1', zone: 'core' });
+    });
+
+    // Seed and zone are what decide the bodies, so a link differing only in how
+    // many systems to make, or how far apart to place them, names the same
+    // worlds and is not worth regenerating for.
+    it.each([
+        ['a larger count', { ...LOADED, systemCount: 400 }],
+        ['a wider volume', { ...LOADED, sectorVolume: 9000 }]
+    ])('leaves it alone when the link differs only by %s', async (_label, loaded) => {
+        await mountAt(LINK, s => {
+            s.sectorData = SECTOR;
+            s.loadedParams = loaded;
+        });
+
+        expect(post).not.toHaveBeenCalled();
+    });
+
+    // But a different seed or zone is a different sky, and answering the link
+    // with the sector already on screen would be answering the wrong question.
+    it.each([
+        ['seed', { ...LOADED, seed: '999' }],
+        ['zone', { ...LOADED, zone: 'core' as const }]
+    ])('rebuilds when the link names another %s', async (_label, loaded) => {
+        await mountAt(LINK, s => {
+            s.sectorData = SECTOR;
+            s.loadedParams = loaded;
+        });
+
+        expect(post).toHaveBeenCalledTimes(1);
+        expect(post.mock.calls[0][1]).toMatchObject({ seed: '644212', zone: 'medium' });
     });
 
     it('does not race a generation already under way', async () => {
@@ -153,11 +182,13 @@ describe('useSectorLink — publishing the sector into the URL', () => {
         });
     });
 
-    // Otherwise closing the panel, or landing on a stale link, leaves a URL that
-    // advertises a sector nobody is looking at — and that reloads into it.
-    it('corrects a URL that names some other sector', async () => {
+    // Otherwise closing the panel, or landing on a half-written link, leaves a
+    // URL that advertises a sector nobody is looking at — and that reloads into
+    // it. The sector here is unreadable rather than merely different, so the
+    // reading side does not rebuild and the writing side is what answers.
+    it('corrects a URL whose sector cannot be read', async () => {
         const { router } = await mountAt(
-            '/system/52?seed=999&zone=core&systems=50&volume=4000',
+            '/system/52?seed=999&zone=nowhere&systems=50&volume=4000',
             s => { s.sectorData = SECTOR; s.loadedParams = PARAMS; }
         );
         await flushPromises();

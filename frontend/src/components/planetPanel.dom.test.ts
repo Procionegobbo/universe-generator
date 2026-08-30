@@ -687,17 +687,17 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     // The bug these pin: (starId, orbitalNumber) is unique inside one sector but
     // not across two, so before the seed was carried a link shared between
     // sectors opened a different planet and looked like it had worked.
-    it('refuses a key whose seed is not the loaded sector\'s', async () => {
-        const { store, wrapper, router } = await mountResults(
+    // A link naming another sector is answered by rebuilding that sector — see
+    // the useSectorLink tests — so what is pinned here is the state in between:
+    // until the named sector is the loaded one, its key opens nothing. Here the
+    // rebuild never lands, because this file's axios mock resolves to nothing.
+    it('opens no panel while the named sector is not the loaded one', async () => {
+        const { store, wrapper } = await mountResults(
             `/?seed=999&zone=medium&systems=100&volume=1000&planet=${LIFE_KEY}`
         );
 
         expect(store.selectedPlanetKey).toBeNull();
         expect(panelOf(wrapper).exists()).toBe(false);
-        expect(router.currentRoute.value.query.planet).toBeUndefined();
-        // And the URL is corrected to the sector actually loaded, rather than
-        // left advertising one that is not on screen.
-        expect(router.currentRoute.value.query.seed).toBe(String(SEED));
     });
 
     it('refuses a key that names no seed at all, rather than guessing', async () => {

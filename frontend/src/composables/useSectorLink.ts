@@ -7,14 +7,14 @@
 // simply never been generated on that machine.
 //
 // So this keeps the URL and the loaded sector in step, both ways. Reading: when
-// the URL names a sector and none is loaded, generate it — from the link's
-// parameters alone, never from the reader's saved settings, since a seed applied
-// to a different zone yields different worlds under the same name. Writing:
-// whenever a sector is loaded, publish it into the URL, so that every page is
-// shareable and not only the ones with a panel open. The sector names the page,
-// not the panel, and outlives the panel being closed.
+// the URL names a sector that is not the one on screen, generate it — from the
+// link's parameters alone, never from the reader's saved settings, since a seed
+// applied to a different zone yields different worlds under the same name.
+// Writing: whenever a sector is loaded, publish it into the URL, so that every
+// page is shareable and not only the ones with a panel open. The sector names
+// the page, not the panel, and outlives the panel being closed.
 
-import { onMounted, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import {
@@ -26,6 +26,12 @@ export function useSectorLink() {
     const router = useRouter();
     const store = useSectorStore();
 
+    // The link speaks first. Publishing below would otherwise overwrite the very
+    // parameters being read here — the watch runs at setup, the read only after
+    // the router is ready — and the link would be answered with the sector it
+    // was meant to replace.
+    const linkAnswered = ref(false);
+
     onMounted(async () => {
         // main.ts mounts without awaiting the router, so on the very first paint
         // the initial URL has not been resolved yet and the query still reads
@@ -33,18 +39,33 @@ export function useSectorLink() {
         // between a link that works and one that silently does nothing.
         await router.isReady();
 
-        // Only ever fills a vacuum. A sector already in memory is the reader's
-        // own — the result of their parameters, possibly mid-inspection — and a
-        // link arriving later must not replace it. This also keeps the reload of
-        // a link generated in-session from regenerating what is already there.
-        if (store.sectorData || store.isLoading) return;
-
         const params = sectorParamsFromQuery(route.query);
-        if (!params) return;
+
+        // Regenerate unless the sector on screen is already the one named. Seed
+        // and zone are the whole test, because they are what decides the bodies:
+        // a link differing only in how many systems to make, or how far apart to
+        // place them, names the same worlds. A link naming a *different* seed or
+        // zone names different worlds, and is worth the regeneration — leaving
+        // the reader on the old one would answer the link with the wrong sky.
+        const needed = params !== null
+            && !sameSector(params, store.loadedParams)
+            && !store.isLoading;
 
         // Fire and forget: the store owns the lifecycle, so the console shows
         // its ordinary generating state and its error state if this fails.
-        void store.generateSector(requestFor(params));
+        if (needed) void store.generateSector(requestFor(params!));
+
+        // A planet whose sector cannot be read goes now, before that sector is
+        // published. Publishing first would make the URL self-consistent and the
+        // key would then be honoured against whatever sector happened to be
+        // loaded — the wrong-planet failure the naming exists to prevent.
+        if (params === null && route.query.planet !== undefined) {
+            const query = { ...route.query };
+            delete query.planet;
+            await router.replace({ query });
+        }
+
+        linkAnswered.value = true;
     });
 
     // Sector -> URL. Nothing to do while the two already agree, which is the
@@ -52,9 +73,9 @@ export function useSectorLink() {
     // parameters the URL already carries. `replace`, so publishing the sector
     // never costs a press of the back button.
     watch(
-        () => store.loadedParams,
-        (params) => {
-            if (!params) return;
+        [() => store.loadedParams, linkAnswered],
+        ([params]) => {
+            if (!params || !linkAnswered.value) return;
             const inUrl = sectorParamsFromQuery(route.query);
             if (sameSector(inUrl, params)
                 && inUrl!.systemCount === params.systemCount
