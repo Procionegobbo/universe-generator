@@ -9,7 +9,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mount, type VueWrapper } from '@vue/test-utils';
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
@@ -317,6 +317,31 @@ describe('OrbitalMap — the empty state and the text summary', () => {
 
         expect(wrapper.get('[data-map-summary] p').text())
             .toBe('Orbital map of UG-0007-A: no planetary bodies.');
+    });
+});
+
+describe('SystemDetailView — a change of the :id param', () => {
+    // Nothing in the UI navigates from one system straight to another today, so
+    // this path has no user yet; the moment one is added — a "next system" link,
+    // a jump from search — a view that read the id once at setup would show the
+    // previous system under the new URL. Pinned here so it cannot regress
+    // unnoticed into the story that adds the link.
+    const BOTH: Sector = {
+        systems: [...KEPLER.systems, ...EXOTIC.systems],
+        stars: [...KEPLER.stars, ...EXOTIC.stars],
+        planets: [...KEPLER.planets, ...EXOTIC.planets]
+    };
+
+    it('re-renders for the system the new id names', async () => {
+        const { wrapper, router } = await mountDetail(BOTH, 1);
+        expect(wrapper.text()).toContain('Kepler-442');
+
+        await router.push('/system/7');
+        await flushPromises();
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.text()).toContain('UG-0007');
+        expect(wrapper.text()).not.toContain('Kepler-442');
     });
 });
 
