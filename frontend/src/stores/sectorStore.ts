@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import type { Sector, GenerationRequest, GenerationResponse, SectorZone } from '../types';
+import type { SectorLinkParams } from '../utils/sectorLink';
 import axios from 'axios';
 
 export type GenerationStatus = 'idle' | 'running' | 'done' | 'error';
@@ -40,10 +41,11 @@ export const useSectorStore = defineStore('sector', () => {
     }
 
     const sectorData = ref<Sector | null>(null);
-    // The seed that produced `sectorData`, which is not currentSeed: the user can
-    // type a new seed without regenerating. The planet deep link compares against
-    // this one, so a shared link cannot resolve against a different sector.
-    const loadedSeed = ref<number | string | null>(null);
+    // The parameters that produced `sectorData`, which are not the live
+    // currentSeed/zone/... refs: the user can retype those without regenerating.
+    // The planet deep link compares against these, so a shared link cannot
+    // resolve against a different sector.
+    const loadedParams = ref<SectorLinkParams | null>(null);
     const isLoading = ref(false);
     const error = ref<string | null>(null);
     const currentSeed = ref<number | string>(Math.floor(Math.random() * 1000000));
@@ -129,7 +131,7 @@ export const useSectorStore = defineStore('sector', () => {
     const generateSector = async (request: GenerationRequest, signal?: AbortSignal) => {
         // Snapshot restored if the request is aborted (D-20).
         const snapshot = sectorData.value;
-        const snapshotSeed = loadedSeed.value;
+        const snapshotParams = loadedParams.value;
         isLoading.value = true;
         generationStatus.value = 'running';
         generationStage.value = 'coordinates';
@@ -170,7 +172,12 @@ export const useSectorStore = defineStore('sector', () => {
             const response = await axios.post('/api/sector/generate', request, { signal });
             if (response.data.success) {
                 sectorData.value = response.data.data;
-                loadedSeed.value = request.seed ?? null;
+                loadedParams.value = {
+                    seed: String(request.seed ?? ''),
+                    zone: request.zone ?? zone.value,
+                    systemCount: request.systemCount,
+                    sectorVolume: request.sectorVolume
+                };
                 lastStats.value = response.data.stats ?? null;
                 generationStatus.value = 'done';
                 generationProgress.value = 1;
@@ -185,7 +192,7 @@ export const useSectorStore = defineStore('sector', () => {
             if (axios.isCancel(e)) {
                 // Cancelled: leave the previous sector exactly as it was (D-20).
                 sectorData.value = snapshot;
-                loadedSeed.value = snapshotSeed;
+                loadedParams.value = snapshotParams;
                 generationStatus.value = snapshot ? 'done' : 'idle';
                 generationProgress.value = snapshot ? 1 : 0;
                 return null;
@@ -210,7 +217,7 @@ export const useSectorStore = defineStore('sector', () => {
     const clearPersistentMemory = () => {
         localStorage.removeItem(STORAGE_KEY);
         sectorData.value = null;
-        loadedSeed.value = null;
+        loadedParams.value = null;
         currentSeed.value = Math.floor(Math.random() * 1000000);
         systemCount.value = 100;
         sectorVolume.value = 1000;
@@ -223,7 +230,7 @@ export const useSectorStore = defineStore('sector', () => {
 
     return {
         sectorData,
-        loadedSeed,
+        loadedParams,
         isLoading,
         error,
         currentSeed,

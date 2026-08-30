@@ -6,11 +6,12 @@
 // Same harness rationale as the other *.dom.test.ts files (see story 004b).
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { h, nextTick } from 'vue';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
+import { useSectorLink } from '../composables/useSectorLink';
 import { LIFE_STAGE_LABELS, type Planet, type Sector, type Star, type System } from '../types';
 import { planetLongDescription, planetTypeLabel } from '../utils/planetDescription';
 import ResultsDisplay from './ResultsDisplay.vue';
@@ -58,6 +59,9 @@ const planet = (
  */
 /** The seed that produced FIXTURE; the deep link is scoped to it. */
 const SEED = 504752;
+/** The sector FIXTURE belongs to, and the query naming it in a link. */
+const PARAMS = { seed: String(SEED), zone: 'medium' as const, systemCount: 100, sectorVolume: 1000 };
+const SECTOR_Q = `seed=${SEED}&zone=medium&systems=100&volume=1000`;
 
 const FIXTURE: Sector = {
     systems: [system(1, 'Kepler-442')],
@@ -98,13 +102,26 @@ const settle = async () => {
     await nextTick();
 };
 
+/**
+ * ResultsDisplay under the same sector/URL sync App.vue installs. Without it the
+ * URL never learns which sector is loaded, and the panel's guard — which asks
+ * exactly that — would refuse every key. The pairing is the app's, not a test
+ * convenience.
+ */
+const ResultsHost = {
+    setup() {
+        useSectorLink();
+        return () => h(ResultsDisplay);
+    }
+};
+
 /** The whole Planets-tab host, which is where 4a opens the panel. */
 async function mountResults(url = '/', sector: Sector = FIXTURE) {
     const pinia = createPinia();
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = sector;
-    store.loadedSeed = SEED;
+    store.loadedParams = PARAMS;
     store.generationStatus = 'done';
     store.activeTab = 'planets';
 
@@ -112,7 +129,7 @@ async function mountResults(url = '/', sector: Sector = FIXTURE) {
     router.push(url);
     await router.isReady();
 
-    const wrapper = mount(ResultsDisplay, {
+    const wrapper = mount(ResultsHost, {
         global: { plugins: [pinia, router] },
         attachTo: document.body
     });
@@ -132,14 +149,14 @@ async function mountCold(url: string) {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = null;
-    store.loadedSeed = null;
+    store.loadedParams = null;
     store.activeTab = 'planets';
 
     const router = makeRouter();
     router.push(url);
     await router.isReady();
 
-    const wrapper = mount(ResultsDisplay, {
+    const wrapper = mount(ResultsHost, {
         global: { plugins: [pinia, router] },
         attachTo: document.body
     });
@@ -154,7 +171,7 @@ async function mountDetail() {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = FIXTURE;
-    store.loadedSeed = SEED;
+    store.loadedParams = PARAMS;
     store.generationStatus = 'done';
 
     const router = makeRouter();
@@ -560,7 +577,7 @@ describe('PlanetDetailPanel — the actions', () => {
 
 describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     it('reopens the exact planet a shared link names', async () => {
-        const { store, wrapper } = await mountResults(`/?seed=${SEED}&planet=${LIFE_KEY}`);
+        const { store, wrapper } = await mountResults(`/?${SECTOR_Q}&planet=${LIFE_KEY}`);
 
         expect(store.selectedPlanetKey).toBe(LIFE_KEY);
         expect(panelOf(wrapper).exists()).toBe(true);
@@ -574,9 +591,12 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         await wrapper.get(`[data-planet-row="${LIFELESS_KEY}"]`).trigger('click');
         await flushPromises();
         expect(router.currentRoute.value.query.planet).toBe(LIFELESS_KEY);
-        // The seed rides along, so the link names one planet rather than one
-        // coordinate that any sector could answer.
-        expect(router.currentRoute.value.query.seed).toBe(String(SEED));
+        // The whole sector rides along, so the link names one planet rather than
+        // one coordinate that any sector could answer — and carries enough for a
+        // reader with nothing in memory to rebuild it.
+        expect(router.currentRoute.value.query).toMatchObject({
+            seed: String(SEED), zone: 'medium', systems: '100', volume: '1000'
+        });
 
         // A reload of that very URL comes back to the same planet.
         const reloaded = await mountResults(router.currentRoute.value.fullPath);
@@ -586,13 +606,17 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         await flushPromises();
         expect(store.selectedPlanetKey).toBeNull();
         expect(router.currentRoute.value.query.planet).toBeUndefined();
-        expect(router.currentRoute.value.query.seed).toBeUndefined();
+        // The sector stays behind. It names the page, not the panel, so closing
+        // the panel must not leave a URL that no longer reloads.
+        expect(router.currentRoute.value.query).toMatchObject({
+            seed: String(SEED), zone: 'medium', systems: '100', volume: '1000'
+        });
     });
 
     it.each(['not-a-key', '7', '999999-1'])(
         'ignores the invalid value %s, strips the param and opens no panel',
         async (value) => {
-            const { store, wrapper, router } = await mountResults(`/?seed=${SEED}&planet=${value}`);
+            const { store, wrapper, router } = await mountResults(`/?${SECTOR_Q}&planet=${value}`);
 
             expect(store.selectedPlanetKey).toBeNull();
             expect(panelOf(wrapper).exists()).toBe(false);
@@ -601,14 +625,14 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     );
 
     it('leaves the rest of the query string alone', async () => {
-        const { router } = await mountResults(`/?tab=planets&seed=${SEED}&planet=not-a-key`);
+        const { router } = await mountResults(`/?tab=planets&${SECTOR_Q}&planet=not-a-key`);
 
         expect(router.currentRoute.value.query.planet).toBeUndefined();
         expect(router.currentRoute.value.query.tab).toBe('planets');
     });
 
     it('does not throw when the sector is regenerated under an open panel', async () => {
-        const { store, wrapper } = await mountResults(`/?seed=${SEED}&planet=${LIFE_KEY}`);
+        const { store, wrapper } = await mountResults(`/?${SECTOR_Q}&planet=${LIFE_KEY}`);
         expect(panelOf(wrapper).exists()).toBe(true);
 
         // A different sector in which that key no longer resolves.
@@ -625,7 +649,7 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     });
 
     it('holds a well-formed key while no sector has loaded yet, then opens it', async () => {
-        const { store, wrapper, router } = await mountCold(`/?seed=${SEED}&planet=${LIFE_KEY}`);
+        const { store, wrapper, router } = await mountCold(`/?${SECTOR_Q}&planet=${LIFE_KEY}`);
 
         // Nothing to resolve against yet: the link is kept, not thrown away,
         // because the sector only arrives once the user generates or restores.
@@ -635,7 +659,7 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
 
         store.sectorData = FIXTURE;
-        store.loadedSeed = SEED;
+        store.loadedParams = PARAMS;
         await flushPromises();
         await settle();
 
@@ -646,13 +670,13 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     });
 
     it('strips the held key once a sector arrives that does not contain it', async () => {
-        const { store, wrapper, router } = await mountCold(`/?seed=${SEED}&planet=999999-1`);
+        const { store, wrapper, router } = await mountCold(`/?${SECTOR_Q}&planet=999999-1`);
 
         expect(router.currentRoute.value.query.planet).toBe('999999-1');
         expect(panelOf(wrapper).exists()).toBe(false);
 
         store.sectorData = FIXTURE;
-        store.loadedSeed = SEED;
+        store.loadedParams = PARAMS;
         await flushPromises();
 
         expect(store.selectedPlanetKey).toBeNull();
@@ -665,13 +689,15 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
     // sectors opened a different planet and looked like it had worked.
     it('refuses a key whose seed is not the loaded sector\'s', async () => {
         const { store, wrapper, router } = await mountResults(
-            `/?seed=999&planet=${LIFE_KEY}`
+            `/?seed=999&zone=medium&systems=100&volume=1000&planet=${LIFE_KEY}`
         );
 
         expect(store.selectedPlanetKey).toBeNull();
         expect(panelOf(wrapper).exists()).toBe(false);
         expect(router.currentRoute.value.query.planet).toBeUndefined();
-        expect(router.currentRoute.value.query.seed).toBeUndefined();
+        // And the URL is corrected to the sector actually loaded, rather than
+        // left advertising one that is not on screen.
+        expect(router.currentRoute.value.query.seed).toBe(String(SEED));
     });
 
     it('refuses a key that names no seed at all, rather than guessing', async () => {
@@ -684,14 +710,14 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
 
     it('refuses a held key when the sector that lands has another seed', async () => {
         const { store, wrapper, router } = await mountCold(
-            `/?seed=${SEED}&planet=${LIFE_KEY}`
+            `/?${SECTOR_Q}&planet=${LIFE_KEY}`
         );
         expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
 
         // The same fixture, but generated under a different seed: the key would
         // resolve, which is exactly why the seed has to be checked first.
         store.sectorData = FIXTURE;
-        store.loadedSeed = 999;
+        store.loadedParams = { ...PARAMS, seed: '999' };
         await flushPromises();
 
         expect(store.selectedPlanetKey).toBeNull();

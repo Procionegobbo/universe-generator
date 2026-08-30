@@ -24,8 +24,14 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { Analytics } from '@vercel/analytics/vue';
 import AppTopBar from './components/AppTopBar.vue';
+import { useSectorLink } from './composables/useSectorLink';
 
 const route = useRoute();
+
+// At the app's root, not in a view: a shared link may land on either the console
+// or a system page, and both need the sector it names before they can show
+// anything — and both should publish the sector they end up holding.
+useSectorLink();
 
 const LEGACY_ROUTES = ['documentation', 'api-reference'];
 

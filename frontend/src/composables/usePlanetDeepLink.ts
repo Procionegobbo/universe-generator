@@ -2,13 +2,12 @@
 // `?planet=<starId>-<orbitalNumber>` on whatever route is current. Planets carry
 // no id, but (starId, orbitalNumber) is unique by construction.
 //
-// The pair is unique only *within one sector*, so the link carries `?seed=` as
-// well. Without it a link shared between two sectors still resolves — against a
-// different planet — and opens the panel on the wrong world with no sign that
-// anything is amiss. The seed is what makes the key mean one planet rather than
-// one coordinate, so a key whose seed is absent or does not match the loaded
-// sector is refused: showing nothing is right where showing the wrong planet is
-// not.
+// The pair is unique only *within one sector*, so the link names its sector too
+// — see `utils/sectorLink.ts` for which parameters that takes and why. Without
+// them a link shared between two sectors still resolves — against a different
+// planet — and opens the panel on the wrong world with no sign that anything is
+// amiss. A key whose sector is unnamed, or is not the one loaded, is refused:
+// showing nothing is right where showing the wrong planet is not.
 //
 // This keeps `store.selectedPlanetKey` and the query param in step in both
 // directions, so a reload or a shared link opens straight to one planet and a
@@ -19,6 +18,7 @@
 import { watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
+import { sameSector, sectorParamsFromQuery, sectorQuery } from '../utils/sectorLink';
 
 const KEY_PATTERN = /^\d+-\d+$/;
 
@@ -33,26 +33,20 @@ export function usePlanetDeepLink() {
         return typeof value === 'string' && value.length > 0 ? value : null;
     };
 
-    const seedValue = (): string | null => {
-        const raw = route.query.seed;
-        const value = Array.isArray(raw) ? raw[0] : raw;
-        return typeof value === 'string' && value.length > 0 ? value : null;
-    };
-
-    /** The seed of the sector actually loaded, as it appears in a URL. */
-    const loadedSeed = (): string | null =>
-        store.loadedSeed === null ? null : String(store.loadedSeed);
-
     const writeParam = (key: string | null) => {
         const query = { ...route.query };
-        if (key === null) {
-            delete query.planet;
-            delete query.seed;
-        } else {
-            query.planet = key;
-            const seed = loadedSeed();
-            if (seed !== null) query.seed = seed;
-        }
+        // Closing takes only the planet away: the sector belongs to the page,
+        // not to the panel, and is what keeps the page reloadable.
+        if (key === null) delete query.planet;
+        else query.planet = key;
+
+        // Every write republishes the loaded sector, whether opening, closing or
+        // refusing. Both this and useSectorLink write through `router.replace`
+        // off their own snapshot of the query, so a write that named only the
+        // planet would drop the sector a moment after it was added — and one
+        // that refused a mismatched link would leave the URL still advertising
+        // the sector that is not on screen.
+        if (store.loadedParams) Object.assign(query, sectorQuery(store.loadedParams));
         // replace, not push: the panel is a view of the current page, so closing
         // it must not need two presses of the browser's back button.
         router.replace({ query });
@@ -82,7 +76,7 @@ export function usePlanetDeepLink() {
     // sector only lands after the user generates or restores it, and is then
     // either opened or rejected.
     watch(
-        [paramValue, () => store.sectorData, () => store.loadedSeed],
+        [paramValue, () => store.sectorData, () => store.loadedParams],
         ([key]) => {
             if (key === null) return;
 
@@ -91,9 +85,9 @@ export function usePlanetDeepLink() {
                 return;
             }
             if (!store.sectorData) return;
-            // The sector has landed, so its seed is known and the link's claim
-            // about which sector it meant can finally be checked.
-            if (seedValue() !== loadedSeed()) {
+            // The sector has landed, so what it is made of is known and the
+            // link's claim about which sector it meant can finally be checked.
+            if (!sameSector(sectorParamsFromQuery(route.query), store.loadedParams)) {
                 reject();
                 return;
             }
