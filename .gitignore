@@ -56,3 +56,4 @@ __tests__/**/*.d.ts.map
 # Claude Code
 .claude/*
 !.claude/agents/
+.mcp.json

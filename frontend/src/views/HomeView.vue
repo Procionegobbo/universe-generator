@@ -1,117 +1,203 @@
 <template>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Left Column: Controls -->
-        <div class="lg:col-span-1">
-            <SectorControls
-                ref="controlsRef"
-                @generate="handleGenerate"
-                @reset="handleReset"
-            />
+    <div class="flex min-h-full flex-col">
+        <div
+            class="grid flex-1 items-start"
+            :class="showInlineRail ? 'lg:grid-cols-[260px_1fr] xl:grid-cols-[300px_1fr]' : 'grid-cols-1'"
+        >
+            <!-- Parameter rail — Overview tab only (D-31), and only in the
+                 inline tier, which starts at 1024px. The `lg:` prefix matches
+                 that tier exactly; what it carries on top is the 260px -> 300px
+                 step at `xl`. -->
+            <aside
+                v-if="showInlineRail"
+                data-rail="inline"
+                class="min-h-[820px] self-stretch border-r border-line-strong bg-panel"
+            >
+                <SectorControls @generate="handleGenerate" @reset="handleReset" />
+            </aside>
+
+            <div class="flex min-w-0 flex-col">
+                <div
+                    v-if="!showRail"
+                    class="border-b border-line-strong px-[18px] py-3 font-mono text-[10px] tracking-[.08em] text-dim"
+                >
+                    {{ subHeader }}
+                </div>
+
+                <!-- 768-1023px (spec §4d): the rail becomes a collapsible top
+                     drawer. It sits in normal flow above the KPI strip, so
+                     opening it pushes the strip down instead of covering it. -->
+                <div v-if="showDrawer" data-rail="drawer" class="border-b border-line-strong bg-panel">
+                    <button
+                        type="button"
+                        data-rail-toggle="drawer"
+                        class="flex w-full items-center justify-between px-[18px] py-[14px] font-mono font-semibold text-[10px] tracking-[.14em] text-dim transition-colors duration-150 hover:text-ink"
+                        :aria-expanded="drawerOpen"
+                        aria-controls="parameter-drawer"
+                        @click="drawerOpen = !drawerOpen"
+                    >
+                        <span>PARAMETERS</span>
+                        <span aria-hidden="true">{{ drawerOpen ? '▲' : '▼' }}</span>
+                    </button>
+                    <div v-if="drawerOpen" id="parameter-drawer" class="border-t border-line-soft">
+                        <SectorControls @generate="handleGenerate" @reset="handleReset" />
+                    </div>
+                </div>
+
+                <KpiStrip />
+
+                <GeneratingState v-if="isRunning" @cancel="handleCancel" />
+
+                <div v-else-if="store.error" class="flex justify-center px-4 py-8">
+                    <div
+                        class="flex w-full max-w-[520px] flex-col gap-3 rounded-card p-5"
+                        style="border: 1px solid rgb(239 68 68 / .3); background: rgb(239 68 68 / .06)"
+                    >
+                        <span class="font-sans font-semibold text-[13px] text-ink">
+                            Generation failed
+                        </span>
+                        <p class="font-mono text-[11px] break-words text-acc-red-pale">
+                            {{ store.error }}
+                        </p>
+                        <button type="button" class="ug-btn-outline self-start px-4 py-2" @click="handleRetry">
+                            RETRY
+                        </button>
+                    </div>
+                </div>
+
+                <!-- The tab host: the tab bar plus whichever body store.activeTab
+                     selects. It is full-bleed, so the bar's bottom border runs the
+                     full width of the column as in the design. -->
+                <ResultsDisplay v-else-if="store.sectorData" />
+
+                <EmptyState v-else @generate="handleGenerate" @restore="handleRestore" />
+            </div>
         </div>
 
-        <!-- Right Column: Results -->
-        <div class="lg:col-span-2">
-            <ResultsDisplay
-                v-if="store.sectorData"
-                :systems="store.sectorData.systems"
-                :stars="store.sectorData.stars"
-                :planets="store.sectorData.planets"
-                :sectorVolume="store.sectorVolume"
-            />
+        <MobileActionBar
+            :disabled="isRunning"
+            @open-parameters="sheetOpen = true"
+            @generate="handleGenerate"
+        />
 
-            <div v-else class="card">
-                <div class="text-center py-12">
-                    <div class="w-24 h-24 mx-auto mb-6 text-gray-600">
-                        <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-bold mb-4">Welcome to Universe Generator</h2>
-                    <p class="text-gray-400 mb-6 mx-auto">
-                        Generate realistic star systems with planets, moons, and habitable zones.<br>
-                        Planets are distributed across <strong>inner</strong>, <strong>medium</strong>, and <strong>outer</strong> orbits, with those in the <a href="https://en.wikipedia.org/wiki/Circumstellar_habitable_zone" class="underline hover:text-green-300" target="_blank">Goldilocks zone</a> (habitable zone) highlighted.
-                        Adjust the parameters on the left and click "Generate Sector" to begin.
-                    </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mx-auto">
-                        <div class="text-center p-4 bg-blue-900/20 rounded-lg">
-                            <div class="text-2xl font-bold text-blue-300">24</div>
-                            <div class="text-sm text-gray-400">Star Types</div>
-                        </div>
-                        <div class="text-center p-4 bg-purple-900/20 rounded-lg">
-                            <div class="text-2xl font-bold text-purple-300">22</div>
-                            <div class="text-sm text-gray-400">Planet Types</div>
-                        </div>
-                        <div class="text-center p-4 bg-green-900/20 rounded-lg">
-                            <div class="text-2xl font-bold text-green-300">3</div>
-                            <div class="text-sm text-gray-400">Habitable Zones</div>
-                        </div>
-                    </div>
+        <!-- Mobile parameter sheet: the rail is reachable on every tab. -->
+        <div v-if="showSheet" class="fixed inset-0 z-40">
+            <div class="absolute inset-0 bg-black/60" @click="sheetOpen = false"></div>
+            <div
+                data-rail="sheet"
+                class="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto border-t border-line-strong bg-panel"
+            >
+                <div class="flex justify-end p-2">
+                    <button
+                        type="button"
+                        class="ug-btn-outline px-3 py-2"
+                        aria-label="Close parameters"
+                        @click="sheetOpen = false"
+                    >
+                        CLOSE ▼
+                    </button>
                 </div>
-                <div class="mt-10 max-w-2xl mx-auto text-left text-gray-300 text-base space-y-4">
-                    <h3 class="text-xl font-semibold mb-2">About this Project</h3>
-                    <ul class="list-disc list-inside mb-2">
-                        <li>Procedural generation of star systems with 24 star types and 22 planet types</li>
-                        <li>Planets are distributed across <strong>inner</strong>, <strong>medium</strong>, and <strong>outer</strong> orbits; those in the <a href="https://en.wikipedia.org/wiki/Circumstellar_habitable_zone" class="underline hover:text-green-300" target="_blank">Goldilocks zone</a> are highlighted</li>
-                        <li>Dice notation formulas for realistic diameters and statistics</li>
-                        <li>Modern, responsive UI with real-time data visualization</li>
-                        <li>REST API backend (Node.js + Express) and Vue.js 3 frontend</li>
-                        <li>Export generated data as JSON</li>
-                    </ul>
-                    <h4 class="font-semibold mt-4">How it works</h4>
-                    <ul class="list-disc list-inside mb-2">
-                        <li>Star and planet types are generated using scientific probability distributions</li>
-                        <li>Each planet type has a unique diameter formula and physical characteristics</li>
-                        <li>Systems are placed in a 3D sector with random coordinates</li>
-                        <li>Supports multi-star systems and probabilistic moon generation</li>
-                    </ul>
-                    <h4 class="font-semibold mt-4">Tech Stack</h4>
-                    <ul class="list-disc list-inside mb-2">
-                        <li>Backend: Node.js, Express, TypeScript</li>
-                        <li>Frontend: Vue.js 3, Vite, TypeScript, Tailwind CSS</li>
-                        <li>API communication via Axios</li>
-                    </ul>
-                    <div class="mt-4 text-sm text-gray-400">
-                        <strong>Source & Documentation:</strong> See the <a href="https://github.com/Procionegobbo/universe-generator" class="underline hover:text-blue-300" target="_blank">GitHub repository</a> for full documentation, API details, and scientific references.
-                    </div>
-                </div>
+                <SectorControls @generate="handleGenerate" @reset="handleReset" />
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import SectorControls from '../components/SectorControls.vue';
 import ResultsDisplay from '../components/ResultsDisplay.vue';
+import KpiStrip from '../components/KpiStrip.vue';
+import EmptyState from '../components/EmptyState.vue';
+import GeneratingState from '../components/GeneratingState.vue';
+import MobileActionBar from '../components/MobileActionBar.vue';
+import { useRailTier } from '../composables/useRailTier';
 import { useSectorStore } from '../stores/sectorStore';
-import type { GenerationRequest } from '../types';
+import { thinThousands } from '../utils/format';
+import type { GenerationRequest, SectorZone } from '../types';
 
 const store = useSectorStore();
-const controlsRef = ref<InstanceType<typeof SectorControls>>();
 
-const handleGenerate = async (request: GenerationRequest) => {
-    if (controlsRef.value) {
-        controlsRef.value.setLoading(true);
-        controlsRef.value.setError(null);
+const { tier } = useRailTier();
+
+const sheetOpen = ref(false);
+const drawerOpen = ref(false);
+const lastRequest = ref<GenerationRequest | null>(null);
+let controller: AbortController | null = null;
+
+const isRunning = computed(() => store.generationStatus === 'running');
+const showRail = computed(() => store.activeTab === 'overview');
+
+// One rail host at a time (spec §4d). The sheet is reachable on every tab, the
+// drawer and the inline rail only on Overview (D-31).
+const showInlineRail = computed(() => showRail.value && tier.value === 'inline');
+const showDrawer = computed(() => showRail.value && tier.value === 'drawer');
+const showSheet = computed(() => sheetOpen.value && tier.value === 'sheet');
+
+// Crossing a breakpoint hands the rail to another host; the one being left
+// should not come back open when the viewport comes back.
+watch(tier, () => {
+    sheetOpen.value = false;
+    drawerOpen.value = false;
+});
+
+const subHeader = computed(() =>
+    `SECTOR ${store.currentSeed} · ${store.zone.toUpperCase()} ZONE · ${thinThousands(store.sectorVolume)} pc³`);
+
+// An empty seed randomises on submit, exactly as the old handleSubmit did. It
+// lives here rather than in the rail because generation is now reachable from
+// three places (the rail, the empty state and the mobile action bar).
+const buildRequest = (): GenerationRequest => {
+    if (store.currentSeed === '' || store.currentSeed === null) {
+        store.currentSeed = Math.floor(Math.random() * 1000000);
     }
+    return {
+        systemCount: store.systemCount,
+        sectorVolume: store.sectorVolume,
+        seed: store.currentSeed,
+        zone: store.zone
+    };
+};
 
-    const response = await store.generateSector(request);
+const run = async (request: GenerationRequest) => {
+    lastRequest.value = request;
+    sheetOpen.value = false;
+    controller = new AbortController();
+    // A copy, because the store fills in defaults on the object it is handed.
+    await store.generateSector({ ...request }, controller.signal);
+    controller = null;
+};
 
-    if (controlsRef.value) {
-        controlsRef.value.setLoading(false);
+const handleGenerate = () => run(buildRequest());
 
-        if (store.error) {
-            controlsRef.value.setError(store.error);
-        } else if (response?.stats) {
-            controlsRef.value.updateStats(response.stats);
-        }
-    }
+const handleRetry = () => run(lastRequest.value ?? buildRequest());
+
+const handleCancel = () => {
+    controller?.abort();
+};
+
+// D-15: restoring means re-generating from the saved parameters, which — because
+// generation is deterministic — reproduces the previous sector exactly.
+const handleRestore = () => {
+    const saved = store.loadSavedParams();
+    if (!saved) return;
+
+    store.currentSeed = saved.currentSeed as number | string;
+    store.systemCount = saved.systemCount as number;
+    store.sectorVolume = saved.sectorVolume as number;
+    store.zone = saved.zone as SectorZone;
+
+    return run({
+        systemCount: saved.systemCount,
+        sectorVolume: saved.sectorVolume,
+        seed: saved.currentSeed,
+        zone: saved.zone
+    });
 };
 
 const handleReset = () => {
     store.sectorData = null;
-    if (controlsRef.value) {
-        controlsRef.value.setError(null);
-    }
+    store.error = null;
+    lastRequest.value = null;
 };
 </script>

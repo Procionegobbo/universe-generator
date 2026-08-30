@@ -4,17 +4,31 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stellar Universe Generator</title>
+    <meta name="color-scheme" content="dark" />
+    <title>Universe Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      /* Pre-paint styles, so the dark ground is up before the app CSS loads.
+         The reset is layered for the same reason as its twin in style.css:
+         unlayered rules outrank every cascade layer, so an unlayered
+         `* { padding: 0 }` here would override Tailwind's @layer utilities and
+         flatten every p-*/px-*/m-* class in the app. */
+      @layer base {
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        background: #0a0e17;
         color: #f8fafc;
         min-height: 100vh;
       }
