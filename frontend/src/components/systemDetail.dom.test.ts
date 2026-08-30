@@ -129,6 +129,16 @@ const nodeLeft = (wrapper: VueWrapper, key: string): number => {
     return Number(/left:\s*([\d.]+)%/.exec(style)![1]);
 };
 
+/** The star ids of the rendered groups, in document order. */
+const groupIds = (wrapper: VueWrapper): string[] =>
+    wrapper.findAll('[data-star-group]')
+        .map(group => group.attributes('data-star-group') as string);
+
+/** The planet-row keys nested inside one star's group, in document order. */
+const rowKeysIn = (wrapper: VueWrapper, starId: string): string[] =>
+    wrapper.get(`[data-star-group="${starId}"]`).findAll('[data-planet-row]')
+        .map(row => row.attributes('data-planet-row') as string);
+
 const nodePx = (wrapper: VueWrapper, key: string): number =>
     wrapper.get(`[data-map-planet="${key}"]`).findComponent(CelestialThumb).props('px') as number;
 
@@ -142,7 +152,7 @@ afterEach(() => {
     for (const wrapper of mounted) wrapper.unmount();
 });
 
-describe('OrbitalMap — the primary star only', () => {
+describe('OrbitalMap — the top-level map (removed by story 003)', () => {
     it('heads the map with ORBITAL MAP · <primary star name>', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
 
@@ -158,18 +168,6 @@ describe('OrbitalMap — the primary star only', () => {
         // The secondary's planet is on the screen, but never on the map.
         expect(wrapper.find('[data-map-planet="2-1"]').exists()).toBe(false);
         expect(wrapper.find('[data-planet-row="2-1"]').exists()).toBe(true);
-    });
-
-    it('lists every star in the rail with its own planet count', async () => {
-        const { wrapper } = await mountDetail(KEPLER, 1);
-        const entries = wrapper.findAll('[data-star-entry]');
-
-        expect(entries).toHaveLength(2);
-        expect(entries[0].text()).toContain('Kepler-442 A');
-        expect(entries[0].get('[data-star-facts]').text()).toContain('4 planets');
-        // A secondary is not hidden just because the map leaves it out.
-        expect(entries[1].text()).toContain('Kepler-442 B');
-        expect(entries[1].get('[data-star-facts]').text()).toContain('1 planets');
     });
 });
 
@@ -320,6 +318,163 @@ describe('OrbitalMap — the empty state and the text summary', () => {
     });
 });
 
+describe('SystemDetailView — the grouped star/planet listing', () => {
+    it('renders one group per star, in payload order', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+
+        expect(groupIds(wrapper)).toEqual(['1', '2']);
+    });
+
+    it('heads every group with its star, its class and its facts', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const headers = wrapper.findAll('[data-star-entry]');
+
+        expect(headers).toHaveLength(2);
+        expect(headers[0].text()).toContain('Kepler-442 A');
+        expect(headers[0].text()).toContain('G-2 · Yellow dwarf');
+        expect(headers[0].get('[data-star-facts]').text()).toContain('4 planets');
+        // A secondary is not hidden just because the top-level map leaves it out.
+        expect(headers[1].text()).toContain('Kepler-442 B');
+        expect(headers[1].get('[data-star-facts]').text()).toContain('1 planets');
+    });
+
+    it('nests each star\'s planets under that star, in orbital order', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+
+        expect(rowKeysIn(wrapper, '1')).toEqual(['1-1', '1-2', '1-3', '1-4']);
+        expect(rowKeysIn(wrapper, '2')).toEqual(['2-1']);
+    });
+
+    it('leaves no planet row outside the group of the star it orbits', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const rows = wrapper.findAll('[data-planet-row]');
+
+        expect(rows).toHaveLength(5);
+        for (const row of rows) {
+            const key = row.attributes('data-planet-row') as string;
+            const group = row.element.closest('[data-star-group]');
+            expect(group).not.toBeNull();
+            expect(group!.getAttribute('data-star-group')).toBe(key.split('-')[0]);
+        }
+    });
+
+    it('replaces the old interleaved flat list with the grouped order', async () => {
+        // The defect this feature exists to fix: the flat table sorted every
+        // star's planets into one orbital-number sequence.
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const keys = wrapper.findAll('[data-planet-row]')
+            .map(row => row.attributes('data-planet-row') as string);
+
+        expect(keys).toEqual(['1-1', '1-2', '1-3', '1-4', '2-1']);
+        expect(keys).not.toEqual(['1-1', '2-1', '1-2', '1-3', '1-4']);
+    });
+
+    it('gives a star with no planets its own empty line', async () => {
+        const { wrapper } = await mountDetail(EXOTIC, 7);
+        const barren = wrapper.get('[data-star-group="9"]');
+
+        expect(barren.get('[data-star-empty="9"]').text()).toBe('No planets orbit this star.');
+        expect(barren.findAll('[data-planet-row]')).toHaveLength(0);
+
+        const populated = wrapper.get('[data-star-group="10"]');
+        expect(populated.find('[data-star-empty]').exists()).toBe(false);
+        expect(rowKeysIn(wrapper, '10')).toEqual(['10-1']);
+    });
+
+    it('states the section once, and drops the rail and the PLANETS header', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+
+        expect(wrapper.get('[data-contents-header]').text()).toBe('STARS & PLANETS');
+        expect(wrapper.find('[data-stars-rail]').exists()).toBe(false);
+        expect(wrapper.find('[data-planets-header]').exists()).toBe(false);
+        // Every star states its own emptiness now; the system-level one is gone.
+        expect(wrapper.find('[data-empty]').exists()).toBe(false);
+    });
+});
+
+describe('SystemDetailView — opening a planet from its star\'s group', () => {
+    it('selects the planet by its composite key and opens the panel', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        expect(wrapper.find('[data-planet-panel]').exists()).toBe(false);
+
+        await wrapper.get('[data-planet-row="2-1"]').trigger('click');
+
+        expect(store.selectedPlanetKey).toBe('2-1');
+        expect(wrapper.find('[data-planet-panel]').exists()).toBe(true);
+    });
+
+    it('opens the planet the clicked row names, not the primary\'s first', async () => {
+        // The two rows are no longer adjacent in the DOM: this pins that the
+        // key travelled with the row into its own group.
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+
+        await wrapper.get('[data-planet-row="2-1"]').trigger('click');
+
+        expect(store.selectedPlanetKey).toBe('2-1');
+        expect(store.selectedPlanetKey).not.toBe('1-1');
+    });
+
+    it('carries the row\'s button semantics, and answers Enter and Space', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        const row = wrapper.get('[data-planet-row="1-1"]');
+
+        expect(row.attributes('role')).toBe('button');
+        expect(row.attributes('tabindex')).toBe('0');
+        expect(row.attributes('aria-label')).toBe('Open detail for Kepler-442 A b');
+
+        await row.trigger('keydown.enter');
+        expect(store.selectedPlanetKey).toBe('1-1');
+        expect(wrapper.find('[data-planet-panel]').exists()).toBe(true);
+
+        store.selectPlanet(null);
+        await wrapper.vm.$nextTick();
+        await row.trigger('keydown.space');
+        expect(store.selectedPlanetKey).toBe('1-1');
+        expect(wrapper.find('[data-planet-panel]').exists()).toBe(true);
+    });
+
+    it('does not navigate: the panel opens over /system/1', async () => {
+        const { wrapper, router } = await mountDetail(KEPLER, 1);
+
+        await wrapper.get('[data-planet-row="1-2"]').trigger('click');
+        await flushPromises();
+
+        expect(router.currentRoute.value.path).toBe('/system/1');
+    });
+
+    it('keeps the row decoration the move could have lost', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const row = wrapper.get('[data-planet-row="1-2"]');
+
+        expect(row.classes()).toContain('ug-row-habitable');
+        expect(row.text()).toContain('LIFE');
+        expect(row.get('[data-cell="zone"]').text()).toBe('GOLDILOCKS');
+    });
+});
+
+describe('SystemDetailView — the grouped listing\'s a11y and narrow widths', () => {
+    it('labels every group by its own star', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const group = wrapper.get('[data-star-group="1"]');
+
+        expect(group.attributes('role')).toBe('group');
+        const labelId = group.attributes('aria-labelledby') as string;
+        const label = wrapper.get(`#${labelId}`);
+        expect(label.element.tagName).toBe('H2');
+        expect(label.text()).toBe('Kepler-442 A');
+    });
+
+    it('scrolls the planet grid sideways, never the star header', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        const grid = wrapper.get('[data-star-group="1"] [class*="min-w-[620px]"]');
+        const scroller = grid.element.closest('.overflow-x-auto');
+
+        expect(scroller).not.toBeNull();
+        expect(scroller!.querySelector('[data-star-entry]')).toBeNull();
+        expect(scroller!.querySelector('[data-planet-row]')).not.toBeNull();
+    });
+});
+
 describe('SystemDetailView — a change of the :id param', () => {
     // Nothing in the UI navigates from one system straight to another today, so
     // this path has no user yet; the moment one is added — a "next system" link,
@@ -346,7 +501,7 @@ describe('SystemDetailView — a change of the :id param', () => {
 });
 
 describe('SystemDetailView — the 1d shell', () => {
-    it('shows the breadcrumb bar, the 5-up KPI strip and the system planet table', async () => {
+    it('shows the breadcrumb bar and the 5-up KPI strip', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
 
         const breadcrumb = wrapper.get('[data-breadcrumb]');
@@ -365,11 +520,6 @@ describe('SystemDetailView — the 1d shell', () => {
         expect(wrapper.get('[data-kpi="IN HABITABLE ZONE"]').text()).toContain('1');
         // G (1.0 M☉) + M (0.3 M☉)
         expect(wrapper.get('[data-kpi="TOTAL MASS"]').text()).toContain('1.30');
-
-        expect(wrapper.get('[data-planets-header]').text()).toBe('PLANETS · 5');
-        const rows = wrapper.findAll('[data-planet-row]')
-            .map(row => row.attributes('data-planet-row') as string);
-        expect(rows).toEqual(['1-1', '2-1', '1-2', '1-3', '1-4']);
     });
 
     it('renders one OrbitalMap, for the system primary', async () => {
