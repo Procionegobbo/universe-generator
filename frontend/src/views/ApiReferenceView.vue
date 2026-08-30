@@ -56,8 +56,11 @@
                         <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Request Body</h4>
                         <pre class="bg-gray-950 rounded-lg p-4 font-mono text-sm text-purple-300 overflow-x-auto">
 {
-  "systemCount": number, // 1-1000
-  "sectorSize": number   // 1-100000
+  "systemCount": number,       // 1-10000
+  "sectorVolume": number,      // pc³, 1-10000000
+  "seed"?: string | number,    // omit for random
+  "zone"?: string              // extragalactic | galactic edge |
+                                // medium | central zone | core
 }</pre>
                     </div>
                     <div>
@@ -80,19 +83,25 @@
                         <h4 class="font-bold text-purple-400 mb-2">Star</h4>
                         <ul class="text-xs text-gray-500 space-y-1 font-mono">
                             <li>starId: number</li>
+                            <li>systemId: number</li>
                             <li>name: string</li>
                             <li>spectralClass: string</li>
-                            <li>subclass: number</li>
+                            <li>subclass?: number</li>
                         </ul>
                     </div>
                     <div class="p-4 bg-gray-800/30 rounded-lg border border-gray-700">
                         <h4 class="font-bold text-green-400 mb-2">Planet</h4>
                         <ul class="text-xs text-gray-500 space-y-1 font-mono">
                             <li>starId: number</li>
-                            <li>planetType: string</li>
                             <li>orbitalNumber: number</li>
+                            <li>planetType: string</li>
                             <li>diameter: number</li>
                             <li>moonCount: number</li>
+                            <li>mass: number</li>
+                            <li>gravity: number</li>
+                            <li>semiMajorAxis: number</li>
+                            <li>temperature: number</li>
+                            <li>habitableZone: boolean</li>
                             <li>lifeProbability: number</li>
                             <li>lifeComplexity: number</li>
                             <li>hasLife: boolean</li>

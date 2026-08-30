@@ -165,9 +165,13 @@ npm run test
 ```json
 {
   "systemCount": 100,
-  "sectorSize": 1000
+  "sectorVolume": 1000,
+  "seed": "optional-seed",
+  "zone": "medium"
 }
 ```
+
+`systemCount` is 1–10000. `sectorVolume` is the sector's volume in pc³, 1–10000000. `seed` is optional (string or number); omitting it generates a random one. `zone` is optional, one of `extragalactic`, `galactic edge`, `medium`, `central zone`, `core`.
 
 #### Generate Sector Response
 
