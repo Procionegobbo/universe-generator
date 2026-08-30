@@ -212,6 +212,22 @@ in view to know whose planets these are, so it must not be the thing that scroll
 7-column grid is not reflowed into cards below 620px; that would be a second layout to design and
 test, and the current screen does not do it. See §7.
 
+**S-10a · The compact map is hidden below `sm:` (640px).**
+Added after S-4 shipped, from a measurement. The header gives the map whatever the identity block
+leaves — 105px at a 375px viewport — and in that space a nine-planet star **overlaps**: worst
+edge-to-edge gap −5.7px, measured on UG-0052 of seed 644212. It clears at −1.8px by 420px and
++3.3px by 480px. Sparse stars are fine throughout: the same system's four- and three-planet stars
+keep +9.1px and +12.3px at 375px, so this is a density limit, not a broken layout.
+
+`sm:` rather than the 480px the measurement allows, because 480 is where *this* star stops
+overlapping, by 3.3px, and planet counts are not bounded at nine — the generator gives Nikawiy's
+primary fourteen. `sm:` is Tailwind's own smallest breakpoint, so no magic number enters the
+codebase, and it leaves ~14px of clearance instead of 3.
+
+Hidden, not shrunk and not scrolled: a squashed map asserts positions it cannot honour, and a
+scrolling one would contradict S-10, which says the header never scrolls. Below the breakpoint the
+star header still names the star and the planet table beneath it is unchanged.
+
 **S-11 · The star name becomes an `<h2>`, and each group is a labelled `role="group"`.**
 The system name is already the page's `<h1>` (`data-system-name`). Making the star name an `<h2>`
 with the group `aria-labelledby` it means a screen reader announces "which star" when entering a

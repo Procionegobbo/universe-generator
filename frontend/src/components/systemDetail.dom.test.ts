@@ -179,6 +179,27 @@ afterEach(() => {
 });
 
 describe('OrbitalMap — one compact map per star, inside its own group header', () => {
+    // S-10a. The map takes whatever the identity block leaves — 105px at a 375px
+    // viewport — and in that space a nine-planet star overlaps by 5.7px, measured
+    // on UG-0052 of seed 644212. jsdom applies no media queries, so the class list
+    // is the only honest thing to assert: it is what actually decides this.
+    it('hides the map below sm:, and hides nothing else in the header', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+
+        const wrapperDiv = mapIn(wrapper, '1').element.parentElement as HTMLElement;
+        expect([...wrapperDiv.classList]).toEqual(
+            expect.arrayContaining(['hidden', 'sm:block'])
+        );
+
+        // The star stays named at every width: only the map steps aside.
+        const header = wrapper.get('[data-star-entry="1"]');
+        const hidden = header.findAll('.hidden');
+        expect(hidden).toHaveLength(1);
+        expect(hidden[0].element).toBe(wrapperDiv);
+        expect(header.get('h2').text()).toBe('Kepler-442 A');
+        expect(header.get('[data-star-facts]').isVisible()).toBe(true);
+    });
+
     it('renders one map per non-empty group, in the compact variant', async () => {
         const { wrapper } = await mountDetail(KEPLER, 1);
 

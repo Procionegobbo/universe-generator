@@ -106,8 +106,12 @@
                              here in its own header rather than one primary-only
                              map above a list organised per star. `rawPlanets`,
                              not the table's display rows — those carry neither
-                             starId nor semiMajorAxis. -->
-                        <div v-if="group.rawPlanets.length" class="min-w-0 flex-1">
+                             starId nor semiMajorAxis.
+                             S-10a: hidden below sm:. The map takes what the
+                             identity block leaves — 105px at 375px — and a
+                             nine-planet star overlaps by 5.7px in that space.
+                             The header and the table below still name the star. -->
+                        <div v-if="group.rawPlanets.length" class="hidden min-w-0 flex-1 sm:block">
                             <OrbitalMap :star="group.star" :planets="group.rawPlanets" variant="compact" />
                         </div>
                     </header>
