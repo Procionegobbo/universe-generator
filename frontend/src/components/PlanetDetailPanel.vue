@@ -110,18 +110,34 @@
                         class="grid grid-cols-[96px_1fr_62px] items-center gap-[10px]"
                     >
                         <span class="font-mono text-[10px] text-muted">{{ row.label }}</span>
-                        <div class="h-[6px] overflow-hidden rounded-[3px] bg-line-soft">
+                        <div
+                            class="relative h-[6px] overflow-hidden rounded-[3px] bg-line-soft"
+                            :title="row.over ? `${row.value} ${row.unit} — past the ${row.scale} bar scale` : undefined"
+                        >
                             <div
                                 data-profile-bar
                                 class="h-full rounded-[3px]"
                                 :style="{ width: `${row.fill * 100}%`, background: row.color }"
                             ></div>
+                            <!-- A full rail means "at least this much", not "the
+                                 most there is": hatch the tip so the two do not
+                                 read alike. -->
+                            <span
+                                v-if="row.over"
+                                data-profile-over
+                                aria-hidden="true"
+                                class="absolute inset-y-0 right-0 w-[13px]"
+                                :style="{ background: OVER_SCALE_HATCH }"
+                            ></span>
                         </div>
                         <span
                             data-profile-value
                             class="text-right font-mono font-medium text-[11px] text-[#e2e8f0]"
                         >
                             {{ row.value }} <span class="text-dim">{{ row.unit }}</span>
+                            <span v-if="row.over" class="sr-only">
+                                , past the {{ row.scale }} bar scale
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -240,10 +256,22 @@ const EARTH_DIAMETER_KM = 12742;
  * of these, so the bars are read against a fixed familiar scale — a 10 M⊕
  * super-Earth, 3 g, and 10 g/cm³ all fill their rail — and the printed number
  * beside each is always the exact value.
+ *
+ * The scale is fixed rather than per-sector because the distribution is heavily
+ * skewed: a sector's median planet is well under 1 M⊕ while its largest is in
+ * the hundreds, so scaling to the maximum would flatten three quarters of the
+ * planets into an invisible sliver. The cost is the other end — roughly a fifth
+ * of planets, the giants, run past 10 M⊕ — so a bar that is merely full is
+ * marked as clipped. Without that mark a 912 M⊕ giant and an 11 M⊕ super-Earth
+ * draw the same full rail and read as equal rather than as both off-scale.
  */
 const MASS_FULL_SCALE = 10;
 const GRAVITY_FULL_SCALE = 3;
 const DENSITY_FULL_SCALE = 10;
+
+/** Hatched cap on a clipped bar: the axis convention for "continues past here". */
+const OVER_SCALE_HATCH =
+    'repeating-linear-gradient(115deg, rgba(2,6,23,.75) 0 2px, transparent 2px 4px)';
 
 // D-9's teal ramp across LIFE_STAGE_LABELS 1-6.
 const STAGE_RAMP = ['#064e3b', '#065f46', '#0f766e', '#0d9488', '#10b981', '#34d399'];
@@ -345,21 +373,27 @@ const physicalRows = computed(() => {
             value: em(mass),
             unit: 'M⊕',
             color: '#3b82f6',
-            fill: mass === null ? 0 : clamp01(mass / MASS_FULL_SCALE)
+            fill: mass === null ? 0 : clamp01(mass / MASS_FULL_SCALE),
+            over: mass !== null && mass > MASS_FULL_SCALE,
+            scale: `${MASS_FULL_SCALE} M⊕`
         },
         {
             label: 'Gravity',
             value: em(gravity),
             unit: 'g',
             color: '#3b82f6',
-            fill: gravity === null ? 0 : clamp01(gravity / GRAVITY_FULL_SCALE)
+            fill: gravity === null ? 0 : clamp01(gravity / GRAVITY_FULL_SCALE),
+            over: gravity !== null && gravity > GRAVITY_FULL_SCALE,
+            scale: `${GRAVITY_FULL_SCALE} g`
         },
         {
             label: 'Density',
             value: em(density),
             unit: 'g/cm³',
             color: '#8b5cf6',
-            fill: density === null ? 0 : clamp01(density / DENSITY_FULL_SCALE)
+            fill: density === null ? 0 : clamp01(density / DENSITY_FULL_SCALE),
+            over: density !== null && density > DENSITY_FULL_SCALE,
+            scale: `${DENSITY_FULL_SCALE} g/cm³`
         },
         // D-7 replaces the design's "Water cover" with a field that exists: the
         // model's life probability, real for any eligible planet whether or not
@@ -369,7 +403,10 @@ const physicalRows = computed(() => {
             value: probability.toFixed(1),
             unit: '%',
             color: '#10b981',
-            fill: clamp01(target.lifeProbability)
+            fill: clamp01(target.lifeProbability),
+            // A probability is bounded by definition, so it can never be clipped.
+            over: false,
+            scale: '100 %'
         }
     ];
 });

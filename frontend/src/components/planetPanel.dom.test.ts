@@ -322,6 +322,64 @@ describe('PlanetDetailPanel — D-7 content, with no fabricated facts', () => {
         expect(rowFill(wrapper, 'Life probability')).toContain('width: 42%');
     });
 
+    // A fixed bar scale keeps the sector's median planet — well under 1 M⊕ —
+    // visible, at the cost of clipping the giants. A clipped bar has to say so,
+    // or "full" reads as "the largest there is" rather than "off the scale".
+    const GIANT_FIXTURE: Sector = {
+        systems: [system(1, 'Kepler-442')],
+        stars: [star(1, 1, 'Kepler-442 A')],
+        planets: [
+            planet(1, 1, 'G', {
+                name: 'Brobdingnag', diameter: 140000,
+                mass: 1.7916e27,  // 300 M⊕ — far past the 10 M⊕ rail
+                gravity: 24.03    // 2.45 g — inside the 3 g rail
+            })
+        ]
+    };
+
+    it('hatches a bar clipped by the scale, and only that bar', async () => {
+        const { wrapper } = await mountResults('/', GIANT_FIXTURE);
+        await wrapper.get('[data-planet-row="1-1"]').trigger('click');
+        await settle();
+
+        const mass = wrapper.get('[data-profile-row="Mass"]');
+        const gravity = wrapper.get('[data-profile-row="Gravity"]');
+
+        // Mass runs past its rail: full bar, marked as clipped.
+        expect(rowFill(wrapper, 'Mass')).toContain('width: 100%');
+        expect(mass.find('[data-profile-over]').exists()).toBe(true);
+        expect(mass.text()).toContain('past the 10 M⊕ bar scale');
+
+        // Gravity is inside its rail on the same planet, so it stays unmarked —
+        // the mark belongs to the row, not to the body.
+        expect(gravity.find('[data-profile-over]').exists()).toBe(false);
+        expect(gravity.text()).not.toContain('past the');
+    });
+
+    it('leaves a bar that merely reaches full unmarked', async () => {
+        const exact: Sector = {
+            ...GIANT_FIXTURE,
+            planets: [planet(1, 1, 'S', { mass: 10 * 5.972e24, gravity: 9.807 })]
+        };
+        const { wrapper } = await mountResults('/', exact);
+        await wrapper.get('[data-planet-row="1-1"]').trigger('click');
+        await settle();
+
+        expect(rowFill(wrapper, 'Mass')).toContain('width: 100%');
+        expect(wrapper.get('[data-profile-row="Mass"]').find('[data-profile-over]').exists())
+            .toBe(false);
+    });
+
+    it('never marks the life-probability bar, which is bounded by definition', async () => {
+        const { wrapper } = await mountResults();
+        await wrapper.get(`[data-planet-row="${LIFE_KEY}"]`).trigger('click');
+        await settle();
+
+        expect(
+            wrapper.get('[data-profile-row="Life probability"]').find('[data-profile-over]').exists()
+        ).toBe(false);
+    });
+
     it('prints an em dash rather than NaN for a degenerate body', async () => {
         const { wrapper } = await mountResults();
         await wrapper.get(`[data-planet-row="${BELT_KEY}"]`).trigger('click');
