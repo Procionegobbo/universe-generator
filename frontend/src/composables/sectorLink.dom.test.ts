@@ -216,3 +216,52 @@ describe('useSectorLink — publishing the sector into the URL', () => {
         expect(router.currentRoute.value.query.seed).toBeUndefined();
     });
 });
+
+
+describe('useSectorLink — a link followed mid-session', () => {
+    // The whole point of watching the route rather than only the first paint:
+    // a link opened while the app is already running is the same request as one
+    // pasted into an empty tab, and deserves the same answer.
+    const OTHER = '/system/9?seed=999&zone=core&systems=100&volume=1000';
+
+    it('rebuilds when a navigation names another sector', async () => {
+        const { router } = await mountAt(LINK);
+        expect(post).toHaveBeenCalledTimes(1);
+
+        await router.push(OTHER);
+        await flushPromises();
+        await flushPromises();
+
+        expect(post).toHaveBeenCalledTimes(2);
+        expect(post.mock.calls[1][1]).toMatchObject({ seed: '999', zone: 'core' });
+    });
+
+    it('stays put when the navigation names the sector already loaded', async () => {
+        const { router } = await mountAt(LINK);
+        expect(post).toHaveBeenCalledTimes(1);
+
+        // Same sector, different system and a planet: ordinary navigation inside
+        // the sector, which must not throw it away and build it again.
+        await router.push('/system/7?planet=1-1&seed=644212&zone=medium&systems=100&volume=1000');
+        await flushPromises();
+        await flushPromises();
+
+        expect(post).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not answer its own publishing', async () => {
+        // Publishing writes the sector back into a URL that named none. That
+        // navigation lands here too, and must not read as a fresh request.
+        const { router } = await mountAt('/system/52', s => {
+            s.sectorData = SECTOR;
+            s.loadedParams = {
+                seed: '644212', zone: 'medium', systemCount: 100, sectorVolume: 1000
+            };
+        });
+        await flushPromises();
+        await flushPromises();
+
+        expect(router.currentRoute.value.query.seed).toBe('644212');
+        expect(post).not.toHaveBeenCalled();
+    });
+});

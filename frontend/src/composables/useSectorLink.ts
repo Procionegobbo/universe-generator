@@ -32,13 +32,12 @@ export function useSectorLink() {
     // was meant to replace.
     const linkAnswered = ref(false);
 
-    onMounted(async () => {
-        // main.ts mounts without awaiting the router, so on the very first paint
-        // the initial URL has not been resolved yet and the query still reads
-        // empty. Waiting here rather than assuming otherwise is the difference
-        // between a link that works and one that silently does nothing.
-        await router.isReady();
-
+    /**
+     * Answer whatever the URL currently says. Run for the URL the app opens on
+     * and again for every navigation, so a link followed mid-session is honoured
+     * exactly as one that was pasted into an empty tab.
+     */
+    const answerTheUrl = async () => {
         const params = sectorParamsFromQuery(route.query);
 
         // Regenerate unless the sector on screen is already the one named. Seed
@@ -47,6 +46,10 @@ export function useSectorLink() {
         // place them, names the same worlds. A link naming a *different* seed or
         // zone names different worlds, and is worth the regeneration — leaving
         // the reader on the old one would answer the link with the wrong sky.
+        //
+        // `isLoading` keeps a navigation arriving mid-generation from starting a
+        // second one; a failed generation is simply not retried, since the URL
+        // that asked for it has not changed and retrying would be a loop.
         const needed = params !== null
             && !sameSector(params, store.loadedParams)
             && !store.isLoading;
@@ -64,9 +67,25 @@ export function useSectorLink() {
             delete query.planet;
             await router.replace({ query });
         }
+    };
 
+    onMounted(async () => {
+        // main.ts mounts without awaiting the router, so on the very first paint
+        // the initial URL has not been resolved yet and the query still reads
+        // empty. Waiting here rather than assuming otherwise is the difference
+        // between a link that works and one that silently does nothing.
+        await router.isReady();
+        await answerTheUrl();
         linkAnswered.value = true;
     });
+
+    // Later navigations. Publishing writes the loaded sector back into the URL,
+    // which lands here too — and finds the URL already naming what is loaded, so
+    // it asks for nothing and the two sides cannot drive each other.
+    watch(
+        () => route.fullPath,
+        () => { if (linkAnswered.value) void answerTheUrl(); }
+    );
 
     // Sector -> URL. Nothing to do while the two already agree, which is the
     // common case: a link that was just honoured, or a sector generated from

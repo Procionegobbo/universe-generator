@@ -85,12 +85,17 @@ export function usePlanetDeepLink() {
                 return;
             }
             if (!store.sectorData) return;
-            // The sector has landed, so what it is made of is known and the
-            // link's claim about which sector it meant can finally be checked.
-            if (!sameSector(sectorParamsFromQuery(route.query), store.loadedParams)) {
-                reject();
-                return;
-            }
+            // Named a sector that is not the one loaded: hold, do not refuse.
+            // useSectorLink answers such a URL by building the sector it names,
+            // and the key becomes checkable when that lands. Refusing here threw
+            // the planet away in the gap, so a link followed from inside another
+            // sector arrived with its planet already stripped.
+            //
+            // Holding is safe in every direction: if the rebuild fails, or the
+            // URL names no readable sector at all, the key simply never opens
+            // anything — and an unreadable one is dropped by useSectorLink
+            // before it can be adopted by whatever is loaded.
+            if (!sameSector(sectorParamsFromQuery(route.query), store.loadedParams)) return;
             if (!resolves(key)) {
                 reject();
                 return;

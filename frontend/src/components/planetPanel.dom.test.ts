@@ -708,21 +708,23 @@ describe('The ?planet= deep link (D-32, success criterion 17)', () => {
         expect(router.currentRoute.value.query.planet).toBeUndefined();
     });
 
-    it('refuses a held key when the sector that lands has another seed', async () => {
+    it('opens nothing when the sector that lands has another seed', async () => {
         const { store, wrapper, router } = await mountCold(
             `/?${SECTOR_Q}&planet=${LIFE_KEY}`
         );
         expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
 
         // The same fixture, but generated under a different seed: the key would
-        // resolve, which is exactly why the seed has to be checked first.
+        // resolve against it, which is exactly why the seed is checked first.
         store.sectorData = FIXTURE;
         store.loadedParams = { ...PARAMS, seed: '999' };
         await flushPromises();
 
         expect(store.selectedPlanetKey).toBeNull();
         expect(panelOf(wrapper).exists()).toBe(false);
-        expect(router.currentRoute.value.query.planet).toBeUndefined();
+        // Held, not thrown away: the URL still names the sector it wants, and
+        // the key becomes checkable again if that sector is built.
+        expect(router.currentRoute.value.query.planet).toBe(LIFE_KEY);
     });
 
     it('rejects a malformed key on a cold load without waiting for a sector', async () => {
