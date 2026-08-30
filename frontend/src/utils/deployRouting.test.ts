@@ -15,15 +15,26 @@ const CONFIG = resolve(dirname(fileURLToPath(import.meta.url)), '../../../vercel
 
 type Rewrite = { source: string; destination: string };
 
-const rewrites = (): Rewrite[] =>
-    JSON.parse(readFileSync(CONFIG, 'utf8')).rewrites as Rewrite[];
+const config = () => JSON.parse(readFileSync(CONFIG, 'utf8'));
+const rewrites = (): Rewrite[] => config().rewrites as Rewrite[];
+
+/**
+ * The shell's own path. `cleanUrls` strips the .html extension, which makes
+ * /index.html a 308 back to /, so a rewrite aimed at /index.html resolves to
+ * nothing and Vercel answers NOT_FOUND — the first attempt at this fix shipped
+ * exactly that and changed nothing in production.
+ */
+const shellPath = () => (config().cleanUrls ? '/' : '/index.html');
 
 describe('vercel.json routing', () => {
-    it('falls back to index.html so client routes survive a direct load', () => {
-        const fallback = rewrites().find(r => r.destination === '/index.html');
+    it('falls back to the shell so client routes survive a direct load', () => {
+        const fallback = rewrites().find(r => r.source === '/(.*)');
 
         expect(fallback, 'no SPA fallback rewrite: deep links will 404').toBeDefined();
-        expect(fallback!.source).toBe('/(.*)');
+        expect(
+            fallback!.destination,
+            'the fallback must point at a path that actually serves the shell'
+        ).toBe(shellPath());
     });
 
     it('keeps the API rewrite ahead of the fallback', () => {
@@ -31,7 +42,7 @@ describe('vercel.json routing', () => {
         // /api would swallow every API call and hand back the HTML shell.
         const list = rewrites();
         const api = list.findIndex(r => r.source.startsWith('/api'));
-        const fallback = list.findIndex(r => r.destination === '/index.html');
+        const fallback = list.findIndex(r => r.source === '/(.*)');
 
         expect(api).toBeGreaterThanOrEqual(0);
         expect(api).toBeLessThan(fallback);
