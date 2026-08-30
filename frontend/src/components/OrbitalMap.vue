@@ -23,6 +23,7 @@
         </div>
 
         <div
+            ref="mapBox"
             data-map-box
             class="relative overflow-hidden rounded-[6px] border border-line-strong"
             :style="{ height: `${boxHeight}px`, background: THERMAL_GRADIENT }"
@@ -47,12 +48,16 @@
                         class="absolute top-0 bottom-0 w-px"
                         :style="{ left: `${rule.x}%`, background: 'rgba(52,211,153,.6)' }"
                     >
+                        <!-- Too narrow a band for two captions: the inner rule
+                             carries both bounds instead, so neither number is
+                             lost to the collapse. -->
                         <span
-                            v-if="!isCompact"
+                            v-if="!isCompact && (hzCaptionsFit || rule.id === 'inner')"
+                            :data-hz-caption="hzCaptionsFit ? rule.id : 'merged'"
                             class="absolute top-[5px] left-[4px] font-mono font-medium text-[8px] whitespace-nowrap"
                             style="color: #6ee7b7"
                         >
-                            {{ rule.label }}
+                            {{ hzCaptionsFit ? rule.label : hzCaption }}
                         </span>
                     </div>
                 </template>
@@ -121,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import CelestialThumb from './CelestialThumb.vue';
 import type { Planet, Star } from '../types';
 import { axisCaption, orbitalDomain, orbitalProjection } from '../utils/orbitalScale';
@@ -180,6 +185,47 @@ const hzRuleMarks = computed(() => {
         { id: 'inner', x: rules.inner, label: `HZ INNER ${formatAu(hz.value.inner)} AU` },
         { id: 'outer', x: rules.outer, label: `HZ OUTER ${formatAu(hz.value.outer)} AU` }
     ];
+});
+
+/**
+ * Width of one rule caption — 17 characters of 8px mono — plus its 4px offset
+ * from the rule. Both captions hang to the right of their own rule, so once the
+ * band is narrower than this the second prints through the first; at 500px the
+ * pair overlapped by 6px and the join was unreadable.
+ */
+const HZ_CAPTION_PX = 88;
+
+const mapBox = ref<HTMLElement | null>(null);
+const mapWidth = ref(0);
+let boxObserver: ResizeObserver | null = null;
+
+const measure = () => {
+    if (mapBox.value) mapWidth.value = mapBox.value.clientWidth;
+};
+
+onMounted(() => {
+    measure();
+    // The map is a block in normal flow, so the window is what resizes it in
+    // practice; the observer is the belt to that pair of braces, catching a
+    // container that changes width on its own. Neither is relied on alone.
+    window.addEventListener('resize', measure);
+    if (typeof ResizeObserver !== 'undefined' && mapBox.value) {
+        boxObserver = new ResizeObserver(measure);
+        boxObserver.observe(mapBox.value);
+    }
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', measure);
+    boxObserver?.disconnect();
+});
+
+/** Both captions fit side by side, or they have to become one. */
+const hzCaptionsFit = computed(() => {
+    const rules = projection.value.hzRules;
+    // Unmeasured: keep the pair rather than collapse on a guess.
+    if (!rules || mapWidth.value === 0) return true;
+    return mapWidth.value * ((rules.outer - rules.inner) / 100) >= HZ_CAPTION_PX;
 });
 
 const hzCaption = computed(() => {

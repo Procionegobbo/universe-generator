@@ -221,6 +221,62 @@ describe('OrbitalMap — the documented projection', () => {
     });
 });
 
+describe('OrbitalMap — the HZ captions at narrow widths', () => {
+    // Both captions hang to the right of their own rule, so a band narrower than
+    // one caption made the second print through the first — at 500px the pair
+    // overlapped by 6px and the join was unreadable. jsdom lays nothing out, so
+    // the map's width is stated outright and the resize the component listens
+    // for is dispatched by hand.
+    const setMapWidth = async (wrapper: VueWrapper, width: number) => {
+        const box = wrapper.get('[data-map-box]').element;
+        Object.defineProperty(box, 'clientWidth', { value: width, configurable: true });
+        window.dispatchEvent(new Event('resize'));
+        await wrapper.vm.$nextTick();
+    };
+
+    const captions = (wrapper: VueWrapper) =>
+        wrapper.findAll('[data-hz-caption]')
+            .map(el => ({ id: el.attributes('data-hz-caption'), text: el.text() }));
+
+    it('keeps the two captions apart when the band has room', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        await setMapWidth(wrapper, 1400);
+
+        expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
+        expect(captions(wrapper)[0].text).toMatch(/^HZ INNER /);
+        expect(captions(wrapper)[1].text).toMatch(/^HZ OUTER /);
+    });
+
+    it('merges them into one when the band is too narrow to hold both', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        await setMapWidth(wrapper, 200);
+
+        const shown = captions(wrapper);
+        expect(shown).toHaveLength(1);
+        expect(shown[0].id).toBe('merged');
+        // Collapsing must not cost a number: both bounds survive the merge.
+        const { inner, outer } = habitableZoneBounds('G');
+        expect(shown[0].text).toContain(inner.toFixed(3));
+        expect(shown[0].text).toContain(outer.toFixed(3));
+        expect(shown[0].text).not.toMatch(/INNER|OUTER/);
+    });
+
+    it('re-splits them when the map grows again', async () => {
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        await setMapWidth(wrapper, 200);
+        expect(captions(wrapper)).toHaveLength(1);
+
+        await setMapWidth(wrapper, 1400);
+        expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
+    });
+
+    it('keeps the pair while the width is still unmeasured', async () => {
+        // Never collapse on a guess: with no measurement the split stands.
+        const { wrapper } = await mountDetail(KEPLER, 1);
+        expect(captions(wrapper).map(c => c.id)).toEqual(['inner', 'outer']);
+    });
+});
+
 describe('OrbitalMap — the empty state and the text summary', () => {
     it('shows "no planetary bodies" in #334155 and omits the HZ rules for an NS primary', async () => {
         const { wrapper } = await mountDetail(EXOTIC, 7);
