@@ -8,7 +8,7 @@
 import { computed, toValue } from 'vue';
 import type { ComputedRef, MaybeRefOrGetter } from 'vue';
 import type { Planet, Sector, SectorZone, Star, System } from '../types';
-import { orbitBand, type OrbitBand } from '../utils/starPhysical';
+import { orbitBand, systemMass, type OrbitBand } from '../utils/starPhysical';
 import { thermalZone, type ThermalZone } from '../utils/thermalZone';
 import { planetDisplayName } from '../utils/planetDisplay';
 import { expectedShare } from '../utils/expectedStarShares';
@@ -65,6 +65,8 @@ export interface SystemRow {
     name: string;
     hasProperName: boolean;
     primaryStar: Star | null;
+    /** Every star in the system, in payload order — the 1d stars rail. */
+    stars: Star[];
     starCount: number;
     planetCount: number;
     moonCount: number;
@@ -72,6 +74,8 @@ export interface SystemRow {
     hasLife: boolean;
     hasBH: boolean;
     hasNS: boolean;
+    /** Nominal combined mass of the system's stars, in solar masses. */
+    mass: number;
     xPos: number;
     yPos: number;
     zPos: number;
@@ -328,6 +332,7 @@ export function useSectorStats(
             // The primary star is component A: the first star the generator
             // emitted for this system.
             primaryStar: bucket.stars[0] || null,
+            stars: bucket.stars,
             starCount: bucket.stars.length,
             planetCount: bucket.planets.length,
             moonCount: bucket.planets.reduce((total, planet) => total + planet.moonCount, 0),
@@ -335,6 +340,7 @@ export function useSectorStats(
             hasLife: bucket.planets.some(planet => planet.hasLife),
             hasBH: bucket.stars.some(star => star.spectralClass === 'BH'),
             hasNS: bucket.stars.some(star => star.spectralClass === 'NS'),
+            mass: systemMass(bucket.stars),
             xPos: bucket.system.xPos,
             yPos: bucket.system.yPos,
             zPos: bucket.system.zPos,

@@ -19,3 +19,4 @@
 - [new-design-006-systems-table.md](COMPLETED/new-design-006-systems-table.md)
 - [new-design-007-stars-table.md](COMPLETED/new-design-007-stars-table.md)
 - [new-design-008-planets-table-and-type-cross-filter.md](COMPLETED/new-design-008-planets-table-and-type-cross-filter.md)
+- [new-design-009-system-detail-and-planet-panel.md](COMPLETED/new-design-009-system-detail-and-planet-panel.md)

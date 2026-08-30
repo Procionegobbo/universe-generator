@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { orbitalProjection } from './orbitalScale';
+import { axisCaption, orbitalDomain, orbitalProjection } from './orbitalScale';
 import { habitableZoneBounds } from './starPhysical';
 
 const G_ZONE = habitableZoneBounds('G'); // ~0.7495 .. 1.7678 AU
@@ -62,5 +62,59 @@ describe('orbitalProjection', () => {
         for (const position of positions) {
             expect(Number.isFinite(position)).toBe(true);
         }
+    });
+});
+
+describe('orbitalDomain', () => {
+    it('is the same domain the projection places its positions in', () => {
+        const distances = [0.4, 1.0, 2.5, 8.13];
+        const domain = orbitalDomain(distances, G_ZONE.inner, G_ZONE.outer)!;
+
+        // domainMin = max(0.05, min(min(a_i), hzInner) * 0.8)
+        expect(domain.min).toBeCloseTo(Math.min(0.4, G_ZONE.inner) * 0.8, 10);
+        // domainMax = max(max(a_i), hzOuter) * 1.1
+        expect(domain.max).toBeCloseTo(8.13 * 1.1, 10);
+
+        // The domain returned is exactly the one the positions were scaled in:
+        // x(a) = 4% + 92% * (ln a - ln domainMin) / (ln domainMax - ln domainMin).
+        const { positions } = orbitalProjection(distances, G_ZONE.inner, G_ZONE.outer);
+        const logMin = Math.log(domain.min);
+        const logSpan = Math.log(domain.max) - logMin;
+
+        distances.forEach((a, index) => {
+            expect(positions[index])
+                .toBeCloseTo(4 + 92 * ((Math.log(a) - logMin) / logSpan), 10);
+        });
+    });
+
+    it('floors the domain at 0.05 AU', () => {
+        const domain = orbitalDomain([0.01], 0, 0)!;
+        expect(domain.min).toBe(0.05);
+    });
+
+    it('widens the domain to hold a habitable zone the planets do not reach', () => {
+        const domain = orbitalDomain([0.1, 0.2], G_ZONE.inner, G_ZONE.outer)!;
+
+        expect(domain.min).toBeCloseTo(0.1 * 0.8, 10);
+        expect(domain.max).toBeCloseTo(G_ZONE.outer * 1.1, 10);
+    });
+
+    it('returns null when there is nothing to project', () => {
+        expect(orbitalDomain([], G_ZONE.inner, G_ZONE.outer)).toBeNull();
+    });
+});
+
+describe('axisCaption', () => {
+    it('prints a domain edge to two significant digits', () => {
+        expect(axisCaption(0.32)).toBe('0.32');
+        expect(axisCaption(8.943)).toBe('8.9');
+        expect(axisCaption(0.05)).toBe('0.05');
+        expect(axisCaption(19.448)).toBe('19');
+        expect(axisCaption(1234)).toBe('1200');
+    });
+
+    it('never prints NaN or Infinity', () => {
+        expect(axisCaption(NaN)).toBe('—');
+        expect(axisCaption(Infinity)).toBe('—');
     });
 });

@@ -1,240 +1,340 @@
 <template>
-    <div class="container mx-auto">
-        <div class="mb-6">
-            <button @click="router.back()" class="btn btn-secondary flex items-center gap-2 mb-4">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Sector
-            </button>
-            <h2 class="text-3xl font-bold bg-linear-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                System Details
-            </h2>
-        </div>
+    <div class="flex min-h-full flex-col">
+        <template v-if="row && system">
+            <!-- Breadcrumb bar (handoff 1d). -->
+            <div
+                data-breadcrumb
+                class="flex h-[52px] flex-none items-center justify-between gap-4 border-b border-line-strong bg-header px-[18px]"
+            >
+                <div class="flex min-w-0 items-center gap-[10px]">
+                    <RouterLink
+                        to="/"
+                        data-breadcrumb-back
+                        class="flex-none font-mono font-medium text-[11px] text-acc-blue-light hover:underline"
+                    >
+                        ← SECTOR {{ store.currentSeed }}
+                    </RouterLink>
+                    <span aria-hidden="true" class="flex-none font-mono text-[11px]" style="color: #334155">/</span>
+                    <h1 data-system-name class="truncate font-sans font-semibold text-[13px] text-ink">
+                        {{ system.name }}
+                    </h1>
+                    <span v-if="system.hasProperName" class="ug-badge ug-badge-iau flex-none">IAU</span>
+                    <span v-if="row.hasLife" class="ug-badge ug-badge-life flex-none">LIFE DETECTED</span>
+                </div>
 
-        <div v-if="system" class="space-y-8">
-            <!-- System Info Card -->
-            <div class="card">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-white">{{ system.name }}</h3>
-                        <div class="text-xs text-gray-500 mb-2">System #{{ system.systemId }}</div>
-                        <div class="flex items-center gap-4 text-gray-400">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                                X: {{ system.xPos }}
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                                Y: {{ system.yPos }}
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                                Z: {{ system.zPos }}
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
-                                Age: {{ system.age }} Gyr
-                            </div>
-                        </div>
+                <div
+                    data-system-readout
+                    class="hidden flex-none items-center gap-[22px] font-mono text-[10px] md:flex"
+                >
+                    <span v-for="entry in readout" :key="entry.label" class="flex items-center gap-[6px]">
+                        <span class="text-dim">{{ entry.label }}</span>
+                        <span class="text-[#e2e8f0]">{{ entry.value }}</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 5-up KPI strip, this system's own counts. -->
+            <div data-system-kpi class="grid grid-cols-2 border-b border-line-strong md:grid-cols-3 lg:grid-cols-5">
+                <div
+                    v-for="(cell, index) in kpis"
+                    :key="cell.label"
+                    :data-kpi="cell.label"
+                    class="flex flex-col gap-[6px] border-line-soft px-[18px] py-[14px]"
+                    :class="index < kpis.length - 1 ? 'border-r' : ''"
+                    :style="cell.tint ? { background: cell.tint } : undefined"
+                >
+                    <span class="font-mono font-medium text-[9px] tracking-[.14em] text-dim">
+                        {{ cell.label }}
+                    </span>
+                    <div class="flex items-baseline gap-2">
+                        <span
+                            class="font-mono font-semibold text-[26px] leading-none"
+                            :style="{ color: cell.ink }"
+                        >
+                            {{ cell.value }}
+                        </span>
+                        <span v-if="cell.suffix" class="font-mono font-medium text-[11px] text-dim">
+                            {{ cell.suffix }}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <!-- Stars and Planets Section -->
-            <div>
-                <div class="grid grid-cols-1 gap-6">
-                    <div v-for="star in systemStars" :key="star.starId" class="space-y-4">
-                        <!-- Star Card -->
-                        <div class="card bg-gray-800/50 border border-gray-700">
-                            <div class="flex flex-col md:flex-row gap-6 items-start">
-                                <!-- Star Info -->
-                                <div class="flex items-center gap-4 min-w-62.5">
-                                    <div class="relative w-32 h-32 shrink-0">
-                                        <img :src="getStarImage(star.spectralClass, 'medium')"
-                                             :alt="getStarDescription(star.spectralClass)"
-                                             class="w-32 h-32 rounded-full object-cover shadow-lg ring-2"
-                                             :class="getStarRingColor(star.spectralClass)" />
-                                    </div>
-                                    <div>
-                                        <div class="text-xl font-bold text-white">{{ star.name }}</div>
-                                        <div class="text-gray-400">{{ getStarDescription(star.spectralClass) }}</div>
-                                        <div class="text-xs text-gray-500 mt-1">ID: {{ star.starId }}</div>
-                                    </div>
+            <!-- The centrepiece: the primary star's orbital map. -->
+            <div class="border-b border-line-strong px-[18px] py-[16px]">
+                <OrbitalMap v-if="row.primaryStar" :star="row.primaryStar" :planets="primaryPlanets" />
+            </div>
+
+            <div class="grid flex-1 items-start lg:grid-cols-[300px_1fr]">
+                <!-- Stars rail: every star in the system, so a secondary that
+                     the map leaves out is still listed with its own planets. -->
+                <aside
+                    data-stars-rail
+                    class="self-stretch border-b border-line-strong bg-panel lg:border-r lg:border-b-0"
+                >
+                    <div class="border-b border-line-soft px-[18px] py-[12px]">
+                        <span class="font-mono font-semibold text-[9px] tracking-[.14em] text-dim">
+                            STARS IN SYSTEM
+                        </span>
+                    </div>
+                    <div
+                        v-for="entry in starEntries"
+                        :key="entry.starId"
+                        :data-star-entry="entry.starId"
+                        class="flex items-center gap-3 border-b border-line-soft px-[18px] py-[12px]"
+                    >
+                        <CelestialThumb kind="star" :code="entry.spectralClass" :px="entry.px" />
+                        <div class="flex min-w-0 flex-col gap-[3px]">
+                            <span class="truncate font-sans font-semibold text-[14px] text-ink">
+                                {{ entry.name }}
+                            </span>
+                            <!-- D-21: the class is named in text beside the
+                                 decorative render. -->
+                            <span class="truncate font-mono text-[10px] text-muted">
+                                {{ entry.classCode }} · {{ entry.classLabel }}
+                            </span>
+                            <span data-star-facts class="truncate font-mono text-[9px] text-faint">
+                                {{ entry.facts }}
+                            </span>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Planet table for the whole system, in orbital order. -->
+                <section class="flex min-w-0 flex-col">
+                    <div
+                        class="flex items-baseline justify-between gap-3 border-b border-line-strong px-[18px] py-[12px]"
+                    >
+                        <span data-planets-header class="font-mono font-semibold text-[10px] tracking-[.14em] text-dim">
+                            PLANETS · {{ row.planetCount }}
+                        </span>
+                        <span class="font-mono text-[9px] text-faint">sorted by orbital number</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <div class="min-w-[620px] px-[18px]">
+                            <div
+                                :class="GRID"
+                                class="border-b border-line-strong py-[10px] font-mono font-medium text-[9px] tracking-[.12em] text-faint"
+                            >
+                                <span>#</span>
+                                <span>PLANET</span>
+                                <span>TYPE</span>
+                                <span class="text-right">Ø KM</span>
+                                <span class="text-right">TEMP</span>
+                                <span class="text-right">MOONS</span>
+                                <span class="text-right">ZONE</span>
+                            </div>
+
+                            <p
+                                v-if="planetRows.length === 0"
+                                data-empty
+                                class="py-10 text-center font-sans text-[12px]"
+                                style="color: #475569"
+                            >
+                                This system has no planets.
+                            </p>
+
+                            <div
+                                v-for="planetRow in planetRows"
+                                :key="planetRow.key"
+                                :data-planet-row="planetRow.key"
+                                role="button"
+                                tabindex="0"
+                                :aria-label="`Open detail for ${planetRow.name}`"
+                                :class="[GRID, planetRow.habitableZone ? 'ug-row-habitable' : '']"
+                                class="ug-row cursor-pointer border-b border-line-hairline py-[10px] transition-colors duration-150 focus:outline focus:outline-acc-blue"
+                                @click="openPanel(planetRow.key)"
+                                @keydown.enter.prevent="openPanel(planetRow.key)"
+                                @keydown.space.prevent="openPanel(planetRow.key)"
+                            >
+                                <span class="font-mono text-[11px] text-faint">
+                                    {{ planetRow.orbitalNumber }}
+                                </span>
+
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    <CelestialThumb
+                                        kind="planet"
+                                        :code="planetRow.planetType"
+                                        :px="planetRow.px"
+                                        :ring="planetRow.habitableZone ? '#34d399' : undefined"
+                                    />
+                                    <span
+                                        data-cell="name"
+                                        class="truncate font-sans font-semibold text-[12px] text-ink"
+                                        :title="planetRow.name"
+                                    >
+                                        {{ planetRow.name }}
+                                    </span>
+                                    <span v-if="planetRow.hasLife" class="ug-badge ug-badge-life flex-none">
+                                        LIFE
+                                    </span>
                                 </div>
 
-                                <!-- Star Planets -->
-                                <div class="flex-1 w-full">
-                                    <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Planets ({{ getPlanetsForStar(star.starId).length }})
-                                    </h4>
-                                    <div v-if="getPlanetsForStar(star.starId).length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        <div v-for="planet in getPlanetsForStar(star.starId)" :key="JSON.stringify(planet)"
-                                             :class="['bg-gray-900/50 rounded-lg p-3 border border-gray-700/50 hover:border-blue-400 transition-colors cursor-pointer', getZoneColor(getThermalZone(planet)), getThermalZone(planet) === 'Goldilocks' ? 'ring-2 ring-green-400/60 ring-offset-2 ring-offset-gray-900 bg-green-900/10' : '']"
-                                             @click="openPlanetDetail(planet)">
-                                            <div class="flex items-start gap-3">
-                                                <img :src="getPlanetImage(planet.planetType, 'medium')" :alt="planetTypeLabel(planet)" class="w-20 h-20 rounded-full object-contain border-2 border-gray-800 bg-black" />
-                                                <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm font-bold bg-gray-800 text-gray-300 ml-1">
-                                                    {{ planet.planetType }}
-                                                    <svg v-if="getThermalZone(planet) === 'Goldilocks'" class="ml-1 w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-14a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z"/></svg>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <div v-if="planet.name" class="font-bold text-gray-100 text-sm truncate mb-0.5" :title="planet.name">
-                                                        {{ planet.name }}
-                                                    </div>
-                                                    <span v-if="planet.hasLife"
-                                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-700/80 text-emerald-100 mb-1">
-                                                        Life
-                                                    </span>
-                                                    <div class="font-medium text-gray-200 text-sm truncate" :title="planetTypeLabel(planet)">
-                                                        {{ planetTypeLabel(planet) }}
-                                                    </div>
-                                                    <div class="text-xs text-gray-500 mt-1 space-y-0.5">
-                                                        <div class="flex gap-2">
-                                                            <span>Pos: #{{ planet.orbitalNumber }}</span>
-                                                            <span>•</span>
-                                                            <span>{{ planet.moonCount }} Moons</span>
-                                                        </div>
-                                                        <div>Ø {{ planet.diameter.toLocaleString() }} km</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-else class="text-sm text-gray-600 italic py-2">
-                                        No planets orbiting this star.
-                                    </div>
-                                </div>
+                                <span data-cell="type" class="truncate font-mono text-[11px] text-ink-2">
+                                    {{ planetShortLabel(planetRow.planetType) }}
+                                </span>
+
+                                <span class="text-right font-mono font-medium text-[12px] text-[#e2e8f0]">
+                                    {{ thinThousands(planetRow.diameter) }}
+                                </span>
+                                <span
+                                    data-cell="temp"
+                                    class="text-right font-mono font-medium text-[12px]"
+                                    :class="tempTextClass(planetRow.zone)"
+                                >
+                                    {{ thinThousands(Math.round(planetRow.temperature)) }}
+                                </span>
+                                <span class="text-right font-mono font-medium text-[12px] text-muted">
+                                    {{ planetRow.moonCount }}
+                                </span>
+                                <span class="flex justify-end">
+                                    <span data-cell="zone" :class="zoneBadgeClass(planetRow.zone)">
+                                        {{ planetRow.zone.toUpperCase() }}
+                                    </span>
+                                </span>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
+        </template>
 
-        </div>
-        <div v-else class="text-center py-12">
-            <h3 class="text-xl text-red-400 mb-4">System Not Found</h3>
-            <button @click="router.push('/')" class="btn btn-primary">Return to Home</button>
+        <div v-else data-system-missing class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
+            <p class="font-sans text-[14px] text-ink">System not found in the current sector.</p>
+            <RouterLink to="/" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
         </div>
 
-        <!-- Planet Detail Modal -->
-        <PlanetDetailModal v-if="selectedPlanet" :planet="selectedPlanet" :close="closePlanetDetail" />
+        <!-- 4b overlays the system detail exactly as it overlays the tables. -->
+        <PlanetDetailPanel v-if="store.selectedPlanetKey" @close="store.selectPlanet(null)" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
+import CelestialThumb from '../components/CelestialThumb.vue';
+import OrbitalMap from '../components/OrbitalMap.vue';
+import PlanetDetailPanel from '../components/PlanetDetailPanel.vue';
 import { useSectorStore } from '../stores/sectorStore';
-import { STAR_TYPE_DESCRIPTIONS } from '../types';
-import { getStarImage } from '../utils/starColors';
-import { getPlanetImage } from '../utils/planetImages';
-import { planetTypeLabel } from '../utils/planetDescription';
-import PlanetDetailModal from '../components/PlanetDetailModal.vue';
+import { useSectorStats } from '../composables/useSectorStats';
+import { usePlanetDeepLink } from '../composables/usePlanetDeepLink';
+import { starPhysical } from '../utils/starPhysical';
+import { starShortLabel } from '../utils/starDisplay';
+import { planetDisplayName, planetShortLabel } from '../utils/planetDisplay';
+import { tempTextClass, thermalZone, zoneBadgeClass } from '../utils/thermalZone';
+import { formatCoord, thinThousands } from '../utils/format';
+
+// Handoff 1d: # 38px · PLANET 1.3fr · TYPE 1fr · Ø 84px · TEMP 78px ·
+// MOONS 70px · ZONE 92px.
+const GRID = 'grid items-center gap-[10px] grid-cols-[38px_1.3fr_1fr_84px_78px_70px_92px]';
 
 const route = useRoute();
-const router = useRouter();
 const store = useSectorStore();
 
-const systemId = route.params.id as string;
-const system = computed(() => store.getSystemById(systemId));
+// Every count on this page comes from the shared indexing pass (spec §7.5);
+// the view itself aggregates nothing.
+const stats = useSectorStats(() => store.sectorData, () => store.zone);
 
-const systemStars = computed(() => {
-    if (!system.value || !store.sectorData) return [];
-    return store.sectorData.stars.filter(s => s.systemId === system.value?.systemId);
+usePlanetDeepLink();
+
+const systemId = computed(() => Number(route.params.id));
+
+const row = computed(() =>
+    stats.systemRows.value.find(entry => entry.systemId === systemId.value) || null);
+
+const system = computed(() => store.getSystemById(String(route.params.id)));
+
+const readout = computed(() => {
+    const target = row.value;
+    if (!target || !system.value) return [];
+    return [
+        { label: 'X', value: formatCoord(target.xPos) },
+        { label: 'Y', value: formatCoord(target.yPos) },
+        { label: 'Z', value: formatCoord(target.zPos) },
+        { label: 'AGE', value: `${system.value.age} Gyr` }
+    ];
 });
 
-const getPlanetsForStar = (starId: number) => {
-    if (!store.sectorData) return [];
-    return store.sectorData.planets.filter(p => p.starId === starId).sort((a, b) => a.orbitalNumber - b.orbitalNumber);
+const kpis = computed(() => {
+    const target = row.value;
+    if (!target) return [];
+    return [
+        { label: 'STARS', value: String(target.starCount), suffix: '', ink: '#c4b5fd', tint: '' },
+        { label: 'PLANETS', value: String(target.planetCount), suffix: '', ink: '#6ee7b7', tint: '' },
+        { label: 'MOONS', value: String(target.moonCount), suffix: '', ink: '#fcd34d', tint: '' },
+        {
+            label: 'IN HABITABLE ZONE',
+            value: String(target.habitableCount),
+            suffix: '',
+            ink: '#34d399',
+            tint: 'rgb(16 185 129 / .06)'
+        },
+        {
+            label: 'TOTAL MASS',
+            value: target.mass.toFixed(2),
+            suffix: 'M☉',
+            ink: '#e2e8f0',
+            tint: ''
+        }
+    ];
+});
+
+/** The primary's own planets — the map shows the primary star only. */
+const primaryPlanets = computed(() => {
+    const primary = row.value?.primaryStar;
+    if (!primary) return [];
+    return (row.value?.planets ?? []).filter(planet => planet.starId === primary.starId);
+});
+
+const starEntries = computed(() => {
+    const stars = row.value?.stars ?? [];
+    const perStar = stats.starRows.value;
+    const maxMass = stars.reduce((max, star) => Math.max(max, starPhysical(star.spectralClass).mass), 0);
+
+    return stars.map(star => {
+        const physical = starPhysical(star.spectralClass);
+        const planetCount = perStar.find(entry => entry.starId === star.starId)?.planetCount ?? 0;
+        const temp = physical.effectiveTemp > 0 ? `${thinThousands(physical.effectiveTemp)} K` : '—';
+        return {
+            starId: star.starId,
+            name: star.name,
+            spectralClass: star.spectralClass,
+            classCode: star.subclass === undefined ? star.spectralClass : `${star.spectralClass}-${star.subclass}`,
+            classLabel: starShortLabel(star.spectralClass),
+            // Handoff 1d: 52-64px, sized by mass relative to the heaviest star.
+            px: maxMass > 0 ? Math.round(52 + 12 * (physical.mass / maxMass)) : 52,
+            facts: `${physical.mass.toFixed(2)} M☉ · ${temp} · ${planetCount} planets`
+        };
+    });
+});
+
+const planetRows = computed(() => {
+    const target = row.value;
+    if (!target) return [];
+    const starsById = new Map(target.stars.map(star => [star.starId, star]));
+    const maxDiameter = target.planets.reduce((max, planet) => Math.max(max, planet.diameter), 0);
+
+    return target.planets.map(planet => {
+        const host = starsById.get(planet.starId);
+        return {
+            key: `${planet.starId}-${planet.orbitalNumber}`,
+            orbitalNumber: planet.orbitalNumber,
+            name: host ? planetDisplayName(planet, host) : `#${planet.orbitalNumber}`,
+            planetType: planet.planetType,
+            diameter: planet.diameter,
+            temperature: planet.temperature,
+            moonCount: planet.moonCount,
+            habitableZone: planet.habitableZone,
+            hasLife: planet.hasLife,
+            zone: thermalZone(planet),
+            // The thumbnail is sized by diameter, as it is in 3a's profile.
+            px: maxDiameter > 0 ? Math.round(18 + 10 * (planet.diameter / maxDiameter)) : 18
+        };
+    });
+});
+
+const openPanel = (key: string) => {
+    store.selectPlanet(key);
 };
-
-const getStarRingColor = (spectralClass: string) => {
-    const colors: Record<string, string> = {
-        // Main sequence
-        'O': 'ring-blue-500/50',
-        'B': 'ring-blue-300/50',
-        'A': 'ring-white/50',
-        'F': 'ring-yellow-100/50',
-        'G': 'ring-yellow-500/50',
-        'K': 'ring-orange-500/50',
-        'M': 'ring-red-500/50',
-        // White dwarfs
-        'DB': 'ring-blue-200/50',
-        'DA': 'ring-blue-100/50',
-        'DF': 'ring-purple-200/50',
-        'DG': 'ring-green-200/50',
-        'DK': 'ring-yellow-200/50',
-        // Giants
-        'gF': 'ring-yellow-200/50',
-        'gG': 'ring-yellow-400/50',
-        'gK': 'ring-orange-400/50',
-        'gM': 'ring-red-500/50',
-        // Supergiants
-        'cB': 'ring-blue-400/50',
-        'cA': 'ring-white/50',
-        'cF': 'ring-yellow-200/50',
-        'cG': 'ring-yellow-500/50',
-        'cK': 'ring-orange-500/50',
-        'cM': 'ring-red-600/50',
-        // Exotics
-        'NS': 'ring-purple-500/50',
-        'BH': 'ring-gray-950/50'
-    };
-    return colors[spectralClass] || 'ring-blue-500/50';
-};
-
-const getStarDescription = (type: string) => STAR_TYPE_DESCRIPTIONS[type] || 'Unknown Star';
-
-const selectedPlanet = ref(null);
-function openPlanetDetail(planet: any) {
-  selectedPlanet.value = planet;
-}
-function closePlanetDetail() {
-  selectedPlanet.value = null;
-}
-
-// Thermal zone derived from the planet's surface temperature (consistent with
-// the backend model). 285 K / 237 K are the zero-albedo equilibrium temps at the
-// *conservative* HZ edges; they sit inside the wider optimistic band the backend
-// uses, so the Hot/Cold labels bracket the Goldilocks planets.
-function getThermalZone(planet: any): string {
-  if (planet.habitableZone) return 'Goldilocks';
-  if (planet.temperature >= 285) return 'Hot';
-  if (planet.temperature >= 237) return 'Temperate';
-  return 'Cold';
-}
-function getZoneColor(zone: string): string {
-  switch (zone) {
-    case 'Hot':
-      return 'bg-red-900/30 text-red-300';
-    case 'Temperate':
-      return 'bg-yellow-900/30 text-yellow-200';
-    case 'Cold':
-      return 'bg-blue-900/30 text-blue-300';
-    case 'Goldilocks':
-      return 'bg-green-700/80 text-green-100 font-bold shadow';
-    default:
-      return 'bg-gray-800/30 text-gray-400';
-  }
-}
 </script>
-
-<style scoped>
-.card {
-    /* Usa solo classi Tailwind standard, non @apply */
-    background-color: #1f2937; /* bg-gray-800 */
-    border-color: #374151;     /* border-gray-700 */
-    border-radius: 0.5rem;     /* rounded-lg */
-    overflow: hidden;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06); /* shadow-md */
-    transition: box-shadow 0.3s;
-}
-
-.card:hover {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05); /* shadow-lg */
-}
-</style>
