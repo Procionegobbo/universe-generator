@@ -303,6 +303,95 @@ describe('systemRows', () => {
     });
 });
 
+describe('starGroups', () => {
+    it('emits one group per star, in payload order', () => {
+        const rows = stats.systemRows.value;
+        expect(rows[0].starGroups.map(group => group.starId)).toEqual([1, 2]);
+        expect(rows[1].starGroups.map(group => group.starId)).toEqual([3]);
+        expect(rows[2].starGroups.map(group => group.starId)).toEqual([4, 5]);
+    });
+
+    it('carries the star object itself in each group', () => {
+        const group = stats.systemRows.value[0].starGroups[0];
+        expect(group.star.starId).toBe(1);
+        expect(group.star.spectralClass).toBe('G');
+    });
+
+    it('holds only the group star\'s own planets', () => {
+        const groups = stats.systemRows.value[0].starGroups;
+        expect(groups[0].planets).toHaveLength(3);
+        expect(groups[0].planets.every(p => p.starId === 1)).toBe(true);
+        expect(groups[1].planets).toHaveLength(2);
+        expect(groups[1].planets.every(p => p.starId === 2)).toBe(true);
+    });
+
+    it('orders each group by orbitalNumber ascending, without the flat interleaving', () => {
+        const flat = stats.systemRows.value[0].planets.map(p => p.orbitalNumber);
+        expect(flat).toEqual([1, 1, 2, 2, 3]);
+
+        for (const row of stats.systemRows.value) {
+            for (const group of row.starGroups) {
+                const orbits = group.planets.map(p => p.orbitalNumber);
+                expect(orbits).toEqual([...orbits].sort((a, b) => a - b));
+                expect(new Set(orbits).size).toBe(orbits.length);
+                expect(orbits).not.toEqual(flat);
+            }
+        }
+
+        expect(stats.systemRows.value[0].starGroups.map(g => g.planets.map(p => p.orbitalNumber)))
+            .toEqual([[1, 2, 3], [1, 2]]);
+    });
+
+    it('counts every planet of a row in exactly one group', () => {
+        for (const row of stats.systemRows.value) {
+            const grouped = row.starGroups.reduce((n, group) => n + group.planets.length, 0);
+            expect(grouped).toBe(row.planetCount);
+        }
+    });
+
+    it('keeps a group with an empty planets array for a star with no planets', () => {
+        const groups = stats.systemRows.value[2].starGroups;
+        const blackHole = groups.find(group => group.starId === 4);
+
+        expect(blackHole).toBeDefined();
+        expect(blackHole!.star.spectralClass).toBe('BH');
+        expect(blackHole!.planets).toEqual([]);
+    });
+
+    it('puts a planet whose star is absent from the payload in no group', () => {
+        const orphaned: Sector = {
+            systems: [system(1, 'UG-0001')],
+            stars: [star(1, 1, 'G')],
+            planets: [
+                planet(1, 1, 'R', 0.4, 400, false, 0),
+                planet(999, 1, 'E', 1.0, 288, true, 0)
+            ]
+        };
+        const rows = useSectorStats(() => orphaned).systemRows.value;
+        const everyGrouped = rows.flatMap(row => row.starGroups).flatMap(group => group.planets);
+
+        expect(everyGrouped.some(p => p.starId === 999)).toBe(false);
+        expect(rows[0].planets.some(p => p.starId === 999)).toBe(false);
+        expect(rows[0].planetCount).toBe(1);
+    });
+
+    it('returns no rows, and does not throw, for an empty or null sector', () => {
+        expect(empty.systemRows.value).toEqual([]);
+
+        const nothing = useSectorStats(ref(null));
+        expect(() => nothing.systemRows.value).not.toThrow();
+        expect(nothing.systemRows.value).toEqual([]);
+    });
+
+    // This asserts only that the field is present and populated. It does NOT prove
+    // the change was additive: that every other SystemRow field is untouched is a
+    // property of the diff — the `systemRows` block above is unedited — and no test
+    // in this file can demonstrate it.
+    it('adds starGroups to the row', () => {
+        expect(stats.systemRows.value[0].starGroups).toHaveLength(2);
+    });
+});
+
 describe('starRows', () => {
     it('summarises each star with its own planets, not its system\'s', () => {
         const rows = stats.starRows.value;

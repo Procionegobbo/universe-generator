@@ -60,6 +60,18 @@ export interface NotableSystem {
     planetCount: number;
 }
 
+/**
+ * One star of a system together with the planets that orbit it — the unit the
+ * system detail screen renders as a block. A star with no planets keeps its
+ * group with an empty `planets` array; it is never dropped.
+ */
+export interface StarPlanetGroup {
+    starId: number;
+    star: Star;
+    /** This star's own planets, orbitalNumber ascending. */
+    planets: Planet[];
+}
+
 export interface SystemRow {
     systemId: number;
     name: string;
@@ -80,6 +92,8 @@ export interface SystemRow {
     yPos: number;
     zPos: number;
     planets: Planet[];
+    /** One group per star, in payload order (primary first). */
+    starGroups: StarPlanetGroup[];
 }
 
 export interface StarRow {
@@ -344,7 +358,14 @@ export function useSectorStats(
             xPos: bucket.system.xPos,
             yPos: bucket.system.yPos,
             zPos: bucket.system.zPos,
-            planets: [...bucket.planets].sort((a, b) => a.orbitalNumber - b.orbitalNumber)
+            planets: [...bucket.planets].sort((a, b) => a.orbitalNumber - b.orbitalNumber),
+            // Reuses the planetsByStar index, so no second pass over the planets.
+            starGroups: bucket.stars.map(star => ({
+                starId: star.starId,
+                star,
+                planets: [...(index.value.planetsByStar.get(star.starId) || [])]
+                    .sort((a, b) => a.orbitalNumber - b.orbitalNumber)
+            }))
         })));
 
     // One row per star for the Stars index (D-23), in payload order. The counts
