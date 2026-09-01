@@ -1,16 +1,29 @@
-// The rule this pins: a link may build the sector it names, but only into an
-// empty room. Anything already in memory belongs to the reader — their
-// parameters, possibly a sector they are halfway through reading — and a link
-// arriving afterwards must not throw it away and regenerate over the top.
+// The sector is named by the path, so this composable has exactly two jobs and
+// the rules below are the whole contract:
+//
+//   reading    the address names a sector -> build it, unless it is already the
+//              one on screen. An address that names none, or names one that
+//              cannot be read, lands on "/" rather than a blank page.
+//   publishing the loaded sector changed -> make the path name it, keeping
+//              whatever followed the sid. Only two things reach that rule: the
+//              first generation from "/", and a regeneration with new
+//              parameters while a sid route is on screen.
+//
+// What the old query-based version had to guard — an ordering flag stopping the
+// write side from publishing over the parameters the read side was still
+// reading — is gone with it: the publish watch is not immediate, and on a cold
+// link-follow `loadedParams` never changes until the link's own sector lands.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { h } from 'vue';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { createMemoryHistory, createRouter } from 'vue-router';
+import { createMemoryHistory, createRouter, RouterView, type Router } from 'vue-router';
 import axios from 'axios';
 import { useSectorStore } from '../stores/sectorStore';
 import { useSectorLink } from './useSectorLink';
-import type { Sector } from '../types';
+import HomeView from '../views/HomeView.vue';
+import type { GenerationRequest, Sector } from '../types';
 
 vi.mock('axios', () => ({
     default: { post: vi.fn(), get: vi.fn(), isCancel: vi.fn(() => false) }
@@ -31,11 +44,30 @@ const SECTOR: Sector = {
     }]
 };
 
-const LINK = '/system/52?planet=87-3&seed=644212&zone=medium&systems=100&volume=1000';
+const SID = '644212-m-100-1000';
+const LOADED = {
+    seed: '644212', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000
+};
+/** A link to one planet of one system inside that sector. */
+const LINK = `/${SID}/system/52?planet=87-3`;
 
-const Harness = { setup: () => { useSectorLink(); return () => null; } };
+const Harness = { setup: () => { useSectorLink(); return () => h(RouterView); } };
 
 let mounted: VueWrapper[] = [];
+
+// The app's own table, near enough for a composable that only reads the sid and
+// the route name: HomeView is real so that "the catch-all renders something"
+// can be asserted, and the detail view is stubbed because nothing here reads it.
+const makeRouter = (): Router => createRouter({
+    history: createMemoryHistory(),
+    routes: [
+        { path: '/documentation', name: 'documentation', component: { template: '<div />' } },
+        { path: '/', name: 'home', component: HomeView },
+        { path: '/:sid', name: 'sector', component: HomeView },
+        { path: '/:sid/system/:id', name: 'system-detail', component: { template: '<div />' } },
+        { path: '/:pathMatch(.*)*', name: 'not-found', component: HomeView }
+    ]
+});
 
 async function mountAt(url: string, prime?: (store: ReturnType<typeof useSectorStore>) => void) {
     const pinia = createPinia();
@@ -43,30 +75,31 @@ async function mountAt(url: string, prime?: (store: ReturnType<typeof useSectorS
     const store = useSectorStore();
     prime?.(store);
 
-    const router = createRouter({
-        history: createMemoryHistory(),
-        routes: [
-            { path: '/', component: { template: '<div />' } },
-            { path: '/system/:id', component: { template: '<div />' } }
-        ]
-    });
+    const router = makeRouter();
     // Resolved before mounting, because a memory history discards a push made
-    // before the router installs — the query would read empty whatever the
+    // before the router installs — the path would read "/" whatever the
     // composable did. So the ordering here cannot reproduce the browser's, where
-    // main.ts mounts without awaiting the router and the query is empty on the
-    // first paint; that the composable waits for `router.isReady()` before
-    // reading it was verified against the running app instead.
+    // main.ts mounts without awaiting the router; that the composable waits for
+    // `router.isReady()` before reading it was verified against the running app.
     router.push(url);
     await router.isReady();
 
     const wrapper = mount(Harness, { global: { plugins: [pinia, router] } });
     mounted.push(wrapper);
     // Twice: once to let the composable past its own `await router.isReady()`,
-    // once to settle the generation it then starts.
+    // once to settle the generation or the replace it then starts.
     await flushPromises();
     await flushPromises();
     return { store, wrapper, router };
 }
+
+/** A generation the user asked for, rather than one a link asked for. */
+const generate = (
+    store: ReturnType<typeof useSectorStore>,
+    request: Partial<GenerationRequest> = {}
+) => store.generateSector({
+    systemCount: 100, sectorVolume: 1000, seed: '644212', zone: 'medium', ...request
+});
 
 beforeEach(() => {
     localStorage.clear();
@@ -79,25 +112,27 @@ afterEach(() => {
     for (const wrapper of mounted) wrapper.unmount();
 });
 
-describe('useSectorLink — reading a sector out of the URL', () => {
-    it('builds the sector a link names when nothing is loaded', async () => {
+describe('useSectorLink — reading the sector out of the path', () => {
+    it('builds the sector the sid names when nothing is loaded', async () => {
         const { store } = await mountAt(LINK);
 
         expect(post).toHaveBeenCalledTimes(1);
+        // Exactly the four the sid decodes to — never completed from whatever
+        // the reader happens to have set, since a seed applied to another zone
+        // yields different worlds under the same name.
         expect(post.mock.calls[0][1]).toMatchObject({
             seed: '644212', zone: 'medium', systemCount: 100, sectorVolume: 1000
         });
         expect(store.sectorData).toEqual(SECTOR);
-        // Recorded as the loaded sector, so the planet key can be checked
-        // against it rather than against whatever the reader had set.
-        expect(store.loadedParams).toMatchObject({ seed: '644212', zone: 'medium' });
     });
 
-    const LOADED = {
-        seed: '644212', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000
-    };
+    it('records the result in loadedParams, so the sid can be checked against it', async () => {
+        const { store } = await mountAt(LINK);
 
-    it('leaves the sector alone when the link names the one already loaded', async () => {
+        expect(store.loadedParams).toEqual(LOADED);
+    });
+
+    it('leaves the sector alone when the sid is the one already loaded', async () => {
         await mountAt(LINK, s => {
             s.sectorData = SECTOR;
             s.loadedParams = LOADED;
@@ -106,34 +141,24 @@ describe('useSectorLink — reading a sector out of the URL', () => {
         expect(post).not.toHaveBeenCalled();
     });
 
-    // Seed and zone are what decide the bodies, so a link differing only in how
-    // many systems to make, or how far apart to place them, names the same
-    // worlds and is not worth regenerating for.
+    // The whole sid, not the seed/zone pair that decides what a body *is*: count
+    // and volume decide which bodies *exist*, and a link to a system the reader
+    // has not got must rebuild rather than report it missing.
     it.each([
-        ['a larger count', { ...LOADED, systemCount: 400 }],
-        ['a wider volume', { ...LOADED, sectorVolume: 9000 }]
-    ])('leaves it alone when the link differs only by %s', async (_label, loaded) => {
-        await mountAt(LINK, s => {
-            s.sectorData = SECTOR;
-            s.loadedParams = loaded;
-        });
-
-        expect(post).not.toHaveBeenCalled();
-    });
-
-    // But a different seed or zone is a different sky, and answering the link
-    // with the sector already on screen would be answering the wrong question.
-    it.each([
+        ['systemCount', { ...LOADED, systemCount: 400 }],
+        ['sectorVolume', { ...LOADED, sectorVolume: 9000 }],
         ['seed', { ...LOADED, seed: '999' }],
         ['zone', { ...LOADED, zone: 'core' as const }]
-    ])('rebuilds when the link names another %s', async (_label, loaded) => {
+    ])('regenerates when the loaded sector differs by %s alone', async (_field, loaded) => {
         await mountAt(LINK, s => {
             s.sectorData = SECTOR;
             s.loadedParams = loaded;
         });
 
         expect(post).toHaveBeenCalledTimes(1);
-        expect(post.mock.calls[0][1]).toMatchObject({ seed: '644212', zone: 'medium' });
+        expect(post.mock.calls[0][1]).toMatchObject({
+            seed: '644212', zone: 'medium', systemCount: 100, sectorVolume: 1000
+        });
     });
 
     it('does not race a generation already under way', async () => {
@@ -142,93 +167,123 @@ describe('useSectorLink — reading a sector out of the URL', () => {
         expect(post).not.toHaveBeenCalled();
     });
 
-    it.each([
-        ['names no sector at all', '/system/52?planet=87-3'],
-        ['names it only in part', '/system/52?planet=87-3&seed=644212'],
-        ['carries an unknown zone', '/system/52?seed=1&zone=nowhere&systems=100&volume=1000'],
-        ['is a plain route', '/system/52']
-    ])('generates nothing when the URL %s', async (_label, url) => {
-        const { store } = await mountAt(url);
+    it('generates nothing on "/", which names no sector', async () => {
+        const { store } = await mountAt('/');
 
         expect(post).not.toHaveBeenCalled();
         expect(store.sectorData).toBeNull();
     });
 
-    it("surfaces a failure as the store's own error state", async () => {
+    it('sends a malformed sid to "/" and generates nothing', async () => {
+        const { store, router } = await mountAt('/not-a-sector');
+
+        expect(router.currentRoute.value.path).toBe('/');
+        expect(post).not.toHaveBeenCalled();
+        expect(store.sectorData).toBeNull();
+    });
+
+    // An address matching no route at all is treated exactly as an unreadable
+    // sid is — one path, and a page rather than an empty <router-view>. Both of
+    // these are what an old shared link now looks like.
+    it.each(['/system/66', '/a/b/c'])(
+        'sends the unmatched address %s to "/" and generates nothing',
+        async (url) => {
+            const { store, wrapper, router } = await mountAt(url);
+
+            expect(router.currentRoute.value.path).toBe('/');
+            expect(post).not.toHaveBeenCalled();
+            expect(store.sectorData).toBeNull();
+            expect(wrapper.findComponent(HomeView).exists()).toBe(true);
+        }
+    );
+
+    it("surfaces a generation failure as the store's own error state", async () => {
         post.mockRejectedValue(new Error('network down'));
-        const { store } = await mountAt(LINK);
+        const { store } = await mountAt(`/${SID}`);
 
         expect(store.sectorData).toBeNull();
         expect(store.error).toBe('network down');
         expect(store.generationStatus).toBe('error');
     });
+
+    // A planet key on the true empty state names nothing: there is no sector for
+    // it to belong to, and no sid for one to arrive under.
+    it('strips a stray planet key from "/" and generates nothing', async () => {
+        const { store, router } = await mountAt('/?planet=1-1');
+
+        expect(router.currentRoute.value.query.planet).toBeUndefined();
+        expect(router.currentRoute.value.path).toBe('/');
+        expect(post).not.toHaveBeenCalled();
+        expect(store.sectorData).toBeNull();
+    });
 });
 
+describe('useSectorLink — publishing the sector into the path', () => {
+    it('names the sector in the path after the first generation from "/"', async () => {
+        const { store, router } = await mountAt('/');
 
-describe('useSectorLink — publishing the sector into the URL', () => {
-    const PARAMS = {
-        seed: '644212', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000
-    };
+        await generate(store);
+        await flushPromises();
 
-    it('names the loaded sector on a URL that carries none', async () => {
-        const { router } = await mountAt('/system/52', s => {
+        expect(router.currentRoute.value.path).toBe(`/${SID}`);
+    });
+
+    // Otherwise the URL goes on naming a sector nobody is looking at, and would
+    // reload into it. What follows the sid is the user's place inside the
+    // sector, and survives the sector being rebuilt under them.
+    it('replaces the sid on a regeneration and keeps the tail', async () => {
+        const { store, router } = await mountAt(`/${SID}/system/66`, s => {
             s.sectorData = SECTOR;
-            s.loadedParams = PARAMS;
+            s.loadedParams = LOADED;
         });
+
+        await generate(store, { systemCount: 400 });
         await flushPromises();
 
-        expect(router.currentRoute.value.query).toMatchObject({
-            seed: '644212', zone: 'medium', systems: '100', volume: '1000'
-        });
+        expect(router.currentRoute.value.path).toBe('/644212-m-400-1000/system/66');
     });
 
-    // Otherwise closing the panel, or landing on a half-written link, leaves a
-    // URL that advertises a sector nobody is looking at — and that reloads into
-    // it. The sector here is unreadable rather than merely different, so the
-    // reading side does not rebuild and the writing side is what answers.
-    it('corrects a URL whose sector cannot be read', async () => {
-        const { router } = await mountAt(
-            '/system/52?seed=999&zone=nowhere&systems=50&volume=4000',
-            s => { s.sectorData = SECTOR; s.loadedParams = PARAMS; }
-        );
-        await flushPromises();
-
-        expect(router.currentRoute.value.query).toMatchObject({
-            seed: '644212', zone: 'medium', systems: '100', volume: '1000'
+    it('publishes nothing when answering a link, so the two sides cannot loop', async () => {
+        const { router } = await mountAt(`/${SID}`, s => {
+            s.sectorData = SECTOR;
+            s.loadedParams = LOADED;
         });
-    });
-
-    it('writes nothing when the URL already agrees', async () => {
-        const { router } = await mountAt(
-            '/system/52?seed=644212&zone=medium&systems=100&volume=1000',
-            s => { s.sectorData = SECTOR; s.loadedParams = PARAMS; }
-        );
         const replace = vi.spyOn(router, 'replace');
         await flushPromises();
 
         expect(replace).not.toHaveBeenCalled();
     });
 
-    it('says nothing while no sector is loaded', async () => {
-        const { router } = await mountAt('/system/52');
+    // A hand-shortened link works, and immediately becomes a complete one:
+    // the missing trailing fields decode to their defaults, and what the
+    // generation records is the full sector.
+    it('canonicalises a short sid once its sector lands', async () => {
+        const { router } = await mountAt('/766207');
         await flushPromises();
 
-        expect(router.currentRoute.value.query.seed).toBeUndefined();
+        expect(post).toHaveBeenCalledTimes(1);
+        expect(router.currentRoute.value.path).toBe('/766207-m-100-1000');
+    });
+
+    it('publishes nothing while no sector is loaded', async () => {
+        const { router } = await mountAt('/');
+        const replace = vi.spyOn(router, 'replace');
+        await flushPromises();
+
+        expect(replace).not.toHaveBeenCalled();
+        expect(router.currentRoute.value.path).toBe('/');
     });
 });
 
-
 describe('useSectorLink — a link followed mid-session', () => {
-    // The whole point of watching the route rather than only the first paint:
-    // a link opened while the app is already running is the same request as one
+    // The whole point of watching the route rather than only the first paint: a
+    // link opened while the app is already running is the same request as one
     // pasted into an empty tab, and deserves the same answer.
-    const OTHER = '/system/9?seed=999&zone=core&systems=100&volume=1000';
-
     it('rebuilds when a navigation names another sector', async () => {
-        const { router } = await mountAt(LINK);
+        const { router } = await mountAt(`/${SID}`);
         expect(post).toHaveBeenCalledTimes(1);
 
-        await router.push(OTHER);
+        await router.push('/999-c-100-1000/system/9');
         await flushPromises();
         await flushPromises();
 
@@ -236,32 +291,16 @@ describe('useSectorLink — a link followed mid-session', () => {
         expect(post.mock.calls[1][1]).toMatchObject({ seed: '999', zone: 'core' });
     });
 
-    it('stays put when the navigation names the sector already loaded', async () => {
-        const { router } = await mountAt(LINK);
+    it('stays put when the navigation stays inside the same sid', async () => {
+        const { router } = await mountAt(`/${SID}`);
         expect(post).toHaveBeenCalledTimes(1);
 
-        // Same sector, different system and a planet: ordinary navigation inside
-        // the sector, which must not throw it away and build it again.
-        await router.push('/system/7?planet=1-1&seed=644212&zone=medium&systems=100&volume=1000');
+        // Ordinary navigation inside the sector, which must not throw it away
+        // and build it again.
+        await router.push(`/${SID}/system/7?planet=1-1`);
         await flushPromises();
         await flushPromises();
 
         expect(post).toHaveBeenCalledTimes(1);
-    });
-
-    it('does not answer its own publishing', async () => {
-        // Publishing writes the sector back into a URL that named none. That
-        // navigation lands here too, and must not read as a fresh request.
-        const { router } = await mountAt('/system/52', s => {
-            s.sectorData = SECTOR;
-            s.loadedParams = {
-                seed: '644212', zone: 'medium', systemCount: 100, sectorVolume: 1000
-            };
-        });
-        await flushPromises();
-        await flushPromises();
-
-        expect(router.currentRoute.value.query.seed).toBe('644212');
-        expect(post).not.toHaveBeenCalled();
     });
 });

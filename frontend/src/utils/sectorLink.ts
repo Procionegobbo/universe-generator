@@ -3,7 +3,18 @@
 // A sector is not stored anywhere: it is regenerated from its parameters, and
 // only the parameters are persisted. So a link that names a planet has to name
 // the sector too, or the recipient — who loads with nothing in memory — has
-// nothing for the planet key to resolve against.
+// nothing for the planet key to resolve against. The `sid` codec below packs
+// the parameters into one path segment for exactly that.
+//
+// The invariant, and the whole reason `sameSid` is string equality of the
+// encoded sid rather than a comparison of some chosen fields:
+//
+//   The sid encodes *every* parameter that feeds generation — today the four
+//   fields of `GenerationRequest` — and the test deciding whether a link is
+//   honoured or the sector rebuilt is equality of the whole sid. Not a curated
+//   subset of "the ones that matter". A fifth generation parameter is added to
+//   the codec, and the comparison follows for free instead of being forgotten
+//   here.
 //
 // Measured against the deployed generator, across systems 52, 199 and 287:
 //
@@ -12,29 +23,23 @@
 //                 its third planet from a 16 000 km super-Earth to a 12 000 km
 //                 ocean world.
 //   systemCount   decides only how many systems exist, never their contents —
-//                 asking for 400 leaves the first 300 byte-identical. It still
-//                 belongs in the link: without it a system past the recipient's
-//                 own count would simply not be there.
+//                 asking for 400 leaves the first 300 byte-identical. It is
+//                 still part of the sector's identity: a link to system 350 of
+//                 a 400-system sector, opened by a reader holding 100, must
+//                 rebuild rather than report a missing system.
 //   sectorVolume  scales the coordinates and nothing else (1 000 -> 9 000 pc3
 //                 multiplies them by the cube root, 2.08). Carried so the
 //                 readout matches what the sender saw.
 //
-// Hence the split below: `sameSector` compares the pair that determines the
-// bodies, while the link carries all four so the regenerated sector is the one
-// the sender was actually looking at.
+// The last two are why the comparison is not the seed/zone pair: they cannot
+// change what a body *is*, but they change which bodies *exist*, and the
+// coordinate guard's checks are only sound against the sector the URL actually
+// names.
 //
-// The `sid` codec added at the foot of this file packs the same four into a
-// single path segment. Its own comparison, `sameSid`, is whole-sid equality
-// rather than that pair, and deliberately so: count and volume still cannot
-// change what a body *is*, but they change which bodies *exist*, so a link to
-// system 350 of a 400-system sector must rebuild for a reader holding 100.
-// Nothing consumes the codec yet — the query helpers above remain the live
-// path until their callers migrate.
+// No `vue-router` dependency, deliberately: this is a pure codec, and the URL
+// shape it serves lives in the router and the composables that read it.
 
 import type { GenerationRequest, SectorZone } from '../types';
-import type { LocationQuery } from 'vue-router';
-
-const ZONES: SectorZone[] = ['extragalactic', 'galactic edge', 'medium', 'central zone', 'core'];
 
 /** The four parameters that reproduce a sector. */
 export interface SectorLinkParams {
@@ -44,45 +49,11 @@ export interface SectorLinkParams {
     sectorVolume: number;
 }
 
-const one = (query: LocationQuery, key: string): string | null => {
-    const raw = query[key];
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    return typeof value === 'string' && value.length > 0 ? value : null;
-};
-
-const positiveInt = (value: string | null): number | null => {
-    if (value === null || !/^\d+$/.test(value)) return null;
+const positiveInt = (value: string): number | null => {
+    if (!/^\d+$/.test(value)) return null;
     const n = Number(value);
     return Number.isSafeInteger(n) && n > 0 ? n : null;
 };
-
-/**
- * The sector a URL names, or null when it names none. All four are required:
- * a partial set cannot be completed from the reader's own settings without
- * risking a different sector under the same seed, which is the failure the
- * whole scheme exists to prevent.
- */
-export function sectorParamsFromQuery(query: LocationQuery): SectorLinkParams | null {
-    const seed = one(query, 'seed');
-    const zone = one(query, 'zone') as SectorZone | null;
-    const systemCount = positiveInt(one(query, 'systems'));
-    const sectorVolume = positiveInt(one(query, 'volume'));
-
-    if (seed === null || zone === null || !ZONES.includes(zone)) return null;
-    if (systemCount === null || sectorVolume === null) return null;
-
-    return { seed, zone, systemCount, sectorVolume };
-}
-
-/** The query fragment naming a sector, for writing back into the URL. */
-export function sectorQuery(params: SectorLinkParams): Record<string, string> {
-    return {
-        seed: String(params.seed),
-        zone: params.zone,
-        systems: String(params.systemCount),
-        volume: String(params.sectorVolume)
-    };
-}
 
 /** The request that regenerates the sector a link names. */
 export function requestFor(params: SectorLinkParams): GenerationRequest {
@@ -92,19 +63,6 @@ export function requestFor(params: SectorLinkParams): GenerationRequest {
         seed: params.seed,
         zone: params.zone
     };
-}
-
-/**
- * Whether two parameter sets hold the same bodies — seed and zone only, since
- * neither of the other two changes what a star or planet is. Comparing all four
- * would refuse a link whose planet is demonstrably the same one.
- */
-export function sameSector(
-    a: SectorLinkParams | null,
-    b: SectorLinkParams | null
-): boolean {
-    if (a === null || b === null) return false;
-    return String(a.seed) === String(b.seed) && a.zone === b.zone;
 }
 
 /** The letter each zone takes in a sid. `central zone` cannot have `c`: `core` has it. */
