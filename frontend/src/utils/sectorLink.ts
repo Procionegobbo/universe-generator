@@ -22,6 +22,14 @@
 // Hence the split below: `sameSector` compares the pair that determines the
 // bodies, while the link carries all four so the regenerated sector is the one
 // the sender was actually looking at.
+//
+// The `sid` codec added at the foot of this file packs the same four into a
+// single path segment. Its own comparison, `sameSid`, is whole-sid equality
+// rather than that pair, and deliberately so: count and volume still cannot
+// change what a body *is*, but they change which bodies *exist*, so a link to
+// system 350 of a 400-system sector must rebuild for a reader holding 100.
+// Nothing consumes the codec yet — the query helpers above remain the live
+// path until their callers migrate.
 
 import type { GenerationRequest, SectorZone } from '../types';
 import type { LocationQuery } from 'vue-router';
@@ -97,4 +105,97 @@ export function sameSector(
 ): boolean {
     if (a === null || b === null) return false;
     return String(a.seed) === String(b.seed) && a.zone === b.zone;
+}
+
+/** The letter each zone takes in a sid. `central zone` cannot have `c`: `core` has it. */
+export const ZONE_CODE: Record<SectorZone, string> = {
+    'extragalactic': 'x',
+    'galactic edge': 'g',
+    'medium': 'm',
+    'central zone': 'z',
+    'core': 'c'
+};
+
+const ZONE_BY_CODE: Record<string, SectorZone> = Object.fromEntries(
+    Object.entries(ZONE_CODE).map(([zone, code]) => [code, zone])
+) as Record<string, SectorZone>;
+
+/**
+ * The defaults a sid's missing trailing fields take, so a link written before a
+ * field existed still decodes. They are the store's own defaults.
+ */
+const SID_DEFAULTS = { zone: 'medium' as SectorZone, systemCount: 100, sectorVolume: 1000 };
+
+const SEED_PATTERN = /^\d+(?:\.\d+)?$/;
+
+/**
+ * Every seed the app can produce, in its canonical string form, or null.
+ * The seed input is `<input type="number" min="0">` and the randomiser is
+ * `Math.floor(Math.random() * 1000000)`, so a non-negative number is the whole
+ * range; anything else cannot be written into a sid, whose delimiter is `-`.
+ */
+export function normaliseSeed(value: unknown): string | null {
+    const text = String(value ?? '').trim();
+    return SEED_PATTERN.test(text) ? text : null;
+}
+
+/** The single path segment naming a sector: `<seed>-<zone>-<systemCount>-<sectorVolume>`. */
+export function encodeSid(params: SectorLinkParams): string {
+    return [
+        String(params.seed),
+        ZONE_CODE[params.zone],
+        String(params.systemCount),
+        String(params.sectorVolume)
+    ].join('-');
+}
+
+/**
+ * The sector a sid names, or null when it names none.
+ *
+ * Positional and left-to-right: field 1 seed, 2 zone, 3 systemCount, 4
+ * sectorVolume. Trailing fields may be absent and take their default; fields
+ * beyond the last one this version knows are ignored, so a link written by a
+ * future build that appends a fifth parameter still resolves to a sector here.
+ * Present-but-wrong is never defaulted — an unknown zone code or a non-positive
+ * count is a malformed sid, not a missing field.
+ */
+export function decodeSid(sid: unknown): SectorLinkParams | null {
+    if (typeof sid !== 'string' || sid.length === 0) return null;
+    const [rawSeed, rawZone, rawSystems, rawVolume]: (string | undefined)[] = sid.split('-');
+
+    const seed = normaliseSeed(rawSeed);
+    if (seed === null) return null;
+
+    let zone = SID_DEFAULTS.zone;
+    if (rawZone !== undefined) {
+        const named = ZONE_BY_CODE[rawZone];
+        if (named === undefined) return null;
+        zone = named;
+    }
+
+    let systemCount = SID_DEFAULTS.systemCount;
+    if (rawSystems !== undefined) {
+        const n = positiveInt(rawSystems);
+        if (n === null) return null;
+        systemCount = n;
+    }
+
+    let sectorVolume = SID_DEFAULTS.sectorVolume;
+    if (rawVolume !== undefined) {
+        const n = positiveInt(rawVolume);
+        if (n === null) return null;
+        sectorVolume = n;
+    }
+
+    return { seed, zone, systemCount, sectorVolume };
+}
+
+/**
+ * Whether two parameter sets name the same sector — all four fields, as string
+ * equality of the whole sid, so a parameter added to the sid is compared for
+ * free rather than forgotten here.
+ */
+export function sameSid(a: SectorLinkParams | null, b: SectorLinkParams | null): boolean {
+    if (a === null || b === null) return false;
+    return encodeSid(a) === encodeSid(b);
 }
