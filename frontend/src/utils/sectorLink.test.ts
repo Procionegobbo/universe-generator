@@ -143,6 +143,16 @@ describe('decodeSid', () => {
         expect(decodeSid(sid)).toBeNull();
     });
 
+    // A zone code naming a member of Object.prototype is still just an unknown
+    // code. Looked up in an object rather than a Map, `constructor` would come
+    // back as a function and be returned as the zone.
+    it.each(['constructor', '__proto__', 'toString', 'valueOf', 'hasOwnProperty'])(
+        'refuses "%s" as a zone code',
+        (code) => {
+            expect(decodeSid(`766207-${code}-100-1000`)).toBeNull();
+        }
+    );
+
     it('accepts a fractional seed, which the seed input can produce', () => {
         expect(decodeSid('1.5-m-100-1000')?.seed).toBe('1.5');
     });

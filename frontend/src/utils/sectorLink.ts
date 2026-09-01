@@ -116,9 +116,12 @@ export const ZONE_CODE: Record<SectorZone, string> = {
     'core': 'c'
 };
 
-const ZONE_BY_CODE: Record<string, SectorZone> = Object.fromEntries(
-    Object.entries(ZONE_CODE).map(([zone, code]) => [code, zone])
-) as Record<string, SectorZone>;
+// A Map, not an object: an object would answer a lookup of `constructor` or
+// `toString` from its prototype, and `decodeSid` would hand back a function
+// where a SectorZone is declared.
+const ZONE_BY_CODE = new Map<string, SectorZone>(
+    Object.entries(ZONE_CODE).map(([zone, code]) => [code, zone as SectorZone])
+);
 
 /**
  * The defaults a sid's missing trailing fields take, so a link written before a
@@ -168,7 +171,7 @@ export function decodeSid(sid: unknown): SectorLinkParams | null {
 
     let zone = SID_DEFAULTS.zone;
     if (rawZone !== undefined) {
-        const named = ZONE_BY_CODE[rawZone];
+        const named = ZONE_BY_CODE.get(rawZone);
         if (named === undefined) return null;
         zone = named;
     }
