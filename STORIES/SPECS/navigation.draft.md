@@ -30,9 +30,15 @@ watcher; con il sid nel path l'URL è *la* fonte di verità e resta solo il lato
 
 ### 1. Codifica reversibile e leggibile, non un hash
 
-Serve una codifica invertibile, non un digest. E non deve essere opaca: i quattro parametri
-non sono segreti, sono scritti sulla home. Base64 costerebbe leggibilità e editabilità a
-mano senza comprare nulla.
+Serve una codifica invertibile, non un digest. E non deve essere opaca: i parametri non
+sono segreti, sono scritti sulla home. Base64 costerebbe leggibilità e editabilità a mano
+senza comprare nulla.
+
+Il sid encoda **tutti** i parametri che entrano nella generazione — oggi i quattro di
+`GenerationRequest` (`seed`, `zone`, `systemCount`, `sectorVolume`), verificati identici
+in `frontend/src/types/index.ts` e `backend/src/types/index.ts`. Non un sottoinsieme
+"quelli che contano": se un parametro influenza l'universo generato, sta nel sid. Se un
+quinto verrà aggiunto, entra qui e nel confronto della decisione 1-bis.
 
 Formato: `<seed>-<zona>-<systems>-<volume>`, con la zona in forma breve.
 
@@ -44,6 +50,19 @@ Requisiti del decoder:
   con un messaggio, mai una pagina bianca o un settore sbagliato.
 - Tollera l'aggiunta futura di un quinto parametro di generazione: campi mancanti = valore
   di default, così i link già condivisi continuano a decodificare.
+
+### 1-bis. Il confronto usa tutti i parametri
+
+Decidere se un link va onorato o se il settore va rigenerato si fa confrontando il sid
+intero, non un sottoinsieme.
+
+Oggi il codice confronta solo seed e zona, sul presupposto — misurato, e vero — che
+`systemCount` e `sectorVolume` non cambiano *cosa* è una stella o un pianeta. Ma cambiano
+**cosa esiste**: un link a `/…-400-…/system/350` aperto da chi ha in memoria un settore da
+100 sistemi troverebbe il sistema 350 mancante, e la decisione 4 sparerebbe un errore di
+coordinate falso — esattamente il fallimento che la decisione 5 esiste per evitare.
+
+Quindi `sameSector` sparisce: il confronto è l'uguaglianza del sid.
 
 ### 2. Il pianeta ha bisogno di una chiave
 
@@ -133,8 +152,11 @@ Due vincoli che discendono dalla decisione 4:
 
 - `/` resta valida come stato vuoto (c'è "RESTORE LAST SECTOR"): si genera da `/` e alla
   prima generazione si fa `replace` su `/<sid>/`.
-- I link nel formato vecchio (`?seed=&zone=&systems=&volume=`) esistono e sono documentati
-  in `DocumentationView.vue:296`. Serve un redirect legacy verso il nuovo path, e
-  l'aggiornamento della documentazione in-app.
+- **Niente retrocompatibilità.** I link nel vecchio formato (`?seed=&zone=&systems=&volume=`)
+  non vanno supportati: nessun redirect legacy, nessuna rotta di transizione. Il formato è
+  documentato in `DocumentationView.vue:296` e la documentazione in-app va aggiornata al
+  nuovo, non affiancata al vecchio. Conseguenza: `sectorParamsFromQuery` — che serviva a
+  leggere quel formato — si può eliminare insieme a `sectorQuery` e `sameSector`, e di
+  `utils/sectorLink.ts` resta encode/decode del sid più `requestFor`.
 - Test da riscrivere: `composables/sectorLink.dom.test.ts`,
   `components/systemDetail.dom.test.ts`.

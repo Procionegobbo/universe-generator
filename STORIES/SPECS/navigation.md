@@ -42,7 +42,7 @@ makes it a bad failure mode.
 **In scope**
 
 - A reversible, human-readable sector id (`sid`) in the first path segment.
-- Routes `/`, `/:sid`, `/:sid/system/:id`, and a legacy redirect from the old query form.
+- Routes `/`, `/:sid`, `/:sid/system/:id`, plus a catch-all that fails soft.
 - A navigation helper every internal link uses, so a sector-less internal link becomes
   impossible to write.
 - Reducing `useSectorLink.ts` to a read side plus a single narrow publish rule.
@@ -55,6 +55,10 @@ makes it a bad failure mode.
 **Out of scope**
 
 - Any change to the generator, the backend, or the API contract.
+- **Backward compatibility with the old `?seed=&zone=&systems=&volume=` link format.**
+  Old shared links are allowed to break (Decision *Da non dimenticare* — "niente
+  retrocompatibilità"). No legacy redirect, no transition route, nothing that reads the
+  old form.
 - Persisting sectors anywhere. Sectors remain regenerated on demand.
 - Putting the planet panel in the path (explicitly rejected — Decision 3).
 - Putting the active tab, filters or paging in the URL.
@@ -96,25 +100,48 @@ today. Precedent: `buildRequest` already rewrites an empty seed in place before 
 (`HomeView.vue:151-153`). This is the only way to guarantee the round-trip Decision 1
 requires, and it cannot loop.
 
-### A3. A link is answered by generating **exactly** the sector it names
+### A3. Recording Decision 1 / 1-bis as an invariant, and what it costs today
 
-Today `sameSector()` compares seed and zone only, so a link differing only in
-`systemCount` or `sectorVolume` does not regenerate — a deliberate, measured choice
-documented at the top of `utils/sectorLink.ts` and pinned by three tests in
-`composables/sectorLink.dom.test.ts`.
+This is not a judgment call — Decisions 1 and 1-bis settle it. It is recorded here only
+because carrying it out deletes code that exists today, and because the invariant needs a
+single place to be stated so a future parameter cannot quietly escape it.
 
-That comparison becomes unsafe under this spec. Decision 4 makes the app *act* on whether
-the system a URL names exists, and Decision 5 forbids reporting a coordinate error that is
-really an artefact of the wrong sector being loaded. With `sameSector`, a link to
-`/766207-m-400-1000/system/350` opened by a reader holding 100 systems would not
-regenerate, system 350 would be absent, and the guard would report invalid coordinates for
-a perfectly valid link — the precise false error Decision 5 warns against.
+> **Invariant.** The sid encodes **every** parameter that feeds generation, and the
+> comparison that decides whether a link is honoured or the sector rebuilt is equality of
+> the whole sid. Not a curated subset of "the ones that matter".
 
-So the read side compares all four parameters (`sameSid`), and `sameSector` is deleted.
-The cost is one extra deterministic generation in the count-only/volume-only case; the
-gain is the invariant *the loaded sector always matches the sid on screen*, without which
-Decision 4 cannot be implemented soundly. **This is a deliberate behaviour change** — see
-*Regression Review*.
+"Every parameter that feeds generation" has a precise definition in this codebase:
+**the fields of `GenerationRequest`**. Verified identical in
+`frontend/src/types/index.ts:46-51` and `backend/src/types/index.ts:62-67`:
+
+```ts
+export interface GenerationRequest {
+    systemCount: number;
+    sectorVolume: number;
+    seed?: string | number;
+    zone?: SectorZone;
+}
+```
+
+Four fields, all four already in the sid format of A1. **Nothing needs to be added today.**
+The invariant is what makes the answer obvious tomorrow: a fifth generation parameter is
+added to `GenerationRequest`, and therefore to `encodeSid`, to `decodeSid`'s field list
+and its `SID_DEFAULTS`, and — for free, since `sameSid` compares the encoded string — to
+the comparison.
+
+**Why the rule is worth having** (Decision 1-bis's own argument): today `sameSector()`
+compares seed and zone only, on the measured and true premise that `systemCount` and
+`sectorVolume` do not change *what* a star or planet is. But they change *what exists*. A
+link to `/766207-m-400-1000/system/350`, opened by a reader holding a 100-system sector,
+would not regenerate; system 350 would be absent; and Decision 4's guard would fire a
+false coordinate error on a perfectly valid link — precisely the failure Decision 5 exists
+to prevent. Correctness of the guard depends on the invariant *the loaded sector always
+matches the sid on screen*, which only whole-sid equality gives.
+
+**What it costs in existing code:** `sameSector` is deleted, the measured comment at the
+head of `utils/sectorLink.ts` is rewritten, and three currently-passing cases in
+`composables/sectorLink.dom.test.ts` are inverted. One extra deterministic generation in
+the count-only/volume-only case. See *Regression Review*.
 
 ### A4. Note on Decision 1's "the write-back can be eliminated" — it reduces, it does not vanish
 
@@ -222,6 +249,24 @@ URL to `/sidA`. This is judged correct — the URL should name what is on screen
 recorded here because it is a behaviour the draft does not discuss, and because cancel is
 only reachable from `HomeView`'s `GeneratingState`, i.e. from a `/:sid` route.
 
+### A15. Unknown paths fail soft through a catch-all, not a blank page
+
+Dropping the legacy `/system/:id` route leaves that path — and every other unknown shape —
+matching no route at all, which in Vue Router means a console warning and an empty
+`<router-view>`. Decision 1 forbids exactly that outcome ("mai una pagina bianca") for a
+sid it cannot read, and there is no reason an unreadable *path* should be treated worse
+than an unreadable *sid*.
+
+So a catch-all `{ path: '/:pathMatch(.*)*', name: 'not-found', component: HomeView }` is
+added, and `useSectorLink` gives it the same treatment as a malformed sid: `replace('/')`
+plus the notice. One code path, one message, no blank page. Note that `/:sid` already
+absorbs any single unknown segment (`/foo` is a malformed sid), so the catch-all only ever
+sees multi-segment unknowns — `/system/2` among them, which is what an old shared link now
+resolves to.
+
+The notice message is worded to cover both entrances: *"That address does not name a
+sector that can be generated."*
+
 ---
 
 ## Architecture / Design Overview
@@ -244,9 +289,9 @@ URL query  <──watch──>  store           URL path  ──read──>  sto
 
 ```
 utils/sectorLink.ts          pure codec + params type. No Vue, no router.
-    encodeSid / decodeSid / sameSid / requestFor / sectorParamsFromQuery (legacy)
+    encodeSid / decodeSid / sameSid / normaliseSeed / requestFor
           │
-          ├── router/index.ts            routes + legacy redirects
+          ├── router/index.ts            routes + the catch-all
           │
           ├── composables/useSectorNav.ts (new)
           │       sid → link targets. Every internal link goes through it.
@@ -371,16 +416,16 @@ readability; Vue Router's ranking already prefers a static segment over a dynami
 
 ```ts
 const routes = [
-    { path: '/documentation',  name: 'documentation',  component: DocumentationView },
-    { path: '/api-reference',  name: 'api-reference',  component: ApiReferenceView },
+    { path: '/documentation', name: 'documentation', component: DocumentationView },
+    { path: '/api-reference', name: 'api-reference', component: ApiReferenceView },
 
-    // Legacy: /system/:id?seed=&zone=&systems=&volume=  (see "Legacy links")
-    { path: '/system/:id', name: 'legacy-system-detail', redirect: legacySystemRedirect },
-
-    { path: '/', name: 'home', component: HomeView, beforeEnter: legacyHomeGuard },
-
+    { path: '/', name: 'home', component: HomeView },
     { path: '/:sid', name: 'sector', component: HomeView },
-    { path: '/:sid/system/:id', name: 'system-detail', component: SystemDetailView }
+    { path: '/:sid/system/:id', name: 'system-detail', component: SystemDetailView },
+
+    // Anything else — /system/2, /a/b/c. Handled by useSectorLink exactly as a
+    // malformed sid is, so an unreadable path never renders an empty view (A15).
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: HomeView }
 ];
 ```
 
@@ -389,50 +434,38 @@ const routes = [
 | `/` | `home` | `HomeView` | No sector named — the empty state |
 | `/:sid` | `sector` | `HomeView` | The console for the sector `sid` names |
 | `/:sid/system/:id` | `system-detail` | `SystemDetailView` | One system inside that sector |
-| `/system/:id` | `legacy-system-detail` | — (redirect) | Old shared links |
 | `/documentation` | `documentation` | `DocumentationView` | Unchanged |
 | `/api-reference` | `api-reference` | `ApiReferenceView` | Unchanged |
+| anything else | `not-found` | `HomeView` | Replaced with `/` plus a notice (A15) |
 
 `App.vue`'s `LEGACY_ROUTES = ['documentation', 'api-reference']` check keys off
-`route.name` and is unaffected by the new names.
+`route.name` and is unaffected by the new names. The catch-all is declared last; Vue
+Router's ranking already prefers every route above it, and the explicit ordering is for
+the reader.
 
-### Legacy links
+### No backward compatibility
 
-Old links exist in the wild and are documented in-app. Both forms are redirected, with the
-query's sector parameters converted to a sid and every other query key (including
-`planet`) carried through:
+Links in the old `?seed=&zone=&systems=&volume=` form are **not** supported. There is no
+legacy redirect route, no transition route, and no code anywhere that reads those query
+keys. An old link resolves as follows:
 
-```ts
-// router/index.ts
-import { sectorParamsFromQuery, encodeSid } from '../utils/sectorLink';
+| Old link | Now resolves to | Why |
+|---|---|---|
+| `/system/66?seed=…&zone=…&systems=…&volume=…` | `not-found` → `replace('/')` + notice | no `/system/:id` route exists any more |
+| `/?seed=…&zone=…&systems=…&volume=…` | `home`, the empty state; the query is ignored | `/` is a real route and its query is inert |
 
-const withoutSectorQuery = (query: LocationQuery): LocationQuery => {
-    const rest = { ...query };
-    delete rest.seed; delete rest.zone; delete rest.systems; delete rest.volume;
-    return rest;
-};
+The second row is worth stating explicitly: `/` still matches, so an old home link does
+not 404 — it simply lands on the empty state with a stale query string nobody reads. That
+is acceptable and needs no code; the user reaches the same place as anyone opening the app
+cold, with RESTORE LAST SECTOR available.
 
-/** /system/:id?<sector query>  ->  /<sid>/system/:id  ; without a readable
- *  sector there is nothing to name, so it falls back to the empty state. */
-const legacySystemRedirect = (to: RouteLocationNormalized) => {
-    const params = sectorParamsFromQuery(to.query);
-    if (params === null) return { path: '/' };
-    return {
-        path: `/${encodeSid(params)}/system/${to.params.id}`,
-        query: withoutSectorQuery(to.query)
-    };
-};
-
-/** /?<sector query>  ->  /<sid>. A bare "/" is the empty state and continues. */
-const legacyHomeGuard = (to: RouteLocationNormalized) => {
-    const params = sectorParamsFromQuery(to.query);
-    if (params === null) return true;
-    return { path: `/${encodeSid(params)}`, query: withoutSectorQuery(to.query) };
-};
-```
-
-`sectorParamsFromQuery` is therefore **kept** in `utils/sectorLink.ts`, unchanged, along
-with its existing unit tests.
+**Consequence for `utils/sectorLink.ts`:** `sectorParamsFromQuery` existed only to read
+that format, so it is deleted along with `sectorQuery` and `sameSector`. Verified by grep
+that its only callers are `useSectorLink.ts:41,98` and `usePlanetDeepLink.ts:98` — all
+three rewritten by this spec — plus its own unit tests. Deleting it also makes the
+module-private `one()` helper and the `ZONES` array dead (`ZONES` is used only by
+`sectorParamsFromQuery`; `ZONE_CODE`'s keys replace it), and drops the `LocationQuery`
+type import. What remains of the module is sid encode/decode plus `requestFor`.
 
 ---
 
@@ -447,15 +480,15 @@ with its existing unit tests.
 | `frontend/src/components/LinkNotice.vue` **(new)** | The inline strip of Decision 6 |
 | `frontend/src/composables/sectorNav.dom.test.ts` **(new)** | Tests for `useSectorNav` + every migrated link site |
 | `frontend/src/composables/coordinateGuard.dom.test.ts` **(new)** | Tests for Decision 4's table and Decision 5's timing |
-| `frontend/src/router/router.test.ts` **(new)** | Route resolution and the two legacy redirects |
+| `frontend/src/router/router.test.ts` **(new)** | Route resolution, including the catch-all |
 | `frontend/src/components/linkNotice.dom.test.ts` **(new)** | Tests for the notice strip (Decision 6) |
 
 ### Modified files
 
 | Path | Change | Contract |
 |---|---|---|
-| `frontend/src/utils/sectorLink.ts` | Add `ZONE_CODE`, `encodeSid`, `decodeSid`, `sameSid`, `normaliseSeed`. Delete `sectorQuery` and `sameSector`. Keep `SectorLinkParams`, `requestFor`, `sectorParamsFromQuery` byte-for-byte. Rewrite the header comment: the four-parameter rationale survives, the `sameSector` split does not. | **Breaking** (two exports removed) — every caller migrated in the same slices |
-| `frontend/src/router/index.ts` | New route table + the two legacy redirects above | **Breaking by design** — old paths redirect rather than 404 |
+| `frontend/src/utils/sectorLink.ts` | Add `ZONE_CODE`, `encodeSid`, `decodeSid`, `sameSid`, `normaliseSeed`. Delete `sectorQuery`, `sameSector` **and `sectorParamsFromQuery`**, plus the now-dead `one()` helper, `ZONES` array and `LocationQuery` import. Keep `SectorLinkParams` and `requestFor` byte-for-byte. Rewrite the header comment: the four-parameter rationale survives as the A3 invariant, the `sameSector` split does not. | **Breaking** (three exports removed) — every caller migrated in the same slices |
+| `frontend/src/router/index.ts` | New route table + the catch-all. No legacy handling. | **Breaking by design** — old links are not supported |
 | `frontend/src/composables/useSectorLink.ts` | Rewritten: read side keyed on `route.params.sid`, publish side reduced to the single rule of A4. `linkAnswered` deleted. | **Breaking** — public signature `useSectorLink(): void` unchanged; behaviour changed per A3/A4 |
 | `frontend/src/composables/usePlanetDeepLink.ts` | Narrowed: stops writing sector query params, stops rejecting (the guard owns that), gains "close the panel when `planet` disappears". Holding behaviour preserved (Decision 5). | **Breaking** internally; signature `usePlanetDeepLink(): void` unchanged |
 | `frontend/src/stores/sectorStore.ts` | Add `linkNotice`, `raiseLinkNotice`, `clearLinkNotice`; clear the notice in `clearPersistentMemory()` | **Additive** |
@@ -467,7 +500,7 @@ with its existing unit tests.
 | `frontend/src/components/AppTopBar.vue` (:10) | Logo click `router.push('/')` → `router.push(nav.homeTo.value)` | Stays inside the current sector |
 | `frontend/src/views/SystemDetailView.vue` (:11, :214) | Both `RouterLink to="/"` → `:to="nav.homeTo"`. Replace the single `data-system-missing` block with the three states below. | See *SystemDetailView states* |
 | `frontend/src/views/HomeView.vue` | `buildRequest()` normalises the seed (A2); `handleReset()` also clears `loadedParams` and navigates to `/` (A13) | Additive + A13 |
-| `frontend/src/views/DocumentationView.vue` (~:288-315) | Rewrite the *Sharing a View* → *The Link* block for the new format; add the zone-code table; note the legacy redirect | Documentation only |
+| `frontend/src/views/DocumentationView.vue` (~:288-315) | Replace the *Sharing a View* → *The Link* block with the new format **only**; add the zone-code table. The old form is removed, not shown alongside. | Documentation only |
 
 ### Deliberately unmodified
 
@@ -486,7 +519,7 @@ with its existing unit tests.
 
 | Path | Why |
 |---|---|
-| `frontend/src/composables/sectorLink.dom.test.ts` | Entirely query-based; the "publishing the sector into the URL" describe block and the three `sameSector` leniency cases no longer describe the system (A3) |
+| `frontend/src/composables/sectorLink.dom.test.ts` | Entirely query-based; the "publishing the sector into the URL" describe block and the three `sameSector` leniency cases no longer describe the system (Decision 1-bis / A3) |
 | `frontend/src/components/systemDetail.dom.test.ts` | `makeRouter` routes, `router.push('/system/N')` at :118 and :643 |
 | `frontend/src/components/planetPanel.dom.test.ts` | `SECTOR_Q` in ~10 cases, `makeRouter` routes, path assertion at :520 (A11) |
 | `frontend/src/utils/sectorLink.test.ts` | Drop the `sectorQuery` round-trip and the whole `sameSector` describe; add `encodeSid`/`decodeSid`/`sameSid` |
@@ -585,7 +618,10 @@ export function sameSid(a: SectorLinkParams | null, b: SectorLinkParams | null):
 
 `positiveInt` is the existing private helper; its signature widens from
 `string | null` to `string | undefined | null` or is called with a non-null argument as
-above. `sectorParamsFromQuery`, `requestFor` and `SectorLinkParams` are untouched.
+above. `requestFor` and `SectorLinkParams` are untouched. `sectorParamsFromQuery`,
+`sectorQuery`, `sameSector`, `one()` and `ZONES` are all deleted, along with the
+`LocationQuery` import — after this the module has no `vue-router` dependency at all,
+which is the shape the layer diagram above describes.
 
 ### `frontend/src/composables/useSectorNav.ts` (new)
 
@@ -630,6 +666,14 @@ export function useSectorLink() {
 
     /** URL -> sector. Run for the URL the app opens on and for every navigation. */
     const answerTheUrl = async () => {
+        // An address that matched nothing gets the same fail-soft treatment as a
+        // sid that cannot be read: one path, one message, never an empty view (A15).
+        if (route.name === 'not-found') {
+            await router.replace({ path: '/' });
+            store.raiseLinkNotice('sid', '/');
+            return;
+        }
+
         const raw = typeof route.params.sid === 'string' ? route.params.sid : '';
 
         // "/" names no sector, and a planet key without one means nothing.
@@ -826,7 +870,7 @@ state (`HomeView.vue:51`, which stays exactly as it is for generation failures).
 
 | kind | Message |
 |---|---|
-| `sid` | `That link does not name a sector that can be generated.` |
+| `sid` | `That address does not name a sector that can be generated.` |
 | `planet` | `The planet in that link does not exist in this sector.` |
 | `coordinates` | `The coordinates in that link are not consistent, so it opened the sector instead.` |
 
@@ -962,22 +1006,27 @@ and `vi.mock('axios')` for anything that touches the router or the store.
    `'766207-m-lots-1000'`, `'766207-m-10.5-1000'`.
 8. `decodeSid('1.5-m-100-1000')` accepts a fractional seed and returns it as `'1.5'`.
 9. `sameSid` is true for identical params and false when **any one** of the four differs —
-   including `systemCount` and `sectorVolume`, which is the change A3 makes.
+    including `systemCount` and `sectorVolume`, which is what Decision 1-bis requires.
 10. `sameSid(null, x)` and `sameSid(x, null)` are false.
 11. `normaliseSeed` accepts `766207`, `'766207'`, `'1.5'`; rejects `-5`, `'abc'`, `''`,
     `NaN`, `null`, `undefined`.
-12. `sectorParamsFromQuery` and `requestFor`: existing cases retained unchanged.
-13. Removed: the `sectorQuery` round-trip case and the whole `sameSector` describe.
+12. `requestFor`: its existing `describe` retained unchanged — it is the only part of
+    the old module that survives.
+13. **Removed, not rewritten**: the whole `sectorParamsFromQuery` describe (7 cases), the
+    `sectorQuery` round-trip case, and the whole `sameSector` describe. Their subjects no
+    longer exist.
 
 ### `frontend/src/router/router.test.ts` (new)
 
-14. `/system/66?seed=766207&zone=medium&systems=100&volume=1000` redirects to
-    `/766207-m-100-1000/system/66`.
-15. The same link with `&planet=87-3` keeps `?planet=87-3` and drops the four sector keys.
-16. The same link with an unrelated key (`&tab=planets`) keeps it.
-17. `/system/66` with no sector query redirects to `/`.
-18. `/?seed=766207&zone=medium&systems=100&volume=1000` redirects to `/766207-m-100-1000`.
-19. `/` with no query resolves to `home` and does not redirect.
+14. `/system/66` resolves to `not-found` — there is no `/system/:id` route.
+15. `/system/66?seed=766207&zone=medium&systems=100&volume=1000` also resolves to
+    `not-found`: the old query form is read by nothing.
+16. `/a/b/c` resolves to `not-found`.
+17. `/?seed=766207&zone=medium&systems=100&volume=1000` resolves to `home` and does **not**
+    redirect; the query is inert.
+18. No route in the table has a `redirect` or `beforeEnter` — pinned so a legacy shim
+    cannot be reintroduced by accident.
+19. `/` with no query resolves to `home`.
 20. `/documentation` and `/api-reference` resolve to their own routes and are never read as
     a sid.
 21. `/766207-m-100-1000` resolves to `sector` with `params.sid` set.
@@ -992,14 +1041,17 @@ Reading:
     decoded parameters.
 25. Records the result in `loadedParams` so the guard can check against it.
 26. Leaves the sector alone when the sid is the one already loaded.
-27. **Regenerates when the sid differs only by `systemCount`** (A3 — the inverse of the
-    deleted "leaves it alone when the link differs only by a larger count").
-28. **Regenerates when the sid differs only by `sectorVolume`** (A3).
+27. **Regenerates when the sid differs only by `systemCount`** (Decision 1-bis / A3 — the
+    inverse of the deleted "leaves it alone when the link differs only by a larger count").
+28. **Regenerates when the sid differs only by `sectorVolume`** (Decision 1-bis / A3).
 29. Regenerates when the sid names another seed, and when it names another zone.
 30. Does not start a second generation while one is running.
 31. Generates nothing on `/`.
 32. A malformed sid (`/not-a-sector`) replaces to `/`, generates nothing, and raises the
     `sid` notice.
+32b. An unmatched address (`/system/66`, `/a/b/c`) replaces to `/`, generates nothing, and
+    raises the same `sid` notice — the A15 path, verified to render `HomeView` rather than
+    an empty `<router-view>`.
 33. A generation failure surfaces as `store.error` / `generationStatus === 'error'` and
     raises **no** notice (Decision 5).
 34. `/?planet=1-1` strips `planet` and generates nothing.
@@ -1105,33 +1157,35 @@ Six vertical slices, in order. Each is independently verifiable; 2 depends on 1,
 down the chain except where noted.
 
 **1 — The sid codec.** `utils/sectorLink.ts`: add `ZONE_CODE`, `encodeSid`, `decodeSid`,
-`sameSid`, `normaliseSeed`. Nothing consumes them yet; `sectorQuery`/`sameSector` stay for
-now, so nothing breaks. Tests 1–13 (less the removals, which land in slice 3).
+`sameSid`, `normaliseSeed`. Nothing consumes them yet; the old exports stay for now, so
+nothing breaks. Tests 1–12 (the deletions in 13 land in slice 3).
 *Depends on: nothing. Verifiable: `npm test` green with the new unit tests.*
 
-**2 — Sector-scoped routes and legacy redirects.** `router/index.ts`; `useSectorLink`'s
-read side keyed on `route.params.sid`; the publish rule; `linkAnswered` deleted;
-`HomeView.buildRequest` seed normalisation (A2) and `handleReset` (A13). Tests 14–23,
-24–41. Old links keep working via the redirects, and the app is navigable end to end.
+**2 — Sector-scoped routes.** `router/index.ts` including the catch-all; `useSectorLink`'s
+read side keyed on `route.params.sid` plus the `not-found` branch; the publish rule;
+`linkAnswered` deleted; `HomeView.buildRequest` seed normalisation (A2) and `handleReset`
+(A13). Tests 14–23, 24–41. **Old links stop working at this slice** — that is intended,
+and it is the slice to call out in any release note. The app is navigable end to end.
 *Depends on: 1.*
 
 **3 — Every internal link carries the sector.** `useSectorNav`; the six navigation sites
-plus `AppTopBar` and `SystemDetailView`'s two links; delete `sectorQuery` and `sameSector`
-and narrow `usePlanetDeepLink` to the panel sync. Tests 42–52, 74–76, and the removals in
-13. **This is the slice that closes the reported bug** — it is worth shipping even alone.
+plus `AppTopBar` and `SystemDetailView`'s two links; delete `sectorQuery`, `sameSector`
+and `sectorParamsFromQuery` with their dead helpers; narrow `usePlanetDeepLink` to the
+panel sync. Tests 42–52, 74–76, and the deletions in 13. **This is the slice that closes
+the reported bug** — it is worth shipping even alone.
 *Depends on: 2.*
 
-**4 — The notice strip.** Store state; `LinkNotice.vue`; wire the malformed-sid case from
-slice 2 to it. Tests 62–69, 32.
+**4 — The notice strip.** Store state; `LinkNotice.vue`; wire the malformed-sid and
+`not-found` cases from slice 2 to it. Tests 62–69, 32, 32b.
 *Depends on: 2. Independent of 3 — can run in parallel with it.*
 
 **5 — The coordinate guard.** `useCoordinateGuard.ts` mounted in `App.vue`;
 `SystemDetailView`'s three states. Tests 53–61, 70–73.
 *Depends on: 3 and 4.*
 
-**6 — The documentation.** `DocumentationView.vue` *Sharing a View*: the new link format,
-the zone-code table, the note that old links redirect. No code, no tests beyond keeping
-`shell.dom.test.ts` green.
+**6 — The documentation.** `DocumentationView.vue` *Sharing a View*: the new link format
+and the zone-code table, replacing the old form rather than sitting beside it. No code, no
+tests beyond keeping `shell.dom.test.ts` green.
 *Depends on: 3 (the format has to be real before it is documented).*
 
 ---
@@ -1154,8 +1208,11 @@ Each item is pass/fail.
 7. `/766207` decodes, generates, and the URL becomes `/766207-m-100-1000`.
 8. `/766207-m-100-1000-99` (an unknown fifth field) still decodes and generates.
 9. `/not-a-sector` lands on `/` with the `sid` notice, never a blank page.
-10. `/system/66?seed=766207&zone=medium&systems=100&volume=1000&planet=87-3` redirects to
-    `/766207-m-100-1000/system/66?planet=87-3`.
+10. `/system/66` and `/a/b/c` land on `/` with the notice and a rendered `HomeView` —
+    never a blank page and never a router warning about an unmatched route.
+10b. A repo grep over `frontend/src` for `sectorParamsFromQuery`, `sectorQuery`,
+    `sameSector` and the literal `?seed=` returns no hits outside test fixtures: no
+    legacy shim survives anywhere.
 11. Decision 4's table holds exactly: A stays on the system without `?planet`; B and C land
     on `/<sid>`; all three use `replace`, and pressing back does not return to the bad URL.
 12. No coordinate notice is ever raised while `generationStatus === 'running'`, nor when it
@@ -1166,8 +1223,8 @@ Each item is pass/fail.
 15. Regenerating with a changed `systemCount` while on `/<oldSid>/system/66` leaves the
     user on `/<newSid>/system/66`.
 16. `DocumentationView`'s *Sharing a View* section shows the `/<sid>/system/<id>?planet=`
-    form and the five zone codes, and no longer shows the `?seed=&zone=&systems=&volume=`
-    form as current.
+    form and the five zone codes, and the `?seed=&zone=&systems=&volume=` form appears
+    nowhere in it.
 17. `utils/deployRouting.test.ts` still passes with `vercel.json` unmodified.
 
 ---
@@ -1180,14 +1237,16 @@ Every entry in *Impact on Existing Code* that modifies rather than adds:
 |---|---|---|
 | `utils/sectorLink.ts` — `sectorQuery` removed | **Breaking, deliberate** | Sole callers: `useSectorLink.ts:103`, `usePlanetDeepLink.ts:49`. Both rewritten in slices 2–3. Its unit test (round-trip) is deleted with it. No other consumer exists — verified by grep. |
 | `utils/sectorLink.ts` — `sameSector` removed | **Breaking, deliberate** | Sole callers: `useSectorLink.ts:54` and `:99`, `usePlanetDeepLink.ts:98`. Both migrate to `sameSid`. Its `describe` block in `utils/sectorLink.test.ts` is deleted. |
-| `utils/sectorLink.ts` — `sectorParamsFromQuery`, `requestFor`, `SectorLinkParams` | **Backward-compatible** | Kept unchanged and still needed (the legacy redirects and `requestFor`); their existing tests stand. |
-| Regeneration keyed on all four params instead of seed+zone | **Breaking, deliberate — the main behaviour change** | Affects one feature: following a link whose `systemCount`/`sectorVolume` differ from the loaded sector now regenerates instead of reusing it. Migration: three cases in `sectorLink.dom.test.ts` are inverted (tests 27–28), and the measured comment at the head of `utils/sectorLink.ts` is rewritten to record why the split no longer applies. Rationale in A3: without it, Decision 4's existence checks report false errors for valid links. User-visible cost: one extra deterministic generation. |
-| `router/index.ts` — `/system/:id` becomes a redirect | **Breaking, deliberate, with a migration path** | Every previously shared link of the form `/system/:id?seed=…` continues to work via `legacySystemRedirect`, landing on the equivalent sid path. Links with an unreadable sector query land on `/` — which is what they do today, since `sectorParamsFromQuery` already returns null for them and `SystemDetailView` already renders the missing state. Tests 14–17 pin it. |
-| `router/index.ts` — `/?seed=…` gains `legacyHomeGuard` | **Breaking, deliberate, with a migration path** | Same as above for home links. A bare `/` is untouched (test 19), so the empty state and RESTORE LAST SECTOR are unaffected. |
+| `utils/sectorLink.ts` — `sectorParamsFromQuery` removed | **Breaking, deliberate** | Its only reason to exist was reading the old query format, which is no longer supported. Sole callers verified by grep: `useSectorLink.ts:41` and `:98`, `usePlanetDeepLink.ts:98` — all three rewritten by this spec — plus its own `describe` in `utils/sectorLink.test.ts`, which is deleted rather than rewritten. Removing it also strands `one()`, `ZONES` and the `LocationQuery` import, which go with it. |
+| `utils/sectorLink.ts` — `requestFor`, `SectorLinkParams` | **Backward-compatible** | Kept unchanged; `requestFor`'s existing test stands. |
+| Regeneration keyed on the whole sid instead of seed+zone | **Breaking, deliberate — the main behavioural change, and a settled rule** | Required by Decision 1-bis, not proposed here. Affects one feature: following a link whose `systemCount`/`sectorVolume` differ from the loaded sector now regenerates instead of reusing it. Migration: three cases in `sectorLink.dom.test.ts` are inverted (tests 27–28), and the measured comment at the head of `utils/sectorLink.ts` is rewritten to record why the seed+zone split no longer governs. Justification restated in A3: without whole-sid equality, Decision 4's existence checks fire false errors on valid links. User-visible cost: one extra deterministic generation. |
+| `router/index.ts` — `/system/:id` removed outright | **Breaking, deliberate, no migration path — by decision** | Previously shared links of the form `/system/:id?seed=…` stop working. They land on the catch-all, are replaced with `/`, and the user is told the address names no sector (A15). This is the user's explicit choice ("niente retrocompatibilità"); the affected population is anyone holding a link shared before this ships, and the cost to them is re-obtaining the link. Tests 14–15 pin the new behaviour, test 18 pins that no shim was reintroduced. |
+| `router/index.ts` — `/?seed=…` | **Backward-compatible by accident, and adequate** | `/` remains a real route, so an old home link still resolves; its query is simply ignored and the user gets the empty state with RESTORE LAST SECTOR. No code handles it. Test 17 pins that it does not redirect. |
+| `router/index.ts` — catch-all added | **Additive** | Nothing matched `/:pathMatch(.*)*` before except paths that previously rendered an empty view. Strictly an improvement; test 32b pins it. |
 | `useSectorLink.ts` rewritten | **Breaking, deliberate** | Its exported signature (`(): void`) and its mount point (`App.vue:34`) are unchanged, so no caller changes. The behavioural deltas are A3 (above), A4 (the write side narrows to one rule) and A5 (`linkAnswered` deleted). A5 is argued from the watch no longer being `immediate`; test 37 pins the no-loop property that the flag used to buy. |
 | `usePlanetDeepLink.ts` narrowed | **Breaking, deliberate** | Signature and both mount points (`ResultsDisplay.vue:37`, `SystemDetailView.vue:248`) unchanged. Two behaviours move out (rejecting an unresolvable key; merging the sector into the query) and one moves in (closing the panel when the param disappears). The *hold, do not refuse* behaviour Decision 5 asks to preserve is explicitly retained and pinned by test 75. Risk of a double-writer over `?planet` is removed by A10's split, not by ordering. |
 | `sectorStore.ts` | **Backward-compatible** | Three new members plus one line in `clearPersistentMemory`. No existing member changes type or semantics; `sectorStore.test.ts` and `sectorStore.size.test.ts` need no edit. |
-| `App.vue` | **Backward-compatible** | One extra composable call and one component. `isLegacyRoute` reads `route.name`, and both legacy route names are unchanged. |
+| `App.vue` | **Backward-compatible** | One extra composable call and one component. `isLegacyRoute` reads `route.name`, and both names it checks (`documentation`, `api-reference`) are unchanged. Note the new `not-found` route renders `HomeView`, which is correctly *not* in `LEGACY_ROUTES` and so gets the full-bleed console layout for the one tick before the replace lands. |
 | `HomeView.vue` — `buildRequest` seed normalisation | **Backward-compatible in practice, narrow behaviour change** | Only fires for a seed that cannot be encoded (negative or non-numeric), which the UI does not produce through its own controls. For every seed reachable today it is a no-op. Precedent: the same function already rewrites an empty seed. |
 | `HomeView.vue` — `handleReset` (A13) | **Deliberate small change** | Reset additionally clears `loadedParams` and navigates to `/`. Previously reset left the sector's identity behind; with the sid in the path that would leave the URL naming a sector that is not on screen and silently regenerate it on reload. No test asserts the old behaviour (verified: `handleReset` is untested today). |
 | `SystemDetailView.vue` — three states | **Additive to the render, with one hook preserved** | `data-system-missing` is kept with its exact text so existing assertions stand; the two new states are additional branches ahead of it. The two `RouterLink to="/"` become `:to="nav.homeTo"`, which evaluates to `/` when no sector is loaded — identical to today in that case. |
@@ -1197,6 +1256,11 @@ Every entry in *Impact on Existing Code* that modifies rather than adds:
 
 **Residual risks recorded rather than resolved**
 
+- Old links break on the day slice 2 ships, with no in-app affordance to recover a link
+  the user only has in the old form. Accepted by decision; recorded because it is the one
+  change in this spec that is visible to someone who never opens the app again until they
+  click a stale link. Nothing in the codebase or in analytics tells us how many such links
+  exist.
 - A14 — an aborted generation moves the URL back to the previous sector's sid. Judged
   correct; recorded because it is a new, undiscussed interaction between D-20's snapshot
   restore and the publish rule.
@@ -1211,9 +1275,10 @@ Every entry in *Impact on Existing Code* that modifies rather than adds:
 
 Not part of this spec. Listed only so they are not mistaken for omissions.
 
-- **A fifth generation parameter.** The decoder is built to absorb one (Decision 1); the
-  encoder would append it and `SID_DEFAULTS` would gain its default. No link written today
-  would break.
+- **A fifth generation parameter.** Governed by the A3 invariant, so the answer is not a
+  judgment call: it is added to `GenerationRequest`, and therefore to `encodeSid`, to
+  `decodeSid`'s field list and `SID_DEFAULTS`, and — for free — to `sameSid`. The decoder
+  is already built to absorb it (Decision 1), so no link written today would break.
 - **A "copy link" affordance.** `PlanetDetailPanel` already has clipboard plumbing
   (`copyViaTextarea`). With the sid in the path, a share button that copies
   `location.href` becomes trivial — but the draft's requirement is that the address bar is
@@ -1221,6 +1286,12 @@ Not part of this spec. Listed only so they are not mistaken for omissions.
 - **Putting the active tab in the query.** `?tab=planets` appears in one existing test
   fixture but is inert. Making it real would extend shareability from "which sector and
   which body" to "which view", and is a separate decision.
-- **A 404 route.** `/:sid` currently absorbs any single-segment path and rejects it with
-  the `sid` notice on `/`. A dedicated not-found page would read better than a redirect,
-  and is a design question, not a correctness one.
+- **A real 404 page.** A15 makes every unreadable address fail soft onto `/` with a
+  notice, which is correct but terse. A dedicated not-found view — one that says what was
+  asked for and offers the empty state — would read better, and is a design question, not
+  a correctness one. It would replace the `not-found` route's `component: HomeView`
+  without touching anything else.
+- **Recovering an old link.** Backward compatibility is out of scope by decision, but if
+  stale links turn out to be common, a one-page "paste your old link here" converter would
+  need nothing from the app but `encodeSid` — the old form carries exactly the four
+  parameters the sid does.
