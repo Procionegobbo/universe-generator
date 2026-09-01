@@ -475,7 +475,7 @@ type import. What remains of the module is sid encode/decode plus `requestFor`.
 
 | Path | Purpose |
 |---|---|
-| `frontend/src/composables/useSectorNav.ts` **(new)** | `sid`, `homeTo`, `systemTo(id)` — the only way internal links are built |
+| `frontend/src/composables/useSectorNav.ts` **(new)** | `sid`, `homeTo`, `systemTo(id)` — the only way internal links are built. **Always destructured at the call site** (see its listing) |
 | `frontend/src/composables/useCoordinateGuard.ts` **(new)** | Decision 4's table, gated by Decision 5 |
 | `frontend/src/components/LinkNotice.vue` **(new)** | The inline strip of Decision 6 |
 | `frontend/src/composables/sectorNav.dom.test.ts` **(new)** | Tests for `useSectorNav` + every migrated link site |
@@ -493,12 +493,12 @@ type import. What remains of the module is sid encode/decode plus `requestFor`.
 | `frontend/src/composables/usePlanetDeepLink.ts` | Narrowed: stops writing sector query params, stops rejecting (the guard owns that), gains "close the panel when `planet` disappears". Holding behaviour preserved (Decision 5). | **Breaking** internally; signature `usePlanetDeepLink(): void` unchanged |
 | `frontend/src/stores/sectorStore.ts` | Add `linkNotice`, `raiseLinkNotice`, `clearLinkNotice`; clear the notice in `clearPersistentMemory()` | **Additive** |
 | `frontend/src/App.vue` | Mount `useCoordinateGuard()` beside `useSectorLink()`; render `<LinkNotice />` between `<AppTopBar />` and `<main>` | **Additive** |
-| `frontend/src/components/PlanetDetailPanel.vue` (:454) | `openSystem` uses `nav.systemTo(id)` | Fixes the reported bug |
-| `frontend/src/components/SystemsTable.vue` (:152, :374) | `RouterLink :to` and `openSystem` use `nav.systemTo(...)` | Behaviour-preserving except the URL now carries the sid |
+| `frontend/src/components/PlanetDetailPanel.vue` (:454) | `const { systemTo } = useSectorNav()`; `openSystem` pushes `systemTo(id)` | Fixes the reported bug |
+| `frontend/src/components/SystemsTable.vue` (:152, :374) | `const { systemTo } = useSectorNav()`; `RouterLink :to="systemTo(row.systemId)"` and `openSystem` pushes `systemTo(systemId)` | Behaviour-preserving except the URL now carries the sid |
 | `frontend/src/components/StarTable.vue` (:149, :323) | idem | idem |
-| `frontend/src/components/NotableSystems.vue` (:23) | `RouterLink :to` uses `nav.systemTo(entry.systemId)` | idem |
-| `frontend/src/components/AppTopBar.vue` (:10) | Logo click `router.push('/')` → `router.push(nav.homeTo.value)` | Stays inside the current sector |
-| `frontend/src/views/SystemDetailView.vue` (:11, :214) | Both `RouterLink to="/"` → `:to="nav.homeTo"`. Replace the single `data-system-missing` block with the three states below. | See *SystemDetailView states* |
+| `frontend/src/components/NotableSystems.vue` (:23) | `const { systemTo } = useSectorNav()`; `RouterLink :to="systemTo(entry.systemId)"` | idem |
+| `frontend/src/components/AppTopBar.vue` (:10) | `const { homeTo } = useSectorNav()`; logo click `router.push('/')` → `router.push(homeTo)` (inline `@click`, a template expression: **no** `.value`) | Stays inside the current sector |
+| `frontend/src/views/SystemDetailView.vue` (:11, :214) | `const { homeTo } = useSectorNav()`; both `RouterLink to="/"` → `:to="homeTo"` (template context, so no `.value` — the destructured binding unwraps). Replace the single `data-system-missing` block with the three states below. | See *SystemDetailView states* |
 | `frontend/src/views/HomeView.vue` | `buildRequest()` normalises the seed (A2); `handleReset()` also clears `loadedParams` and navigates to `/` (A13) | Additive + A13 |
 | `frontend/src/views/DocumentationView.vue` (~:288-315) | Replace the *Sharing a View* → *The Link* block with the new format **only**; add the zone-code table. The old form is removed, not shown alongside. | Documentation only |
 
@@ -510,7 +510,8 @@ type import. What remains of the module is sid encode/decode plus `requestFor`.
   scope, do not touch.
 - `frontend/src/components/EmptyState.vue` — its only link is `/documentation`.
 - `frontend/src/views/ApiReferenceView.vue` / `DocumentationView.vue` back buttons
-  (`router.push('/')`): **optional**, may adopt `nav.homeTo` for consistency; not required,
+  (`router.push('/')`, both inline `@click`, so `homeTo` without `.value`): **optional**,
+  may adopt it for consistency; not required,
   because `/` with a sector loaded is a valid state and the publish rule does not fire
   (`loadedParams` did not change). If adopted, `useSectorNav`'s `loadedParams` fallback is
   what makes it work off a sid-less route.
@@ -656,6 +657,47 @@ export function useSectorNav() {
 }
 ```
 
+**How every consumer binds it — not optional, and the same at all seven sites.**
+`useSectorNav()` returns a plain object, so `homeTo` and `sid` reach the caller as
+`ComputedRef`s. Vue's template compiler unwraps a top-level `<script setup>` binding that
+is a ref, but **not** a ref reached through a property access — so `nav.homeTo` in a
+template compiles to `_unref(nav).homeTo`, which stays a `ComputedRef` and fails
+type-checking with
+
+```
+error TS2322: Type 'ComputedRef<string>' is not assignable to type
+  'string | RouteLocationAsRelativeGeneric | RouteLocationAsPathGeneric'
+```
+
+breaking `npm run build` (Success Criterion 2). **Always destructure:**
+
+```ts
+const { homeTo, systemTo } = useSectorNav();   // homeTo unwraps in the template
+```
+
+```html
+<RouterLink :to="homeTo">…</RouterLink>        <!-- string, correct -->
+```
+
+and write `homeTo.value` only in genuine `<script setup>` code.
+
+The boundary is the template, not the binding syntax: **every** template expression
+auto-unwraps a destructured top-level ref — interpolations, `:bind` props, and inline
+`@click` handlers alike. So `@click="router.push(homeTo)"` is correct and
+`@click="router.push(homeTo.value)"` fails with `TS2551: Property 'value' does not exist
+on type 'string'`. Every `router.push` site in this codebase is an inline handler
+(`AppTopBar.vue:10`, `ApiReferenceView.vue:8`, `DocumentationView.vue:29`), so in practice
+none of them take `.value`; the script-context form applies only if a handler is ever
+moved into `<script setup>`.
+
+`systemTo` is a plain function returning a string, so `:to="systemTo(row.systemId)"` needs
+nothing special.
+
+This matches the codebase: `useRailTier` and `useBackendHealth` — the two composables
+whose values reach a template — are both destructured (`const { tier } = useRailTier()`,
+`const { status } = useBackendHealth()`). `useSectorStats` is bound as an object precisely
+because it is only ever read in script, through `stats.systemRows.value`.
+
 ### `frontend/src/composables/useSectorLink.ts` (rewritten)
 
 ```ts
@@ -742,6 +784,17 @@ does not stay in the history and "back" cannot re-trigger the error in a loop.
 ```ts
 const KEY_PATTERN = /^\d+-\d+$/;
 
+// LocationQuery is a type-only import from vue-router, alongside the
+// useRoute/useRouter this composable already needs.
+/** The current query without the planet key. The same spread-and-delete
+ *  `useSectorLink` uses on its own branch, named here because both stripping
+ *  branches below need it. */
+const withoutPlanet = (query: LocationQuery): LocationQuery => {
+    const rest = { ...query };
+    delete rest.planet;
+    return rest;
+};
+
 export function useCoordinateGuard() {
     const route = useRoute();
     const router = useRouter();
@@ -778,7 +831,7 @@ export function useCoordinateGuard() {
         // A malformed key is not a coordinate at all: strip it, say nothing.
         if (!KEY_PATTERN.test(rawKey)) {
             store.selectPlanet(null);
-            await router.replace({ path: route.path, query: without(route.query, 'planet') });
+            await router.replace({ path: route.path, query: withoutPlanet(route.query) });
             return;
         }
 
@@ -789,7 +842,7 @@ export function useCoordinateGuard() {
         // Case A — absence. The planet is missing; the rest of the URL still holds.
         if (!planet) {
             store.selectPlanet(null);
-            await router.replace({ path: route.path, query: without(route.query, 'planet') });
+            await router.replace({ path: route.path, query: withoutPlanet(route.query) });
             store.raiseLinkNotice('planet', route.path);
             return;
         }
@@ -895,7 +948,7 @@ v-if="row && system"                    → the system (unchanged)
 v-else-if="isBuilding"                  → data-system-waiting
         "Rebuilding the sector this link names…"
 v-else-if="store.generationStatus === 'error'"  → data-system-error
-        store.error, plus <RouterLink :to="nav.homeTo">BACK TO SECTOR</RouterLink>
+        store.error, plus <RouterLink :to="homeTo">BACK TO SECTOR</RouterLink>
 v-else                                  → data-system-missing (kept, verbatim text)
         "System not found in the current sector." + BACK TO SECTOR
 ```
@@ -1164,15 +1217,41 @@ nothing breaks. Tests 1–12 (the deletions in 13 land in slice 3).
 **2 — Sector-scoped routes.** `router/index.ts` including the catch-all; `useSectorLink`'s
 read side keyed on `route.params.sid` plus the `not-found` branch; the publish rule;
 `linkAnswered` deleted; `HomeView.buildRequest` seed normalisation (A2) and `handleReset`
-(A13). Tests 14–23, 24–41. **Old links stop working at this slice** — that is intended,
-and it is the slice to call out in any release note. The app is navigable end to end.
+(A13).
+
+**`usePlanetDeepLink` must be narrowed in this same slice** — see the boxed note below;
+it is not separable. So this slice also switches its sector test to
+`sameSid(decodeSid(route.params.sid), store.loadedParams)`, drops the
+`Object.assign(query, sectorQuery(...))` from `writeParam`, deletes `sectorQuery`,
+`sameSector` and `sectorParamsFromQuery` with their now-dead helpers, and migrates
+`planetPanel.dom.test.ts` off the old query form.
+
+Its `reject()` stays for now: until slice 5 the guard does not exist, and removing
+`reject()` early would leave an unresolvable `?planet` sitting in the URL. Slice 5 removes
+it.
+
+Tests 14–23, 24–41, 74–76, and the deletions in 13. **Old links stop working at this
+slice** — that is intended, and it is the slice to call out in any release note. The app
+is navigable end to end.
 *Depends on: 1.*
 
+> **Why slices 2 and 3 cannot be cut between the two composables.** `useSectorLink` and
+> `usePlanetDeepLink` both answer the question *"which sector does this URL name?"*, and
+> they must answer it from the same place. Leaving `usePlanetDeepLink` query-based while
+> `useSectorLink` goes path-based breaks it in both directions:
+> **read** — `sameSector(sectorParamsFromQuery(route.query), loadedParams)`
+> (`usePlanetDeepLink.ts:98`) returns `false` for every sid URL, because a sid URL carries
+> no sector query, so the key is held forever and the panel never opens;
+> **write** — `Object.assign(query, sectorQuery(store.loadedParams))`
+> (`usePlanetDeepLink.ts:49`) re-adds `?seed=&zone=&systems=&volume=` to the URL on every
+> panel open and close, resurrecting the very format this spec deletes.
+> The second is the more serious: it is a live defect, not just a red suite. Both are
+> fixed by moving the narrowing into slice 2.
+
 **3 — Every internal link carries the sector.** `useSectorNav`; the six navigation sites
-plus `AppTopBar` and `SystemDetailView`'s two links; delete `sectorQuery`, `sameSector`
-and `sectorParamsFromQuery` with their dead helpers; narrow `usePlanetDeepLink` to the
-panel sync. Tests 42–52, 74–76, and the deletions in 13. **This is the slice that closes
-the reported bug** — it is worth shipping even alone.
+plus `AppTopBar` and `SystemDetailView`'s two links, all destructuring the composable per
+its listing. Tests 42–52. **This is the slice that closes the reported bug** — it is worth
+shipping even alone.
 *Depends on: 2.*
 
 **4 — The notice strip.** Store state; `LinkNotice.vue`; wire the malformed-sid and
@@ -1180,7 +1259,8 @@ the reported bug** — it is worth shipping even alone.
 *Depends on: 2. Independent of 3 — can run in parallel with it.*
 
 **5 — The coordinate guard.** `useCoordinateGuard.ts` mounted in `App.vue`;
-`SystemDetailView`'s three states. Tests 53–61, 70–73.
+`SystemDetailView`'s three states; `usePlanetDeepLink.reject()` deleted now that the guard
+owns stripping and notices. Tests 53–61, 70–73.
 *Depends on: 3 and 4.*
 
 **6 — The documentation.** `DocumentationView.vue` *Sharing a View*: the new link format
@@ -1249,7 +1329,7 @@ Every entry in *Impact on Existing Code* that modifies rather than adds:
 | `App.vue` | **Backward-compatible** | One extra composable call and one component. `isLegacyRoute` reads `route.name`, and both names it checks (`documentation`, `api-reference`) are unchanged. Note the new `not-found` route renders `HomeView`, which is correctly *not* in `LEGACY_ROUTES` and so gets the full-bleed console layout for the one tick before the replace lands. |
 | `HomeView.vue` — `buildRequest` seed normalisation | **Backward-compatible in practice, narrow behaviour change** | Only fires for a seed that cannot be encoded (negative or non-numeric), which the UI does not produce through its own controls. For every seed reachable today it is a no-op. Precedent: the same function already rewrites an empty seed. |
 | `HomeView.vue` — `handleReset` (A13) | **Deliberate small change** | Reset additionally clears `loadedParams` and navigates to `/`. Previously reset left the sector's identity behind; with the sid in the path that would leave the URL naming a sector that is not on screen and silently regenerate it on reload. No test asserts the old behaviour (verified: `handleReset` is untested today). |
-| `SystemDetailView.vue` — three states | **Additive to the render, with one hook preserved** | `data-system-missing` is kept with its exact text so existing assertions stand; the two new states are additional branches ahead of it. The two `RouterLink to="/"` become `:to="nav.homeTo"`, which evaluates to `/` when no sector is loaded — identical to today in that case. |
+| `SystemDetailView.vue` — three states | **Additive to the render, with one hook preserved** | `data-system-missing` is kept with its exact text so existing assertions stand; the two new states are additional branches ahead of it. The two `RouterLink to="/"` become `:to="homeTo"` off a destructured binding, which evaluates to `/` when no sector is loaded — identical to today in that case. |
 | `PlanetDetailPanel`, `SystemsTable`, `StarTable`, `NotableSystems`, `AppTopBar` | **Deliberate, and the point of the feature** | Destinations gain the sid prefix. `starsTable.dom.test.ts:328` and `tabs.dom.test.ts:231-263` assert the old bare hrefs and are updated. |
 | `DocumentationView.vue` | **Content only** | No behaviour. |
 | `vercel.json`, `backend/**` | **Unmodified** | Verified sufficient (A12); `deployRouting.test.ts` unchanged. |
@@ -1261,6 +1341,10 @@ Every entry in *Impact on Existing Code* that modifies rather than adds:
   change in this spec that is visible to someone who never opens the app again until they
   click a stale link. Nothing in the codebase or in analytics tells us how many such links
   exist.
+- Slices 2 and 3 are not cuttable between `useSectorLink` and `usePlanetDeepLink` (boxed
+  note in the breakdown). Recorded here because the coupling is invisible from either
+  file alone — it lives in the fact that both read the sector from the URL — and a
+  re-slicing that separates them would reintroduce a live defect, not merely a red suite.
 - A14 — an aborted generation moves the URL back to the previous sector's sid. Judged
   correct; recorded because it is a new, undiscussed interaction between D-20's snapshot
   restore and the publish rule.
