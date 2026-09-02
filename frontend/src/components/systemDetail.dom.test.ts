@@ -714,9 +714,15 @@ describe('SystemDetailView — the 1d shell', () => {
         expect(wrapper.find('[data-system-missing]').exists()).toBe(false);
     });
 
+    // The state a real failure leaves behind: `loadedParams` is null, because
+    // the sector the sid names was never built. Setting it to the sid instead
+    // describes a state the app cannot reach — nothing generates when the
+    // loaded sector already matches the URL, so nothing can fail — and it hid
+    // this branch being unreachable for as long as the test claimed to cover it.
     it('reports the generation failure rather than a missing system', async () => {
         const { store, wrapper } = await mountDetail(KEPLER, 1);
         store.sectorData = null;
+        store.loadedParams = null;
         store.generationStatus = 'error';
         store.error = 'network down';
         await nextTick();
@@ -725,6 +731,20 @@ describe('SystemDetailView — the 1d shell', () => {
         expect(failed.text()).toContain('network down');
         expect(failed.get('a').attributes('href')).toBe(`/${SID}`);
         expect(wrapper.find('[data-system-missing]').exists()).toBe(false);
+        expect(wrapper.find('[data-system-waiting]').exists()).toBe(false);
+    });
+
+    // The other half of the same rule: a sector loaded under a different sid,
+    // which is what a failure leaves when the reader already had one on screen.
+    it('reports the failure even when another sector was loaded before it', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        store.sectorData = null;
+        store.loadedParams = { ...PARAMS, seed: '999' };
+        store.generationStatus = 'error';
+        store.error = 'network down';
+        await nextTick();
+
+        expect(wrapper.get('[data-system-error]').text()).toContain('network down');
         expect(wrapper.find('[data-system-waiting]').exists()).toBe(false);
     });
 });

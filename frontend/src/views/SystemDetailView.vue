@@ -278,11 +278,20 @@ usePlanetDeepLink();
  * The sector on screen is not yet the one the URL names — either a generation
  * is running, or the sid decodes to something other than what is loaded and
  * useSectorLink is about to build it.
+ *
+ * A failed generation is neither. useSectorLink does not retry a URL that has
+ * not changed, so after a failure nothing further is coming and the mismatch
+ * below is permanent: `loadedParams` never became the sid, because the sector
+ * it names was never built. Without the guard the mismatch alone keeps this
+ * true forever, the page sits on "rebuilding" promising work nobody is doing,
+ * and the error state underneath is unreachable — which is the whole point of
+ * having one.
  */
 const isBuilding = computed(() =>
-    store.generationStatus === 'running'
-    || (decodeSid(route.params.sid) !== null
-        && !sameSid(decodeSid(route.params.sid), store.loadedParams)));
+    store.generationStatus !== 'error'
+    && (store.generationStatus === 'running'
+        || (decodeSid(route.params.sid) !== null
+            && !sameSid(decodeSid(route.params.sid), store.loadedParams))));
 
 const systemId = computed(() => Number(route.params.id));
 
