@@ -293,20 +293,54 @@
                     <div class="card bg-gray-900/50 border-gray-800 p-6 mb-6">
                         <h4 class="text-lg font-bold text-blue-300 mb-3">The Link</h4>
                         <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 mb-4 overflow-x-auto">
-                            /system/&lt;id&gt;?seed=&lt;seed&gt;&amp;zone=&lt;zone&gt;&amp;systems=&lt;count&gt;&amp;volume=&lt;pc³&gt;&amp;planet=&lt;starId&gt;-&lt;orbit&gt;
+                            /&lt;sid&gt;/system/&lt;id&gt;?planet=&lt;starId&gt;-&lt;orbit&gt;
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">
+                            The sector is the <em>first part of the address</em>, so no link inside the
+                            app can drop it. That first segment is the sector id — the four parameters
+                            joined by hyphens:
+                        </p>
+                        <div class="bg-gray-950 p-4 rounded font-mono text-sm text-green-400 mb-4 overflow-x-auto">
+                            &lt;seed&gt;-&lt;zone&gt;-&lt;systems&gt;-&lt;volume&gt;
+                            <span class="text-gray-500"> e.g. </span>766207-m-100-1000
                         </div>
                         <ul class="text-sm text-gray-400 space-y-2">
                             <li><span class="font-mono text-blue-300 mr-2">seed</span>the generator seed</li>
-                            <li><span class="font-mono text-blue-300 mr-2">zone</span>galactic zone — extragalactic, galactic edge, medium, central zone or core</li>
+                            <li><span class="font-mono text-blue-300 mr-2">zone</span>the galactic zone, as a single letter — see the table below</li>
                             <li><span class="font-mono text-blue-300 mr-2">systems</span>how many systems the sector holds</li>
                             <li><span class="font-mono text-blue-300 mr-2">volume</span>sector volume in pc³</li>
+                            <li><span class="font-mono text-blue-300 mr-2">id</span>optional — one system inside that sector</li>
                             <li><span class="font-mono text-blue-300 mr-2">planet</span>optional — opens the detail panel on one planet</li>
                         </ul>
                         <p class="text-xs text-gray-500 mt-4 italic">
-                            You never have to assemble this. The four sector parameters appear in the
-                            address bar as soon as a sector is generated, and <span class="font-mono">planet</span>
-                            is added when you open a planet and removed when you close it. Copy the
-                            address bar and the link is already complete.
+                            You never have to assemble this. The sector id appears in the address bar as
+                            soon as a sector is generated, and <span class="font-mono">planet</span> is
+                            added when you open a planet and removed when you close it. Copy the address
+                            bar and the link is already complete.
+                        </p>
+                    </div>
+
+                    <div class="card bg-gray-900/50 border-gray-800 p-6 mb-6">
+                        <h4 class="text-lg font-bold text-blue-300 mb-3">Zone codes</h4>
+                        <p class="text-sm text-gray-400 mb-4">
+                            One letter each. <span class="font-mono text-blue-300">central zone</span>
+                            cannot take <span class="font-mono text-blue-300">c</span>, because
+                            <span class="font-mono text-blue-300">core</span> has it, so it takes the
+                            letter of its second word.
+                        </p>
+                        <ul class="text-sm text-gray-400 space-y-2">
+                            <li><span class="font-mono text-blue-300 mr-2">x</span>extragalactic</li>
+                            <li><span class="font-mono text-blue-300 mr-2">g</span>galactic edge</li>
+                            <li><span class="font-mono text-blue-300 mr-2">m</span>medium</li>
+                            <li><span class="font-mono text-blue-300 mr-2">z</span>central zone</li>
+                            <li><span class="font-mono text-blue-300 mr-2">c</span>core</li>
+                        </ul>
+                        <p class="text-xs text-gray-500 mt-4 italic">
+                            Trailing parts may be left off and take their defaults, so
+                            <span class="font-mono">/766207</span> opens the same sector as
+                            <span class="font-mono">/766207-m-100-1000</span> and completes itself in the
+                            address bar. An address that names no sector that can be generated opens the
+                            empty state and tells you so, rather than a blank page.
                         </p>
                     </div>
 
@@ -323,11 +357,13 @@
                             <li><span class="font-bold text-blue-300">volume</span> scales the coordinates, so the position readout matches what the sender saw.</li>
                         </ul>
                         <p class="text-xs text-gray-500 mt-4 italic">
-                            A link missing any of them is refused rather than completed from your own
-                            settings — a seed applied to the wrong zone would open a different world under
-                            the same name, and showing nothing is better than showing the wrong planet.
-                            Opening a link for the sector already on screen changes nothing; one naming a
-                            different seed or zone rebuilds it.
+                            So the sector id is compared whole. Opening a link for the sector already on
+                            screen changes nothing; one that differs in <em>any</em> of the four rebuilds
+                            it, including the two that only decide which bodies exist — otherwise a
+                            perfectly good link to system 250 would be reported as a missing system. And
+                            a link is never completed from your own settings: a seed applied to the wrong
+                            zone would open a different world under the same name, and showing nothing is
+                            better than showing the wrong planet.
                         </p>
                     </div>
                 </section>
