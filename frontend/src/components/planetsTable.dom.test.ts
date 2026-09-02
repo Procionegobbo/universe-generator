@@ -141,8 +141,9 @@ let mounted: VueWrapper[] = [];
 const makeRouter = () => createRouter({
     history: createMemoryHistory(),
     routes: [
-        { path: '/', component: { template: '<div />' } },
-        { path: '/system/:id', component: { template: '<div />' } }
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/:sid', name: 'sector', component: { template: '<div />' } },
+        { path: '/:sid/system/:id', name: 'system-detail', component: { template: '<div />' } }
     ]
 });
 

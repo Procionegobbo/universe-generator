@@ -8,7 +8,7 @@
             >
                 <div class="flex min-w-0 items-center gap-[10px]">
                     <RouterLink
-                        to="/"
+                        :to="homeTo"
                         data-breadcrumb-back
                         class="flex-none font-mono font-medium text-[11px] text-acc-blue-light hover:underline"
                     >
@@ -211,7 +211,7 @@
 
         <div v-else data-system-missing class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
             <p class="font-sans text-[14px] text-ink">System not found in the current sector.</p>
-            <RouterLink to="/" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
+            <RouterLink :to="homeTo" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
         </div>
 
         <!-- 4b overlays the system detail exactly as it overlays the tables. -->
@@ -228,6 +228,7 @@ import PlanetDetailPanel from '../components/PlanetDetailPanel.vue';
 import { useSectorStore } from '../stores/sectorStore';
 import { useSectorStats } from '../composables/useSectorStats';
 import { usePlanetDeepLink } from '../composables/usePlanetDeepLink';
+import { useSectorNav } from '../composables/useSectorNav';
 import { starPhysical } from '../utils/starPhysical';
 import { starShortLabel } from '../utils/starDisplay';
 import { planetDisplayName, planetShortLabel } from '../utils/planetDisplay';
@@ -244,6 +245,10 @@ const store = useSectorStore();
 // Every count on this page comes from the shared indexing pass (spec §7.5);
 // the view itself aggregates nothing.
 const stats = useSectorStats(() => store.sectorData, () => store.zone);
+
+// Destructured, so `homeTo` unwraps in the template: `:to="nav.homeTo"` would
+// stay a ComputedRef and fail vue-tsc.
+const { homeTo } = useSectorNav();
 
 usePlanetDeepLink();
 

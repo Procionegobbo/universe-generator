@@ -149,7 +149,7 @@
                         <div class="flex items-center gap-[7px] overflow-hidden">
                             <!-- D-11: the payload's name, verbatim. -->
                             <RouterLink
-                                :to="`/system/${row.systemId}`"
+                                :to="systemTo(row.systemId)"
                                 class="truncate font-sans font-semibold text-[12px] text-ink hover:underline"
                             >
                                 {{ row.name }}
@@ -218,6 +218,7 @@ import CelestialThumb from './CelestialThumb.vue';
 import OrbitProfile from './OrbitProfile.vue';
 import TablePager from './TablePager.vue';
 import { useSectorStore } from '../stores/sectorStore';
+import { useSectorNav } from '../composables/useSectorNav';
 import { useSectorStats, type SystemRow } from '../composables/useSectorStats';
 import { formatCoord, thinThousands } from '../utils/format';
 import { starShortLabel } from '../utils/starDisplay';
@@ -247,6 +248,7 @@ const SORTS = [
 
 const store = useSectorStore();
 const router = useRouter();
+const { systemTo } = useSectorNav();
 
 // One aggregate source (spec §3): systemRows is the same derivation the KPI
 // strip, Overview and Statistics read.
@@ -371,6 +373,6 @@ const setSort = (sort: string) => { store.systemFilters.sort = sort; };
 // that already landed on it must not navigate twice.
 const openSystem = (systemId: number, event: MouseEvent) => {
     if ((event.target as HTMLElement | null)?.closest('a')) return;
-    router.push(`/system/${systemId}`);
+    router.push(systemTo(systemId));
 };
 </script>

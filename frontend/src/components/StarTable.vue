@@ -146,7 +146,7 @@
                         </div>
 
                         <RouterLink
-                            :to="`/system/${row.systemId}`"
+                            :to="systemTo(row.systemId)"
                             data-cell="system"
                             class="truncate font-sans text-[12px] text-ink-2 hover:underline"
                             :title="row.systemName"
@@ -186,6 +186,7 @@ import { RouterLink, useRouter } from 'vue-router';
 import CelestialThumb from './CelestialThumb.vue';
 import TablePager from './TablePager.vue';
 import { useSectorStore } from '../stores/sectorStore';
+import { useSectorNav } from '../composables/useSectorNav';
 import { useSectorStats, type StarRow } from '../composables/useSectorStats';
 import { thinThousands } from '../utils/format';
 import { starShortLabel } from '../utils/starDisplay';
@@ -216,6 +217,7 @@ const SORTS = [
 
 const store = useSectorStore();
 const router = useRouter();
+const { systemTo } = useSectorNav();
 
 // One aggregate source (spec §3): starRows is the same derivation the KPI
 // strip, Overview and Statistics read.
@@ -320,6 +322,6 @@ const setSort = (sort: string) => { store.starFilters.sort = sort; };
 // click that already landed on it must not navigate twice.
 const openSystem = (systemId: number, event: MouseEvent) => {
     if ((event.target as HTMLElement | null)?.closest('a')) return;
-    router.push(`/system/${systemId}`);
+    router.push(systemTo(systemId));
 };
 </script>

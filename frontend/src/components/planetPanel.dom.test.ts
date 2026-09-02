@@ -515,12 +515,10 @@ describe('PlanetDetailPanel — the life block (D-8, D-9)', () => {
 });
 
 describe('PlanetDetailPanel — the actions', () => {
-    // OPEN SYSTEM still pushes the sector-less `/system/1` of the old route
-    // table — the link is what `navigation-003` fixes, through the navigation
-    // helper. Pinned as it actually behaves in between: that address matches no
-    // route any more, so it fails soft to "/" rather than rendering an empty
-    // view. When 003 lands, this becomes `/${SID}/system/1`.
-    it('fails soft on OPEN SYSTEM, whose link does not yet name the sector', async () => {
+    // The reported bug, closed: OPEN SYSTEM used to push a sector-less
+    // `/system/1`, which matches no route at all now. It goes through the
+    // navigation helper, so the sector comes with it.
+    it('carries the sector on OPEN SYSTEM', async () => {
         const { wrapper, router } = await mountResults();
         await wrapper.get(`[data-planet-row="${LIFE_KEY}"]`).trigger('click');
         await settle();
@@ -529,8 +527,8 @@ describe('PlanetDetailPanel — the actions', () => {
         await flushPromises();
         await flushPromises();
 
-        expect(router.currentRoute.value.name).toBe('home');
-        expect(router.currentRoute.value.path).toBe('/');
+        expect(router.currentRoute.value.name).toBe('system-detail');
+        expect(router.currentRoute.value.path).toBe(`/${SID}/system/1`);
     });
 
     it('copies the planet as JSON through the clipboard and flashes COPIED for 1.2s', async () => {

@@ -7,7 +7,7 @@
         <button
             type="button"
             class="flex items-center gap-3 text-left cursor-pointer"
-            @click="router.push('/')"
+            @click="router.push(homeTo)"
         >
             <img src="/images/logo.png" alt="Universe Generator" class="h-7 w-7 rounded-full object-cover" />
             <span class="flex flex-col leading-none">
@@ -92,6 +92,7 @@ import { computed, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
 import { useBackendHealth } from '../composables/useBackendHealth';
+import { useSectorNav } from '../composables/useSectorNav';
 
 const MENU_ITEMS = [
     { to: '/documentation', label: 'Documentation' },
@@ -102,6 +103,7 @@ const menuOpen = ref(false);
 
 const router = useRouter();
 const store = useSectorStore();
+const { homeTo } = useSectorNav();
 const { status } = useBackendHealth();
 
 // A generation in flight overrides the online/offline colour for its duration.
