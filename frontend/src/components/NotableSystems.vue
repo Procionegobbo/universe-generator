@@ -20,7 +20,7 @@
             <RouterLink
                 v-for="entry in entries"
                 :key="entry.systemId"
-                :to="`/system/${entry.systemId}`"
+                :to="systemTo(entry.systemId)"
                 class="ug-row flex flex-col gap-[7px] border-b border-line-hairline px-[18px] py-[14px] transition-colors duration-150 xl:border-b-0 xl:border-r xl:last:border-r-0"
             >
                 <div class="flex flex-wrap items-center gap-2">
@@ -45,6 +45,7 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import CelestialThumb from './CelestialThumb.vue';
 import type { NotableSystem, SystemRow } from '../composables/useSectorStats';
+import { useSectorNav } from '../composables/useSectorNav';
 import { useSectorStore } from '../stores/sectorStore';
 import { formatCoord, thinThousands } from '../utils/format';
 
@@ -56,6 +57,7 @@ const props = defineProps<{
 }>();
 
 const store = useSectorStore();
+const { systemTo } = useSectorNav();
 
 const totalSystems = computed(() => props.rows.length);
 

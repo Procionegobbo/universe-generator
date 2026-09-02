@@ -237,6 +237,7 @@ import { useRouter } from 'vue-router';
 import CelestialThumb from './CelestialThumb.vue';
 import OrbitalMap from './OrbitalMap.vue';
 import { useSectorStore } from '../stores/sectorStore';
+import { useSectorNav } from '../composables/useSectorNav';
 import { LIFE_STAGE_LABELS } from '../types';
 import { planetLongDescription, planetTypeLabel } from '../utils/planetDescription';
 import { lifeStageLevel } from '../utils/lifeStage';
@@ -280,6 +281,7 @@ const COPIED_MS = 1200;
 
 const store = useSectorStore();
 const router = useRouter();
+const { systemTo } = useSectorNav();
 
 const panelRef = ref<HTMLElement | null>(null);
 const open = ref(false);
@@ -451,7 +453,7 @@ const onKeydown = (event: KeyboardEvent) => {
 const openSystem = () => {
     const id = star.value?.systemId;
     if (id === undefined) return;
-    router.push(`/system/${id}`);
+    router.push(systemTo(id));
 };
 
 /** The documented fallback: a hidden textarea plus the legacy copy command. */

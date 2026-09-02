@@ -102,11 +102,16 @@ const ALL_CLASSES: Sector = {
 
 let mounted: VueWrapper[] = [];
 
+/** The sector is the first path segment now; there is no bare `/system/:id`. */
+const SID = '766207-m-100-1000';
+const PARAMS = { seed: '766207', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000 };
+
 const makeRouter = () => createRouter({
     history: createMemoryHistory(),
     routes: [
-        { path: '/', component: { template: '<div />' } },
-        { path: '/system/:id', component: { template: '<div />' } }
+        { path: '/', name: 'home', component: { template: '<div />' } },
+        { path: '/:sid', name: 'sector', component: { template: '<div />' } },
+        { path: '/:sid/system/:id', name: 'system-detail', component: { template: '<div />' } }
     ]
 });
 
@@ -115,6 +120,7 @@ function mountTable(sector: Sector = FIXTURE, pinia?: Pinia) {
     setActivePinia(activePinia);
     const store = useSectorStore();
     store.sectorData = sector;
+    store.loadedParams = { ...PARAMS };
     store.generationStatus = 'done';
     store.activeTab = 'stars';
 
@@ -129,6 +135,7 @@ function mountSystemsTable(sector: Sector = FIXTURE) {
     setActivePinia(activePinia);
     const store = useSectorStore();
     store.sectorData = sector;
+    store.loadedParams = { ...PARAMS };
     store.generationStatus = 'done';
     store.activeTab = 'systems';
 
@@ -325,7 +332,7 @@ describe('StarTable — names, IDs, search and sort', () => {
         const cell = wrapper.get('[data-star-row="3"] [data-cell="system"]');
 
         expect(cell.text()).toBe('Necklace');
-        expect(cell.attributes('href')).toBe('/system/2');
+        expect(cell.attributes('href')).toBe(`/${SID}/system/2`);
     });
 
     it('matches the search on the star name, trimmed and case-insensitive', async () => {

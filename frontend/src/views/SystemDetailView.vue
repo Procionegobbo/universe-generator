@@ -8,7 +8,7 @@
             >
                 <div class="flex min-w-0 items-center gap-[10px]">
                     <RouterLink
-                        to="/"
+                        :to="homeTo"
                         data-breadcrumb-back
                         class="flex-none font-mono font-medium text-[11px] text-acc-blue-light hover:underline"
                     >
@@ -209,9 +209,30 @@
             </section>
         </template>
 
+        <!-- The sector this link names is still being built. Saying "not found"
+             here would be a lie about a perfectly good link, for as long as the
+             generation takes. -->
+        <div v-else-if="isBuilding" data-system-waiting class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
+            <p class="font-sans text-[14px] text-ink">Rebuilding the sector this link names…</p>
+        </div>
+
+        <div
+            v-else-if="store.generationStatus === 'error'"
+            data-system-error
+            class="flex flex-1 flex-col items-center justify-center gap-4 py-16"
+        >
+            <p class="font-sans text-[14px] text-ink">Generation failed</p>
+            <p class="max-w-[420px] text-center font-mono text-[11px] break-words text-acc-red-pale">
+                {{ store.error }}
+            </p>
+            <RouterLink :to="homeTo" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
+        </div>
+
+        <!-- Kept, verbatim: the one tick between the coordinate guard deciding
+             the system is not there and its replace landing. -->
         <div v-else data-system-missing class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
             <p class="font-sans text-[14px] text-ink">System not found in the current sector.</p>
-            <RouterLink to="/" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
+            <RouterLink :to="homeTo" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
         </div>
 
         <!-- 4b overlays the system detail exactly as it overlays the tables. -->
@@ -228,11 +249,13 @@ import PlanetDetailPanel from '../components/PlanetDetailPanel.vue';
 import { useSectorStore } from '../stores/sectorStore';
 import { useSectorStats } from '../composables/useSectorStats';
 import { usePlanetDeepLink } from '../composables/usePlanetDeepLink';
+import { useSectorNav } from '../composables/useSectorNav';
 import { starPhysical } from '../utils/starPhysical';
 import { starShortLabel } from '../utils/starDisplay';
 import { planetDisplayName, planetShortLabel } from '../utils/planetDisplay';
 import { tempTextClass, thermalZone, zoneBadgeClass } from '../utils/thermalZone';
 import { formatCoord, thinThousands } from '../utils/format';
+import { decodeSid, sameSid } from '../utils/sectorLink';
 
 // Handoff 1d: # 38px · PLANET 1.3fr · TYPE 1fr · Ø 84px · TEMP 78px ·
 // MOONS 70px · ZONE 92px.
@@ -245,7 +268,30 @@ const store = useSectorStore();
 // the view itself aggregates nothing.
 const stats = useSectorStats(() => store.sectorData, () => store.zone);
 
+// Destructured, so `homeTo` unwraps in the template: `:to="nav.homeTo"` would
+// stay a ComputedRef and fail vue-tsc.
+const { homeTo } = useSectorNav();
+
 usePlanetDeepLink();
+
+/**
+ * The sector on screen is not yet the one the URL names — either a generation
+ * is running, or the sid decodes to something other than what is loaded and
+ * useSectorLink is about to build it.
+ *
+ * A failed generation is neither. useSectorLink does not retry a URL that has
+ * not changed, so after a failure nothing further is coming and the mismatch
+ * below is permanent: `loadedParams` never became the sid, because the sector
+ * it names was never built. Without the guard the mismatch alone keeps this
+ * true forever, the page sits on "rebuilding" promising work nobody is doing,
+ * and the error state underneath is unreachable — which is the whole point of
+ * having one.
+ */
+const isBuilding = computed(() =>
+    store.generationStatus !== 'error'
+    && (store.generationStatus === 'running'
+        || (decodeSid(route.params.sid) !== null
+            && !sameSid(decodeSid(route.params.sid), store.loadedParams))));
 
 const systemId = computed(() => Number(route.params.id));
 

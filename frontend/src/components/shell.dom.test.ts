@@ -15,9 +15,11 @@ vi.mock('axios', () => ({
 }));
 
 const ROUTES = [
-    { path: '/', component: { template: '<div />' } },
     { path: '/documentation', component: { template: '<div />' } },
-    { path: '/api-reference', component: { template: '<div />' } }
+    { path: '/api-reference', component: { template: '<div />' } },
+    { path: '/', name: 'home', component: { template: '<div />' } },
+    { path: '/:sid', name: 'sector', component: { template: '<div />' } },
+    { path: '/:sid/system/:id', name: 'system-detail', component: { template: '<div />' } }
 ];
 
 /** See railAndStates.dom.test.ts — jsdom's matchMedia never matches anything. */

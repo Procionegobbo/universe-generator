@@ -71,20 +71,26 @@ function buttonWith(wrapper: VueWrapper, text: string) {
 const valueOf = (wrapper: VueWrapper, selector: string) =>
     (wrapper.get(selector).element as HTMLInputElement).value;
 
-/** Mounts the console shell. `localStorage` must already hold whatever the store should read. */
-function mountHome() {
+/**
+ * Mounts the console shell. `localStorage` must already hold whatever the store
+ * should read. The route table mirrors the app's, because the sector is named
+ * by the path and RESET has to be able to leave it.
+ */
+function mountHome(url = '/') {
     const pinia = createPinia();
     setActivePinia(pinia);
     const store = useSectorStore();
     const router = createRouter({
         history: createMemoryHistory(),
         routes: [
-            { path: '/', component: { template: '<div />' } },
-            { path: '/documentation', component: { template: '<div />' } }
+            { path: '/documentation', component: { template: '<div />' } },
+            { path: '/', name: 'home', component: { template: '<div />' } },
+            { path: '/:sid', name: 'sector', component: { template: '<div />' } }
         ]
     });
+    router.push(url);
     const wrapper = mount(HomeView, { global: { plugins: [pinia, router] } });
-    return { store, wrapper };
+    return { store, wrapper, router };
 }
 
 function mountControls() {
@@ -242,5 +248,55 @@ describe('T-F54 — the sliders map through the logarithmic scale', () => {
         expect(expected).toBe(71);
         expect(store.systemCount).toBe(expected);
         expect(valueOf(wrapper, '#systemCount')).toBe(String(expected));
+    });
+});
+
+describe('RESET clears the sector identity, not only the sector', () => {
+    it('empties loadedParams and leaves the sid route for "/"', async () => {
+        const { wrapper, store, router } = mountHome('/771-c-140-4000');
+        mounted.push(wrapper);
+        await flushPromises();
+
+        store.sectorData = sector(7);
+        store.loadedParams = {
+            seed: '771', zone: 'core', systemCount: 140, sectorVolume: 4000
+        };
+        store.generationStatus = 'done';
+        await nextTick();
+
+        await buttonWith(wrapper, 'RESET').trigger('click');
+        await flushPromises();
+
+        expect(store.sectorData).toBeNull();
+        // Both, or the path would go on naming a sector that is not on screen
+        // and a reload would regenerate it — undoing the reset.
+        expect(store.loadedParams).toBeNull();
+        expect(router.currentRoute.value.path).toBe('/');
+    });
+});
+
+describe('a seed that cannot be written into a sid is normalised on submit', () => {
+    // `type="number"` still lets a user type `-5`, whose leading `-` is the
+    // sid's field delimiter. Replaced by a fresh random seed, exactly as an
+    // empty one already was, so the link the generation publishes round-trips.
+    it.each([
+        ['an empty seed', ''],
+        ['a negative seed', -5]
+    ])('replaces %s with a fresh random one', async (_label, seed) => {
+        const { wrapper, store } = mountHome();
+        mounted.push(wrapper);
+        await flushPromises();
+
+        store.currentSeed = seed;
+        await nextTick();
+
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+
+        const sent = (post.mock.calls[0][1] as { seed: number }).seed;
+        expect(sent).not.toBe(seed);
+        expect(Number.isInteger(sent)).toBe(true);
+        expect(sent).toBeGreaterThanOrEqual(0);
+        expect(store.currentSeed).toBe(sent);
     });
 });

@@ -83,6 +83,10 @@ const NINE_TYPES: Sector = {
         .map((type, index) => planet(1, index + 1, type))
 };
 
+/** The sector the links carry, since every internal link now names its sector. */
+const SID = '766207-m-100-1000';
+const PARAMS = { seed: '766207', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000 };
+
 let mounted: VueWrapper[] = [];
 
 function mountWith(component: Parameters<typeof mount>[0], props: Record<string, unknown> = {}, pinia?: Pinia) {
@@ -91,8 +95,9 @@ function mountWith(component: Parameters<typeof mount>[0], props: Record<string,
     const router = createRouter({
         history: createMemoryHistory(),
         routes: [
-            { path: '/', component: { template: '<div />' } },
-            { path: '/system/:id', component: { template: '<div />' } }
+            { path: '/', name: 'home', component: { template: '<div />' } },
+            { path: '/:sid', name: 'sector', component: { template: '<div />' } },
+            { path: '/:sid/system/:id', name: 'system-detail', component: { template: '<div />' } }
         ]
     });
     const wrapper = mount(component, { props, global: { plugins: [activePinia, router] } });
@@ -106,6 +111,7 @@ function mountResults(sector: Sector = FIXTURE) {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = sector;
+    store.loadedParams = { ...PARAMS };
     store.generationStatus = 'done';
     const wrapper = mountWith(ResultsDisplay, {}, pinia);
     return { store, wrapper };
@@ -228,11 +234,11 @@ describe('OverviewPanel — 1a right column', () => {
 
     it('ranks notable systems by D-28 and caps the list at four', () => {
         const { wrapper } = mountResults();
-        const entries = wrapper.findComponent(OverviewPanel).findAll('a[href^="/system/"]');
+        const entries = wrapper.findComponent(OverviewPanel).findAll('a[href*="/system/"]');
 
         // 1 has the life-bearing planet; 2 has a habitable planet; 3 has neither.
         expect(entries.map(entry => entry.attributes('href')))
-            .toEqual(['/system/1', '/system/2', '/system/3']);
+            .toEqual([1, 2, 3].map(id => `/${SID}/system/${id}`));
         expect(entries.length).toBeLessThanOrEqual(4);
 
         expect(flat(entries[0].element)).toContain('UG-0001 LIFE');
@@ -257,10 +263,10 @@ describe('OverviewPanel — 1a right column', () => {
         };
 
         const { wrapper } = mountResults(ranked);
-        const entries = wrapper.findComponent(OverviewPanel).findAll('a[href^="/system/"]');
+        const entries = wrapper.findComponent(OverviewPanel).findAll('a[href*="/system/"]');
 
         expect(entries.map(entry => entry.attributes('href')))
-            .toEqual(['/system/5', '/system/4', '/system/3', '/system/1']);
+            .toEqual([5, 4, 3, 1].map(id => `/${SID}/system/${id}`));
     });
 
     it('conveys every occupied thermal zone with a text badge, never colour alone', () => {

@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import SectorControls from '../components/SectorControls.vue';
 import ResultsDisplay from '../components/ResultsDisplay.vue';
 import KpiStrip from '../components/KpiStrip.vue';
@@ -114,9 +115,11 @@ import MobileActionBar from '../components/MobileActionBar.vue';
 import { useRailTier } from '../composables/useRailTier';
 import { useSectorStore } from '../stores/sectorStore';
 import { thinThousands } from '../utils/format';
+import { normaliseSeed } from '../utils/sectorLink';
 import type { GenerationRequest, SectorZone } from '../types';
 
 const store = useSectorStore();
+const router = useRouter();
 
 const { tier } = useRailTier();
 
@@ -147,8 +150,14 @@ const subHeader = computed(() =>
 // An empty seed randomises on submit, exactly as the old handleSubmit did. It
 // lives here rather than in the rail because generation is now reachable from
 // three places (the rail, the empty state and the mobile action bar).
+//
+// The same replacement covers every seed that cannot be written into a sid:
+// `type="number"` still lets a user type `-5`, whose leading `-` is the sid's
+// field delimiter. Normalising here rather than weakening the sid grammar is
+// what guarantees the round-trip, and it cannot loop — the replacement is
+// always a value normaliseSeed accepts.
 const buildRequest = (): GenerationRequest => {
-    if (store.currentSeed === '' || store.currentSeed === null) {
+    if (normaliseSeed(store.currentSeed) === null) {
         store.currentSeed = Math.floor(Math.random() * 1000000);
     }
     return {
@@ -199,5 +208,10 @@ const handleReset = () => {
     store.sectorData = null;
     store.error = null;
     lastRequest.value = null;
+    // The sector's identity goes with the sector. Leaving loadedParams set would
+    // leave the path naming a sector that is not on screen, and a reload would
+    // regenerate it — undoing the reset.
+    store.loadedParams = null;
+    void router.push('/');
 };
 </script>
