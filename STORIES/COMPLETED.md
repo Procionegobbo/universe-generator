@@ -25,3 +25,7 @@
 - [new-system-view-003-per-star-orbital-maps.md](COMPLETED/new-system-view-003-per-star-orbital-maps.md)
 - [navigation-001-sid-codec.md](COMPLETED/navigation-001-sid-codec.md)
 - [navigation-002-sector-scoped-routes.md](COMPLETED/navigation-002-sector-scoped-routes.md)
+- [navigation-003-internal-links-carry-sector.md](COMPLETED/navigation-003-internal-links-carry-sector.md)
+- [navigation-004-link-notice-strip.md](COMPLETED/navigation-004-link-notice-strip.md)
+- [navigation-005-coordinate-guard.md](COMPLETED/navigation-005-coordinate-guard.md)
+- [navigation-006-documentation.md](COMPLETED/navigation-006-documentation.md)
