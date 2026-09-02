@@ -8,6 +8,20 @@ export type GenerationStatus = 'idle' | 'running' | 'done' | 'error';
 export type GenerationStage = 'coordinates' | 'stars' | 'planets' | 'moons' | 'habitability';
 export type SectorTab = 'overview' | 'statistics' | 'systems' | 'stars' | 'planets';
 
+/**
+ * What a link got wrong, for the inline strip that says so.
+ *
+ *   sid          the address names no sector that can be generated
+ *   planet       the planet key names no planet in this sector
+ *   coordinates  the parts of the address contradict each other
+ *
+ * `path` is the path the notice is to be read on — recorded, not derived,
+ * because the notice is raised *after* the corrective navigation lands, and the
+ * strip clears itself as soon as the route moves off it.
+ */
+export type LinkNoticeKind = 'sid' | 'planet' | 'coordinates';
+export interface LinkNotice { kind: LinkNoticeKind; path: string }
+
 const defaultSystemFilters = () => ({ query: '', preset: 'all', primaryClass: 'any', sort: 'planets-desc' });
 const defaultStarFilters = () => ({ query: '', preset: 'all', sort: 'id-asc' });
 const defaultPlanetFilters = () => ({
@@ -77,6 +91,7 @@ export const useSectorStore = defineStore('sector', () => {
     const planetFilters = ref(defaultPlanetFilters());
     const selectedPlanetKey = ref<string | null>(null); // "<starId>-<orbitalNumber>"
     const page = ref(defaultPage());
+    const linkNotice = ref<LinkNotice | null>(null);
 
     // --- Persistenza automatica SOLO parametri su LocalStorage ---
     // (RIMOSSO IL WATCHER)
@@ -213,6 +228,16 @@ export const useSectorStore = defineStore('sector', () => {
         return null;
     };
 
+    /**
+     * Raised after the corrective navigation has landed, so it records the path
+     * it will be read on. Nothing persists it: a reload shows no notice.
+     */
+    const raiseLinkNotice = (kind: LinkNoticeKind, path: string) => {
+        linkNotice.value = { kind, path };
+    };
+
+    const clearLinkNotice = () => { linkNotice.value = null; };
+
     // Funzione per azzerare la memoria persistente
     const clearPersistentMemory = () => {
         localStorage.removeItem(STORAGE_KEY);
@@ -225,6 +250,7 @@ export const useSectorStore = defineStore('sector', () => {
         savedParamsRevision.value++;
         lastStats.value = null;
         activeTab.value = 'overview';
+        linkNotice.value = null;
         resetFilters();
     };
 
@@ -254,6 +280,9 @@ export const useSectorStore = defineStore('sector', () => {
         selectedPlanetKey,
         page,
         hasSavedParams,
+        linkNotice,
+        raiseLinkNotice,
+        clearLinkNotice,
         resetFilters,
         selectPlanet
     };

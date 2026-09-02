@@ -174,19 +174,21 @@ describe('useSectorLink — reading the sector out of the path', () => {
         expect(store.sectorData).toBeNull();
     });
 
-    it('sends a malformed sid to "/" and generates nothing', async () => {
+    it('sends a malformed sid to "/", generates nothing, and says so', async () => {
         const { store, router } = await mountAt('/not-a-sector');
 
         expect(router.currentRoute.value.path).toBe('/');
         expect(post).not.toHaveBeenCalled();
         expect(store.sectorData).toBeNull();
+        // Landing somewhere else in silence would be its own failure.
+        expect(store.linkNotice).toEqual({ kind: 'sid', path: '/' });
     });
 
     // An address matching no route at all is treated exactly as an unreadable
     // sid is — one path, and a page rather than an empty <router-view>. Both of
     // these are what an old shared link now looks like.
     it.each(['/system/66', '/a/b/c'])(
-        'sends the unmatched address %s to "/" and generates nothing',
+        'sends the unmatched address %s to "/", generates nothing, and says so',
         async (url) => {
             const { store, wrapper, router } = await mountAt(url);
 
@@ -194,6 +196,7 @@ describe('useSectorLink — reading the sector out of the path', () => {
             expect(post).not.toHaveBeenCalled();
             expect(store.sectorData).toBeNull();
             expect(wrapper.findComponent(HomeView).exists()).toBe(true);
+            expect(store.linkNotice).toEqual({ kind: 'sid', path: '/' });
         }
     );
 
@@ -204,6 +207,9 @@ describe('useSectorLink — reading the sector out of the path', () => {
         expect(store.sectorData).toBeNull();
         expect(store.error).toBe('network down');
         expect(store.generationStatus).toBe('error');
+        // The full-page generation error owns that message; the link strip is
+        // for a link that was wrong, which this one was not.
+        expect(store.linkNotice).toBeNull();
     });
 
     // A planet key on the true empty state names nothing: there is no sector for

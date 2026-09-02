@@ -4,6 +4,10 @@
 
         <AppTopBar />
 
+        <!-- Above both destinations, so neither view has to know a link went
+             wrong on the way here. -->
+        <LinkNotice />
+
         <!-- Main Content (Router View) -->
         <main class="flex-1 overflow-y-auto">
             <!-- The console routes go full-bleed; the two legacy pages keep the
@@ -24,6 +28,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { Analytics } from '@vercel/analytics/vue';
 import AppTopBar from './components/AppTopBar.vue';
+import LinkNotice from './components/LinkNotice.vue';
 import { useSectorLink } from './composables/useSectorLink';
 
 const route = useRoute();

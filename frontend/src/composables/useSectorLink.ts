@@ -20,7 +20,8 @@
 //                   to a URL that already names it.
 //
 // An address that cannot be read — a malformed sid, or a shape that matches no
-// route at all — is answered with "/" rather than a blank page.
+// route at all — is answered with "/" rather than a blank page, plus a notice
+// saying so, since landing somewhere else in silence is its own failure.
 
 import { onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -38,6 +39,7 @@ export function useSectorLink() {
         // sid that cannot be read: one path, never an empty view.
         if (route.name === 'not-found') {
             await router.replace({ path: '/' });
+            store.raiseLinkNotice('sid', '/');
             return;
         }
 
@@ -57,6 +59,7 @@ export function useSectorLink() {
         if (params === null) {
             // Fail soft. Never a blank page, never the wrong sector.
             await router.replace({ path: '/' });
+            store.raiseLinkNotice('sid', '/');
             return;
         }
 
