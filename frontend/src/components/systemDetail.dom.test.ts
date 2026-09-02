@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { nextTick } from 'vue';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
@@ -98,11 +99,16 @@ const G_ZONE = habitableZoneBounds('G');
 
 let mounted: VueWrapper[] = [];
 
+/** The sector these systems belong to, and the sid naming it in every URL. */
+const PARAMS = { seed: '482913', zone: 'medium' as const, systemCount: 100, sectorVolume: 1000 };
+const SID = '482913-m-100-1000';
+
 const makeRouter = (): Router => createRouter({
     history: createMemoryHistory(),
     routes: [
         { path: '/', name: 'home', component: { template: '<div />' } },
-        { path: '/system/:id', name: 'system-detail', component: SystemDetailView }
+        { path: '/:sid', name: 'sector', component: { template: '<div />' } },
+        { path: '/:sid/system/:id', name: 'system-detail', component: SystemDetailView }
     ]
 });
 
@@ -111,11 +117,12 @@ async function mountDetail(sector: Sector, systemId: number) {
     setActivePinia(pinia);
     const store = useSectorStore();
     store.sectorData = sector;
+    store.loadedParams = { ...PARAMS };
     store.generationStatus = 'done';
     store.currentSeed = 482913;
 
     const router = makeRouter();
-    router.push(`/system/${systemId}`);
+    router.push(`/${SID}/system/${systemId}`);
     await router.isReady();
 
     const wrapper = mount(SystemDetailView, { global: { plugins: [pinia, router] } });
@@ -580,13 +587,13 @@ describe('SystemDetailView — opening a planet from its star\'s group', () => {
         expect(wrapper.find('[data-planet-panel]').exists()).toBe(true);
     });
 
-    it('does not navigate: the panel opens over /system/1', async () => {
+    it('does not navigate: the panel opens over the system\'s own path', async () => {
         const { wrapper, router } = await mountDetail(KEPLER, 1);
 
         await wrapper.get('[data-planet-row="1-2"]').trigger('click');
         await flushPromises();
 
-        expect(router.currentRoute.value.path).toBe('/system/1');
+        expect(router.currentRoute.value.path).toBe(`/${SID}/system/1`);
     });
 
     it('keeps the row decoration the move could have lost', async () => {
@@ -640,7 +647,8 @@ describe('SystemDetailView — a change of the :id param', () => {
         const { wrapper, router } = await mountDetail(BOTH, 1);
         expect(wrapper.text()).toContain('Kepler-442');
 
-        await router.push('/system/7');
+        // A change of :id inside one sid — the sector does not change under it.
+        await router.push(`/${SID}/system/7`);
         await flushPromises();
         await wrapper.vm.$nextTick();
 
@@ -671,12 +679,53 @@ describe('SystemDetailView — the 1d shell', () => {
         expect(wrapper.get('[data-kpi="TOTAL MASS"]').text()).toContain('1.30');
     });
 
+    // Kept verbatim: this is the one tick between the coordinate guard deciding
+    // the system is not there and its corrective replace landing.
     it('degrades to a not-found message for a system outside the sector', async () => {
         const { wrapper } = await mountDetail(KEPLER, 404);
 
         expect(wrapper.get('[data-system-missing]').text())
             .toContain('System not found in the current sector.');
         expect(wrapper.find('[data-orbital-map]').exists()).toBe(false);
+    });
+
+    // "Not found" while the sector the link names is still being built is a lie
+    // about a perfectly good link, for as long as the generation takes.
+    it('waits rather than reporting not-found while the named sector is building', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        store.generationStatus = 'running';
+        store.sectorData = null;
+        await nextTick();
+
+        expect(wrapper.get('[data-system-waiting]').text())
+            .toContain('Rebuilding the sector this link names…');
+        expect(wrapper.find('[data-system-missing]').exists()).toBe(false);
+    });
+
+    it('waits when the sid names a sector other than the loaded one', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        // The URL still names 482913; the sector under it is another one, so
+        // useSectorLink is about to rebuild.
+        store.loadedParams = { ...PARAMS, seed: '999' };
+        store.sectorData = null;
+        await nextTick();
+
+        expect(wrapper.find('[data-system-waiting]').exists()).toBe(true);
+        expect(wrapper.find('[data-system-missing]').exists()).toBe(false);
+    });
+
+    it('reports the generation failure rather than a missing system', async () => {
+        const { store, wrapper } = await mountDetail(KEPLER, 1);
+        store.sectorData = null;
+        store.generationStatus = 'error';
+        store.error = 'network down';
+        await nextTick();
+
+        const failed = wrapper.get('[data-system-error]');
+        expect(failed.text()).toContain('network down');
+        expect(failed.get('a').attributes('href')).toBe(`/${SID}`);
+        expect(wrapper.find('[data-system-missing]').exists()).toBe(false);
+        expect(wrapper.find('[data-system-waiting]').exists()).toBe(false);
     });
 });
 

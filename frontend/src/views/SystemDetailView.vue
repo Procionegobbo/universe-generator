@@ -209,6 +209,27 @@
             </section>
         </template>
 
+        <!-- The sector this link names is still being built. Saying "not found"
+             here would be a lie about a perfectly good link, for as long as the
+             generation takes. -->
+        <div v-else-if="isBuilding" data-system-waiting class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
+            <p class="font-sans text-[14px] text-ink">Rebuilding the sector this link names…</p>
+        </div>
+
+        <div
+            v-else-if="store.generationStatus === 'error'"
+            data-system-error
+            class="flex flex-1 flex-col items-center justify-center gap-4 py-16"
+        >
+            <p class="font-sans text-[14px] text-ink">Generation failed</p>
+            <p class="max-w-[420px] text-center font-mono text-[11px] break-words text-acc-red-pale">
+                {{ store.error }}
+            </p>
+            <RouterLink :to="homeTo" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
+        </div>
+
+        <!-- Kept, verbatim: the one tick between the coordinate guard deciding
+             the system is not there and its replace landing. -->
         <div v-else data-system-missing class="flex flex-1 flex-col items-center justify-center gap-4 py-16">
             <p class="font-sans text-[14px] text-ink">System not found in the current sector.</p>
             <RouterLink :to="homeTo" class="ug-btn-outline px-4 py-2">BACK TO SECTOR</RouterLink>
@@ -234,6 +255,7 @@ import { starShortLabel } from '../utils/starDisplay';
 import { planetDisplayName, planetShortLabel } from '../utils/planetDisplay';
 import { tempTextClass, thermalZone, zoneBadgeClass } from '../utils/thermalZone';
 import { formatCoord, thinThousands } from '../utils/format';
+import { decodeSid, sameSid } from '../utils/sectorLink';
 
 // Handoff 1d: # 38px · PLANET 1.3fr · TYPE 1fr · Ø 84px · TEMP 78px ·
 // MOONS 70px · ZONE 92px.
@@ -251,6 +273,16 @@ const stats = useSectorStats(() => store.sectorData, () => store.zone);
 const { homeTo } = useSectorNav();
 
 usePlanetDeepLink();
+
+/**
+ * The sector on screen is not yet the one the URL names — either a generation
+ * is running, or the sid decodes to something other than what is loaded and
+ * useSectorLink is about to build it.
+ */
+const isBuilding = computed(() =>
+    store.generationStatus === 'running'
+    || (decodeSid(route.params.sid) !== null
+        && !sameSid(decodeSid(route.params.sid), store.loadedParams)));
 
 const systemId = computed(() => Number(route.params.id));
 

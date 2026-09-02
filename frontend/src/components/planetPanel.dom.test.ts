@@ -11,6 +11,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import { useSectorStore } from '../stores/sectorStore';
+import { useCoordinateGuard } from '../composables/useCoordinateGuard';
 import { useSectorLink } from '../composables/useSectorLink';
 import { LIFE_STAGE_LABELS, type Planet, type Sector, type Star, type System } from '../types';
 import { planetLongDescription, planetTypeLabel } from '../utils/planetDescription';
@@ -109,14 +110,17 @@ const settle = async () => {
 };
 
 /**
- * ResultsDisplay under the same sector/URL sync App.vue installs. Without it the
- * URL never learns which sector is loaded, and the panel's guard — which asks
- * exactly that — would refuse every key. The pairing is the app's, not a test
- * convenience.
+ * ResultsDisplay under the same two composables App.vue installs. Without
+ * useSectorLink the URL never learns which sector is loaded, and the panel's
+ * own test — which asks exactly that — would hold every key; without
+ * useCoordinateGuard nothing takes an unresolvable key back out of the URL,
+ * since usePlanetDeepLink only opens and closes the panel now. The pairing is
+ * the app's, not a test convenience.
  */
 const ResultsHost = {
     setup() {
         useSectorLink();
+        useCoordinateGuard();
         return () => h(ResultsDisplay);
     }
 };
@@ -283,7 +287,7 @@ describe('PlanetDetailPanel — focus and the close triggers', () => {
             expect(panelOf(wrapper).exists()).toBe(true);
 
             await closeIt();
-            await nextTick();
+            await flushPromises();
 
             expect(store.selectedPlanetKey).toBeNull();
             expect(panelOf(wrapper).exists()).toBe(false);
@@ -361,7 +365,7 @@ describe('PlanetDetailPanel — D-7 content, with no fabricated facts', () => {
     };
 
     it('hatches a bar clipped by the scale, and only that bar', async () => {
-        const { wrapper } = await mountResults('/', GIANT_FIXTURE);
+        const { wrapper } = await mountResults(`/${SID}`, GIANT_FIXTURE);
         await wrapper.get('[data-planet-row="1-1"]').trigger('click');
         await settle();
 
@@ -384,7 +388,7 @@ describe('PlanetDetailPanel — D-7 content, with no fabricated facts', () => {
             ...GIANT_FIXTURE,
             planets: [planet(1, 1, 'S', { mass: 10 * 5.972e24, gravity: 9.807 })]
         };
-        const { wrapper } = await mountResults('/', exact);
+        const { wrapper } = await mountResults(`/${SID}`, exact);
         await wrapper.get('[data-planet-row="1-1"]').trigger('click');
         await settle();
 
