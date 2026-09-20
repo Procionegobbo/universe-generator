@@ -20,7 +20,7 @@ const publicPath = path.join(__dirname, '../public');
 app.use(express.static(publicPath));
 
 // Support for Single Page Application routing (fallback to index.html)
-app.get('*', (req: Request, res: Response, next: NextFunction) => {
+app.get('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
     // '/api/' rather than '/api': the bare prefix also matched the SPA's own
     // '/api-reference' route, so it fell through to the 404 handler instead of
     // being served index.html. All endpoints are mounted under '/api/sector'.
